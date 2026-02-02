@@ -39,6 +39,9 @@ export class DerivWebSocketManager {
   private connectionPromise: Promise<void> | null = null
   private reqIdCounter = 1000
 
+  private symbolsCache: any[] | null = null
+  private symbolsPromise: Promise<any[]> | null = null
+
   public getNextReqId(): number {
     return ++this.reqIdCounter;
   }
@@ -47,7 +50,9 @@ export class DerivWebSocketManager {
   private readonly appId = DERIV_CONFIG.APP_ID
   private readonly wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${DERIV_CONFIG.APP_ID}`
 
-  private constructor() {}
+  private tickCallbacks: Map<string, Set<(tick: TickData) => void>> = new Map()
+
+  private constructor() { }
 
   public static getInstance(): DerivWebSocketManager {
     if (!DerivWebSocketManager.instance) {
@@ -105,8 +110,14 @@ export class DerivWebSocketManager {
 
         this.ws.onmessage = (event) => {
           try {
-            this.lastMessageTime = Date.now()
             const message = JSON.parse(event.data)
+            this.lastMessageTime = Date.now() // Move here to ensure it's only on successful parse
+
+            // Log pings for debugging if needed (rare)
+            if (message.msg_type === "ping") {
+              // console.log("[v0] Heartbeat pong received")
+            }
+
             this.routeMessage(message)
           } catch (error) {
             console.error("[v0] Failed to parse message:", error)
@@ -127,12 +138,12 @@ export class DerivWebSocketManager {
           clearTimeout(connectionTimeout)
           console.log("[v0] WebSocket closed, attempting reconnect...")
           this.log("warning", "WebSocket closed, reconnecting...")
-          
+
           if (this.connectionPromise) {
             // Rejection will only trigger if it hasn't resolved yet
             reject(new Error("WebSocket closed during connection attempt"))
           }
-          
+
           this.connectionPromise = null
           this.stopHeartbeat()
           this.notifyConnectionStatus("disconnected")
@@ -179,16 +190,18 @@ export class DerivWebSocketManager {
     this.heartbeatInterval = setInterval(() => {
       const timeSinceLastMessage = Date.now() - this.lastMessageTime
 
-      if (timeSinceLastMessage > 30000) {
-        console.warn("[v0] No messages received for 30 seconds, reconnecting...")
-        this.log("warning", "No messages for 30 seconds, reconnecting")
+      // Increase threshold to 45s (3x ping interval) to allow for network jitter
+      if (timeSinceLastMessage > 45000) {
+        console.warn(`[v0] No messages received for ${Math.round(timeSinceLastMessage / 1000)}s, reconnecting...`)
+        this.log("warning", "No messages for 45s, reconnecting")
         this.ws?.close()
         return
       }
 
       if (this.ws?.readyState === WebSocket.OPEN) {
         try {
-          this.send({ ping: 1, req_id: this.getNextReqId() })
+          // Send ping to keep connection alive and update lastMessageTime on response
+          this.ws.send(JSON.stringify({ ping: 1, req_id: this.getNextReqId() }))
         } catch (error) {
           console.error("[v0] Heartbeat ping failed:", error)
           this.log("error", `Heartbeat ping failed: ${error}`)
@@ -229,44 +242,50 @@ export class DerivWebSocketManager {
 
       // 1. Resolve pending request-response patterns first
       if (message.req_id) {
-        const callback = this.pendingRequests.get(message.req_id)
+        const req_id = Number(message.req_id);
+        const callback = this.pendingRequests.get(req_id);
         if (callback) {
-          // Note: We don't delete yet if it's a subscription response to allow it to pass through
-          // but for standard requests, we resolve them here.
-          // Actually, standard requests should be deleted.
-          // Subscriptions are handled by msg_type handlers or wildcard.
-          // Let's check if it's an error. Errors should always resolve the request.
           if (message.error || !message.subscription) {
-              this.pendingRequests.delete(message.req_id)
+            this.pendingRequests.delete(req_id);
           }
-          callback(message)
-          // If resolved by callback, we still allow msg_type routing for legacy support
-          // but we might want to return early if it's a pure request-response.
+          callback(message);
         }
       }
 
-      // 2. Route by message type
+      // 2. Special handling for ticks (New robust way)
+      if (message.tick) {
+        const symbol = message.tick.symbol
+        const callbacks = this.tickCallbacks.get(symbol)
+        if (callbacks) {
+          const tickData: TickData = {
+            quote: message.tick.quote,
+            lastDigit: this.extractLastDigit(message.tick.quote),
+            epoch: message.tick.epoch,
+            symbol: symbol,
+            id: message.subscription?.id
+          }
+          callbacks.forEach(cb => cb(tickData))
+        }
+      }
+
+      // 3. Route by message type for other events
       if (message.msg_type) {
         const handlers = this.messageHandlers.get(message.msg_type) || []
         handlers.forEach((handler) => handler(message))
       }
 
-      // 3. Special handling for legacy keys if msg_type is missing
+      // 4. Legacy fallbacks
       if (!message.msg_type) {
-          if (message.tick) (this.messageHandlers.get('tick') || []).forEach(h => h(message));
-          if (message.proposal) (this.messageHandlers.get('proposal') || []).forEach(h => h(message));
-          if (message.buy) (this.messageHandlers.get('buy') || []).forEach(h => h(message));
+        if (message.proposal) (this.messageHandlers.get('proposal') || []).forEach(h => h(message));
+        if (message.buy) (this.messageHandlers.get('buy') || []).forEach(h => h(message));
       }
 
-      // 4. Global error handling (only if not handled by a specific request)
+      // 5. Route to wildcard and error handlers
       if (message.error) {
-        // Only log/emit global error if it wasn't a targeted request-response error
-        // or if explicitly desired. For now, let's keep it but make it quieter.
         const handlers = this.messageHandlers.get("error") || []
         handlers.forEach((handler) => handler(message))
       }
 
-      // 5. Route to wildcard handlers
       const wildcardHandlers = this.messageHandlers.get("*") || []
       wildcardHandlers.forEach((handler) => handler(message))
     } catch (error) {
@@ -279,26 +298,39 @@ export class DerivWebSocketManager {
    * Send a message and wait for its specific response using req_id
    */
   public async sendAndWait(message: any, timeoutMs = 15000): Promise<any> {
-      const req_id = message.req_id || this.getNextReqId();
-      const payload = { ...message, req_id };
+    const req_id = message.req_id || this.getNextReqId();
+    const payload = { ...message, req_id };
 
-      return new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-              this.pendingRequests.delete(req_id);
-              reject(new Error(`Request ${req_id} timed out after ${timeoutMs}ms`));
-          }, timeoutMs);
+    // Ensure connected before starting the timeout
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      try {
+        await this.connect();
+      } catch (error) {
+        throw new Error(`Cannot send request ${req_id}: WebSocket failed to connect`);
+      }
+    }
 
-          this.pendingRequests.set(req_id, (data: any) => {
-              clearTimeout(timeout);
-              if (data.error) {
-                  reject(data.error);
-              } else {
-                  resolve(data);
-              }
-          });
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(req_id);
+        const error = new Error(`Request ${req_id} (${message.ticks || message.active_symbols || 'unknown'}) timed out after ${timeoutMs}ms`);
+        console.error(`[v0] ${error.message}`);
+        this.log("error", error.message);
+        reject(error);
+      }, timeoutMs);
 
-          this.send(payload);
+      this.pendingRequests.set(req_id, (data: any) => {
+        clearTimeout(timeout);
+        if (data.error) {
+          console.error(`[v0] Request ${req_id} failed:`, data.error);
+          reject(data.error);
+        } else {
+          resolve(data);
+        }
       });
+
+      this.send(payload);
+    });
   }
 
   public on(event: string, handler: MessageHandler) {
@@ -322,203 +354,186 @@ export class DerivWebSocketManager {
   private activeSubscriptions: Set<string> = new Set() // Track symbols currently being subscribed to prevent race conditions
 
   public async subscribeTicks(symbol: string, callback: (tick: TickData) => void): Promise<string> {
+    // Register the callback
+    if (!this.tickCallbacks.has(symbol)) {
+      this.tickCallbacks.set(symbol, new Set())
+    }
+    this.tickCallbacks.get(symbol)!.add(callback)
+
     // 1. Check if already subscribed to this symbol
     const existingId = this.symbolToSubscriptionMap.get(symbol)
     if (existingId) {
-      // Already subscribed, increment ref count and register the callback
       const currentRef = this.subscriptionRefCount.get(existingId) || 0
       this.subscriptionRefCount.set(existingId, currentRef + 1)
-      
       console.log(`[v0] Reusing existing subscription for ${symbol}: ${existingId} (Refs: ${currentRef + 1})`)
-      this.on("tick", (message: any) => {
-          if (message.tick && message.tick.symbol === symbol) {
-              const quote = message.tick.quote
-              callback({
-                  quote,
-                  lastDigit: this.extractLastDigit(quote),
-                  epoch: message.tick.epoch,
-                  symbol: message.tick.symbol,
-                  id: existingId
-              })
-          }
-      })
       return existingId
     }
 
     // 2. Prevent concurrent duplicate subscription requests
     if (this.activeSubscriptions.has(symbol)) {
-        console.log(`[v0] Subscription in progress for ${symbol}, waiting...`)
-        return new Promise((resolve) => {
-            const check = setInterval(() => {
-                const id = this.symbolToSubscriptionMap.get(symbol)
-                if (id) {
-                    clearInterval(check)
-                    this.subscribeTicks(symbol, callback).then(resolve)
-                }
-            }, 500)
-        })
+      console.log(`[v0] Subscription in progress for ${symbol}, waiting...`)
+      return new Promise((resolve) => {
+        const check = setInterval(() => {
+          const id = this.symbolToSubscriptionMap.get(symbol)
+          if (id) {
+            clearInterval(check)
+            resolve(id)
+          }
+        }, 200)
+        setTimeout(() => { clearInterval(check); resolve("") }, 10000)
+      })
     }
 
     this.activeSubscriptions.add(symbol)
     const requestId = this.getNextReqId()
-    let subscriptionId: string | null = null
 
-    const handler = (message: any) => {
-      // Capture the subscription ID from the initial response
-      if (message.req_id === requestId && message.subscription) {
-        subscriptionId = message.subscription.id
-        if (subscriptionId) {
-          this.subscriptions.set(subscriptionId, symbol)
-          this.symbolToSubscriptionMap.set(symbol, subscriptionId)
-          this.subscriptionRefCount.set(subscriptionId, 1) // Initial ref count
-          this.activeSubscriptions.delete(symbol)
+    try {
+      const response = await this.sendAndWait({
+        ticks: symbol,
+        subscribe: 1,
+        req_id: requestId,
+      })
+
+      if (response.subscription?.id) {
+        const subscriptionId = response.subscription.id
+        this.subscriptions.set(subscriptionId, symbol)
+        this.symbolToSubscriptionMap.set(symbol, subscriptionId)
+        this.subscriptionRefCount.set(subscriptionId, 1)
+        this.activeSubscriptions.delete(symbol)
+
+        // Push initial tick if available
+        if (response.tick) {
+          callback({
+            quote: response.tick.quote,
+            lastDigit: this.extractLastDigit(response.tick.quote),
+            epoch: response.tick.epoch,
+            symbol: symbol,
+            id: subscriptionId
+          })
         }
-        return
-      }
 
-      // Handle subsequent ticks using the captured subscription ID
-      if (message.tick && message.subscription?.id === subscriptionId) {
-        const quote = message.tick.quote
-        const lastDigit = this.extractLastDigit(quote)
-
-        callback({
-          quote,
-          lastDigit,
-          epoch: message.tick.epoch,
-          symbol: message.tick.symbol,
-          id: subscriptionId || undefined
-        })
+        return subscriptionId
       }
+    } catch (error) {
+      console.error(`[v0] Failed to subscribe to ${symbol}:`, error)
+      this.activeSubscriptions.delete(symbol)
     }
 
-    this.on("tick", handler)
-
-    this.send({
-      ticks: symbol,
-      subscribe: 1,
-      req_id: requestId,
-    })
-
-    return new Promise((resolve) => {
-      const checkId = setInterval(() => {
-        if (subscriptionId) {
-          clearInterval(checkId)
-          resolve(subscriptionId)
-        }
-      }, 100)
-      
-      setTimeout(() => {
-        clearInterval(checkId)
-        if (!subscriptionId) {
-            this.activeSubscriptions.delete(symbol)
-            resolve("") 
-        }
-      }, 5000)
-    })
+    return ""
   }
 
   public extractLastDigit(quote: number): number {
-    const quoteStr = quote.toString().replace(".", "")
-    const lastChar = quoteStr[quoteStr.length - 1]
-    const digit = Number.parseInt(lastChar, 10)
-
-    if (isNaN(digit)) return 0
-    return digit
+    // This is the most reliable way to get the last digit from Deriv quotes
+    // Quotes usually have 2-4 decimal places.
+    const parts = quote.toString().split('.')
+    const decimals = parts[1] || ""
+    if (decimals.length > 0) {
+      return parseInt(decimals[decimals.length - 1])
+    }
+    return Math.floor(quote) % 10
   }
 
-  public async unsubscribe(subscriptionId: string) {
-    if (!subscriptionId || subscriptionId.length < 32) {
-      console.warn("[v0] Skipping invalid subscription ID for forget:", subscriptionId)
-      return
+  public async unsubscribe(subscriptionId: string, callback?: (tick: TickData) => void) {
+    if (!subscriptionId) return
+
+    const symbol = this.subscriptions.get(subscriptionId)
+
+    // Remove individual callback if provided
+    if (symbol && callback) {
+      const callbacks = this.tickCallbacks.get(symbol)
+      if (callbacks) {
+        callbacks.delete(callback)
+        if (callbacks.size === 0) {
+          this.tickCallbacks.delete(symbol)
+        }
+      }
     }
 
     const currentRef = this.subscriptionRefCount.get(subscriptionId) || 1
     if (currentRef > 1) {
-        this.subscriptionRefCount.set(subscriptionId, currentRef - 1)
-        console.log(`[v0] Decremented ref count for ${subscriptionId}. Remaining: ${currentRef - 1}`)
-        return
+      this.subscriptionRefCount.set(subscriptionId, currentRef - 1)
+      return
     }
 
-    // Actually unsubscribe when ref count hits 1 (and we are about to delete it)
-    const symbol = this.subscriptions.get(subscriptionId)
+    // Really unsubscribe
     if (symbol) {
-        this.symbolToSubscriptionMap.delete(symbol)
+      this.symbolToSubscriptionMap.delete(symbol)
+      this.tickCallbacks.delete(symbol)
     }
-    this.send({ forget: subscriptionId, req_id: this.getNextReqId() })
-    this.subscriptions.delete(subscriptionId)
-    this.subscriptionRefCount.delete(subscriptionId)
-    this.log("info", `Unsubscribed from ${subscriptionId} (${symbol || 'unknown symbol'})`)
+
+    try {
+      this.send({ forget: subscriptionId, req_id: this.getNextReqId() })
+      this.subscriptions.delete(subscriptionId)
+      this.subscriptionRefCount.delete(subscriptionId)
+      console.log(`[v0] Unsubscribed from ${subscriptionId} (${symbol})`)
+    } catch (error) {
+      console.error("[v0] Unsubscribe error:", error)
+    }
   }
 
   public async unsubscribeAll() {
-    this.send({ forget_all: ["ticks", "candles"], req_id: this.getNextReqId() })
+    this.send({ forget_all: ["ticks"], req_id: this.getNextReqId() })
     this.subscriptions.clear()
-    this.log("info", "Unsubscribed from all subscriptions")
+    this.subscriptionRefCount.clear()
+    this.symbolToSubscriptionMap.clear()
+    this.tickCallbacks.clear()
+    this.log("info", "Unsubscribed from all ticks")
   }
 
   public async getActiveSymbols(): Promise<Array<{ symbol: string; display_name: string; market?: string; market_display_name?: string }>> {
-    return new Promise((resolve, reject) => {
-      const requestId = this.getNextReqId()
-      const timeout = setTimeout(() => {
-        this.off("*", handler)
-        console.warn("[v0] getActiveSymbols timeout, using default symbols")
-        this.log("warning", "getActiveSymbols timeout, using defaults")
-        // Return default symbols if timeout
-        resolve([
-          { symbol: "R_50", display_name: "Volatility 50", market: "synthetic_index", market_display_name: "Volatility Indices" },
-          { symbol: "R_100", display_name: "Volatility 100", market: "synthetic_index", market_display_name: "Volatility Indices" },
-          { symbol: "EURUSD", display_name: "EUR/USD", market: "forex", market_display_name: "Forex" },
-          { symbol: "GBPUSD", display_name: "GBP/USD", market: "forex", market_display_name: "Forex" },
-          { symbol: "USDJPY", display_name: "USD/JPY", market: "forex", market_display_name: "Forex" },
-        ])
-      }, 10000)
+    if (this.symbolsCache) return this.symbolsCache;
+    if (this.symbolsPromise) return this.symbolsPromise;
 
-      const handler = (message: any) => {
-        if (message.active_symbols && Array.isArray(message.active_symbols) && message.req_id === requestId) {
-          clearTimeout(timeout)
-          this.off("*", handler)
-          console.log("[v0] Active symbols received:", message.active_symbols.length)
-          this.log("info", `Received ${message.active_symbols.length} active symbols`)
-          resolve(
-            message.active_symbols.map((s: any) => ({
+    this.symbolsPromise = (async () => {
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (attempts < maxAttempts) {
+        try {
+          attempts++;
+          console.log(`[v0] Fetching active symbols (attempt ${attempts}/${maxAttempts})...`);
+
+          const response = await this.sendAndWait({
+            active_symbols: "brief",
+            product_type: "basic"
+          }, 30000); // 30s timeout for symbols
+
+          if (response.active_symbols) {
+            this.symbolsCache = response.active_symbols.map((s: any) => ({
               symbol: s.symbol,
               display_name: s.display_name,
               market: s.market,
               market_display_name: s.market_display_name
-            })),
-          )
-        } else if (message.error && message.req_id === requestId) {
-          clearTimeout(timeout)
-          this.off("*", handler)
-          console.error("[v0] Active symbols error:", JSON.stringify(message.error, null, 2))
-          this.log("error", `Active symbols error: ${JSON.stringify(message.error)}`)
-          // Still return defaults on error
-          resolve([
-            { symbol: "R_50", display_name: "Volatility 50", market: "synthetic_index", market_display_name: "Volatility Indices" },
-            { symbol: "R_100", display_name: "Volatility 100", market: "synthetic_index", market_display_name: "Volatility Indices" },
-            { symbol: "EURUSD", display_name: "EUR/USD", market: "forex", market_display_name: "Forex" },
-            { symbol: "GBPUSD", display_name: "GBP/USD", market: "forex", market_display_name: "Forex" },
-            { symbol: "USDJPY", display_name: "USD/JPY", market: "forex", market_display_name: "Forex" },
-          ])
+            }));
+            console.log(`[v0] Successfully loaded ${this.symbolsCache?.length} symbols`);
+            return this.symbolsCache!;
+          }
+          throw new Error("Invalid symbols response");
+        } catch (error) {
+          console.error(`[v0] getActiveSymbols attempt ${attempts} failed:`, error);
+          if (attempts === maxAttempts) {
+            console.warn("[v0] All attempts to fetch symbols failed, using defaults");
+            this.symbolsCache = [
+              { symbol: "R_10", display_name: "Volatility 10 Index", market: "synthetic_index" },
+              { symbol: "R_25", display_name: "Volatility 25 Index", market: "synthetic_index" },
+              { symbol: "R_50", display_name: "Volatility 50 Index", market: "synthetic_index" },
+              { symbol: "R_75", display_name: "Volatility 75 Index", market: "synthetic_index" },
+              { symbol: "R_100", display_name: "Volatility 100 Index", market: "synthetic_index" },
+              { symbol: "1HZ10V", display_name: "Volatility 10 (1s) Index", market: "synthetic_index" },
+              { symbol: "1HZ100V", display_name: "Volatility 100 (1s) Index", market: "synthetic_index" },
+            ];
+            return this.symbolsCache;
+          }
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
         }
       }
+      return []; // Should not reach here
+    })();
 
-      this.on("*", handler)
-      
-      if (!this.isConnected()) {
-        clearTimeout(timeout)
-        console.warn("[v0] WebSocket not connected, cannot fetch active symbols")
-        this.log("warning", "WebSocket not connected")
-        reject(new Error("WebSocket not connected"))
-        return
-      }
-
-      this.send({
-        active_symbols: "brief",
-        product_type: "basic",
-        req_id: requestId,
-      })
-    })
+    return this.symbolsPromise.finally(() => {
+      this.symbolsPromise = null;
+    });
   }
 
   public isConnected(): boolean {
@@ -565,33 +580,19 @@ export class DerivWebSocketManager {
     this.connectionStatusListeners.forEach((callback) => callback(status))
   }
 
-  public static subscribe(symbol: string, callback: (data: any) => void): () => void {
+  public static subscribe(symbol: string, callback: (data: TickData) => void): () => void {
     const instance = DerivWebSocketManager.getInstance()
     let subscriptionId: string | null = null
 
-    // Connect if not already connected
-    if (!instance.isConnected()) {
-      instance.connect().catch((err: any) => {
-        console.error("[v0] Failed to connect for subscription:", err)
-      })
-    }
-
-    // Subscribe to ticks
     instance
       .subscribeTicks(symbol, callback)
       .then((id: string) => {
         subscriptionId = id
-        console.log("[v0] Subscribed to", symbol, "with ID:", id)
-      })
-      .catch((err: any) => {
-        console.error("[v0] Subscription failed:", err)
       })
 
-    // Return unsubscribe function
     return () => {
       if (subscriptionId) {
-        instance.unsubscribe(subscriptionId)
-        console.log("[v0] Unsubscribed from", symbol)
+        instance.unsubscribe(subscriptionId, callback)
       }
     }
   }

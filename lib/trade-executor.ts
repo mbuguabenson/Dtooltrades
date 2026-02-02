@@ -136,21 +136,21 @@ export class TradeExecutor {
                 is_sold: contract.is_sold,
                 profit: contract.profit,
                 payout: contract.payout,
-                sell_price: contract.sell_price,
-                buy_price: contract.buy_price,
-                current_spot: contract.current_spot,
+                sell_price: (contract as any).sell_price,
+                buy_price: (contract as any).buy_price,
+                current_spot: (contract as any).current_spot,
               })
 
-              if (contract.status === "sold" || contract.is_sold === 1 || contract.is_sold === true) {
+              if (contract.status === "sold" || Number(contract.is_sold) === 1) {
                 contractSettled = true
 
                 const profit = contract.profit ?? 0
-                const actualPayout = contract.sell_price ?? contract.payout ?? buyResponse.payout ?? 0
+                const actualPayout = (contract.payout ?? (contract as any).payout) || 0
                 const buyPrice = contract.buy_price ?? buyResponse.buy_price
 
                 console.log("[v0] Payout calculation:", {
                   buy_price: buyPrice,
-                  sell_price: contract.sell_price,
+                  sell_price: (contract as any).sell_price,
                   payout: contract.payout,
                   profit: contract.profit,
                   actualPayout,
@@ -208,7 +208,7 @@ export class TradeExecutor {
         const result = await Promise.race([contractPromise, timeoutPromise])
 
         if (subscriptionId) {
-          await this.apiClient.forget(subscriptionId).catch(() => {})
+          await this.apiClient.forget(subscriptionId).catch(() => { })
         }
 
         resolve(result)

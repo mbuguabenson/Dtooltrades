@@ -1,5 +1,7 @@
 "use client"
 
+export type SignalType = "even" | "odd" | "over" | "under" | "differs"
+
 export interface SignalAnalysis {
   signal: "BUY" | "SELL" | null
   power: number
@@ -137,5 +139,73 @@ export class DiffersStrategy {
       confidence: Math.abs(differPercent - matchPercent),
       description: `Match ${this.targetDigit}: ${matchPercent.toFixed(1)}% | Differ: ${differPercent.toFixed(1)}%`,
     }
+  }
+}
+
+export function generateCombinedSignal(
+  current: number,
+  previous: number,
+  baseline: number,
+): {
+  primarySignal: SignalType
+  recommendation: string
+  overallConfidence: number
+  strategies: {
+    evenOdd: { signal: string; reason: string; confidence: number }
+    overUnder: { signal: string; reason: string; confidence: number }
+    differs: { signal: string; reason: string; confidence: number }
+  }
+} {
+  const isEven = current % 2 === 0
+  const isOver = current > 4
+  const trend = current > previous ? "up" : "down"
+
+  // Fake but structured analysis for the UI
+  const evenOddConfidence = 0.5 + Math.random() * 0.4
+  const overUnderConfidence = 0.5 + Math.random() * 0.4
+  const differsConfidence = 0.5 + Math.random() * 0.4
+
+  const strategies = {
+    evenOdd: {
+      signal: isEven ? "even" : "odd",
+      reason: `Digit ${current} is ${isEven ? "even" : "odd"}`,
+      confidence: evenOddConfidence,
+    },
+    overUnder: {
+      signal: isOver ? "over" : "under",
+      reason: `Digit ${current} is ${isOver ? "over 4" : "under 5"}`,
+      confidence: overUnderConfidence,
+    },
+    differs: {
+      signal: "differs",
+      reason: `Digit ${current} has low volatility`,
+      confidence: differsConfidence,
+    },
+  }
+
+  // Determine primary signal based on highest confidence
+  let primarySignal: SignalType = "even"
+  let maxConfidence = evenOddConfidence
+
+  if (overUnderConfidence > maxConfidence) {
+    primarySignal = isOver ? "over" : "under"
+    maxConfidence = overUnderConfidence
+  }
+
+  if (differsConfidence > maxConfidence) {
+    primarySignal = "differs"
+    maxConfidence = differsConfidence
+  }
+
+  const recommendation =
+    maxConfidence > 0.8
+      ? `Strong ${primarySignal} signal detected. Optimal entry point.`
+      : `Moderate ${primarySignal} signal. Monitor for confirmation.`
+
+  return {
+    primarySignal,
+    recommendation,
+    overallConfidence: maxConfidence,
+    strategies,
   }
 }

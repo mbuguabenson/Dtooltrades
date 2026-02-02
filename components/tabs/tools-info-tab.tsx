@@ -6,7 +6,7 @@ import { HelpPanel } from "@/components/help-panel"
 import { ConnectionLogs } from "@/components/connection-logs"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ErrorBoundary } from "@/components/error-boundary"
-import type { ConnectionLog } from "@/lib/types"
+import type { ConnectionLog } from "@/hooks/use-deriv"
 
 interface ToolsInfoTabProps {
   theme: "light" | "dark"
@@ -51,11 +51,10 @@ export function ToolsInfoTab({ theme, connectionLogs = [] }: ToolsInfoTabProps) 
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className={`flex-shrink-0 rounded-none border-b-2 border-transparent text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-3 whitespace-nowrap transition-all font-medium ${
-                  theme === "dark"
+                className={`flex-shrink-0 rounded-none border-b-2 border-transparent text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-3 whitespace-nowrap transition-all font-medium ${theme === "dark"
                     ? "text-gray-400 hover:text-white data-[state=active]:border-blue-500 data-[state=active]:text-blue-400 data-[state=active]:bg-blue-500/10"
                     : "text-gray-600 hover:text-gray-900 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 data-[state=active]:bg-blue-50"
-                }`}
+                  }`}
               >
                 {tab.label}
               </TabsTrigger>

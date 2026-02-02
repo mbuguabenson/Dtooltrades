@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
 import { DERIV_CONFIG } from "@/lib/deriv-config"
 
@@ -24,10 +24,15 @@ export function useDerivAuth() {
   const [accountCode, setAccountCode] = useState<string>("")
   const [accounts, setAccounts] = useState<Account[]>([])
   const [activeLoginId, setActiveLoginId] = useState<string | null>(null)
+  const activeLoginIdRef = useRef<string | null>(null)
   const [showApprovalModal, setShowApprovalModal] = useState(false)
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [balanceSubscribed, setBalanceSubscribed] = useState(false)
   const manager = DerivWebSocketManager.getInstance()
+
+  useEffect(() => {
+    activeLoginIdRef.current = activeLoginId
+  }, [activeLoginId])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -84,7 +89,7 @@ export function useDerivAuth() {
 
     console.log("[v0] 🔌 Connecting via manager...")
     await manager.connect()
-    
+
     const authorizeHandler = (data: any) => {
       // 1. Handle Authorization Specific messages (Success or Error)
       if (data.msg_type === "authorize") {
@@ -127,16 +132,16 @@ export function useDerivAuth() {
 
       // 2. Handle Balance updates
       if (data.msg_type === "balance" && data.balance) {
-        const msgLoginId = data.balance.loginid || activeLoginId
-        
+        const msgLoginId = data.balance.loginid || activeLoginIdRef.current
+
         // Update current account balance
-        if (msgLoginId === activeLoginId) {
+        if (msgLoginId === activeLoginIdRef.current) {
           setBalance({
             amount: data.balance.balance,
             currency: data.balance.currency,
           })
         }
-        
+
         // Update list of accounts balance
         setAccounts(prev => prev.map(acc => {
           if (acc.id === msgLoginId) {
@@ -151,7 +156,7 @@ export function useDerivAuth() {
     // For Auth, we actually only care about authorize and balance messages.
     manager.on("authorize", authorizeHandler)
     manager.on("balance", authorizeHandler)
-    
+
     // Initial authorization
     manager.send({ authorize: apiToken })
   }
@@ -198,7 +203,7 @@ export function useDerivAuth() {
 
     console.log("[v0] 👋 Logging out...")
     manager.send({ forget_all: ["balance", "ticks", "proposal_open_contract"] })
-    
+
     localStorage.removeItem("deriv_api_token")
     localStorage.removeItem("deriv_token")
     localStorage.removeItem("deriv_account")
@@ -230,7 +235,7 @@ export function useDerivAuth() {
     localStorage.setItem("deriv_api_token", targetToken)
     localStorage.setItem("active_login_id", loginId)
     setToken(targetToken)
-    
+
     // Authorization message ONLY takes the token. loginid is NOT a allowed property.
     manager.send({ authorize: targetToken })
   }

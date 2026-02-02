@@ -25,16 +25,29 @@ export interface AutoBotState {
   currentStake: number
   consecutiveLosses: number
   trades: TradeLog[]
+  isAnalyzing?: boolean
+  isTrading?: boolean
+  lastTrade?: TradeLog | null
+  currentAnalysis?: any
+  proposalMetrics?: {
+    probabilities: number[]
+    winRates: number[]
+    payouts: number[]
+  }
 }
 
 export interface TradeLog {
   id: string
   timestamp: number
-  contract: string
+  contractType: string
   prediction: string
   result: "WIN" | "LOSS"
   profitLoss: number
   stake: number
+  entrySpot?: string
+  exitSpot?: string
+  isWin: boolean
+  profit: number
 }
 
 export type BotStrategy =
@@ -85,6 +98,11 @@ export class AutoBot {
       currentStake: config.initialStake,
       consecutiveLosses: 0,
       trades: [],
+      isAnalyzing: false,
+      isTrading: false,
+      lastTrade: null,
+      currentAnalysis: null, // Initialize new state properties
+      proposalMetrics: { probabilities: [], winRates: [], payouts: [] }, // Initialize new state properties
     }
   }
 
@@ -167,7 +185,11 @@ export class AutoBot {
         console.log(`[v0] 📈 Analysis - Probability: ${probability.toFixed(1)}%, Payout: $${proposal.payout}`)
 
         // Execute trade
+        this.state.isTrading = true
+        this.updateUI()
+
         const result = await this.executeTrade(signal.contractType, signal.prediction)
+        this.state.isTrading = false
 
         console.log(`[v0] 🎲 Trade result: ${result.isWin ? "WIN" : "LOSS"}, Profit: $${result.profit.toFixed(2)}`)
 
@@ -584,14 +606,17 @@ export class AutoBot {
     const tradeLog: TradeLog = {
       id: Date.now().toString(),
       timestamp: Date.now(),
-      contract: this.strategy,
+      contractType: this.strategy,
       prediction: result.isWin ? "WIN" : "LOSS",
       result: result.isWin ? "WIN" : "LOSS",
       profitLoss: result.profit,
       stake: this.state.currentStake,
+      isWin: result.isWin,
+      profit: result.profit,
     }
 
     this.state.trades.unshift(tradeLog)
+    this.state.lastTrade = tradeLog
     if (this.state.trades.length > 50) {
       this.state.trades.pop()
     }

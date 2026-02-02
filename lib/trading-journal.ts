@@ -4,7 +4,7 @@ export interface JournalEntry {
   id: string
   timestamp: Date
   type: "TRADE" | "ANALYSIS"
-  action: "WIN" | "LOSS" | "ANALYSIS_COMPLETE"
+  action: "WIN" | "LOSS" | "ANALYSIS_COMPLETE" | "INFO"
   stake: number
   profit: number
   contractType: string

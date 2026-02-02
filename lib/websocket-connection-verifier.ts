@@ -28,7 +28,7 @@ export class WebSocketVerifier {
    */
   static async runDiagnostics(): Promise<DiagnosticResult> {
     const startTime = new Date()
-    
+
     try {
       console.log("[v0] Starting WebSocket diagnostics...")
 
@@ -106,7 +106,7 @@ export class WebSocketVerifier {
 
     // Monitor for 30 seconds then stop
     setTimeout(() => {
-      unsubscribe()
+      this.manager.unsubscribe(unsubscribe)
       console.log("[v0] Stopped monitoring connection")
     }, 30000)
   }

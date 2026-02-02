@@ -123,7 +123,7 @@ export class DerivAPIClient {
   async connect(): Promise<void> {
     await this.manager.connect()
     if (this.config.token && !this.isAuthorised) {
-        await this.authorize(this.config.token)
+      await this.authorize(this.config.token)
     }
   }
 
@@ -174,7 +174,9 @@ export class DerivAPIClient {
 
       setTimeout(() => {
         if (this.pendingRequests.has(req_id)) {
-          this.pendingRequests.get(req_id)!.reject(new Error("Request timeout"))
+          const errorMsg = `Request ${req_id} (${Object.keys(request)[0]}) timed out after 30000ms`;
+          console.error(`[v0] ${errorMsg}`);
+          this.pendingRequests.get(req_id)!.reject(new Error(errorMsg))
           this.pendingRequests.delete(req_id)
         }
       }, 30000)
@@ -184,12 +186,12 @@ export class DerivAPIClient {
 
   async authorize(token: string): Promise<AuthorizeResponse> {
     this.config.token = token
-    
+
     return new Promise(async (resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error("Authorization request timeout after 10 seconds"))
       }, 10000)
-      
+
       try {
         const response = await this.send({ authorize: token })
         clearTimeout(timeout)
@@ -318,13 +320,13 @@ export class DerivAPIClient {
     try {
       // Delegate to manager for shared subscription handling
       const subscriptionId = await this.manager.subscribeTicks(symbol, callback)
-      
+
       if (subscriptionId) {
         this.activeSubscriptions.set(`tick_${symbol}`, subscriptionId)
         // We register it locally too so it can be handled by handleMessage if needed, 
         // though the manager now handles the callback.
         this.subscriptions.set(subscriptionId, (data) => {
-            if (data.tick) callback(data.tick)
+          if (data.tick) callback(data.tick)
         })
       }
 
@@ -355,7 +357,8 @@ export class DerivAPIClient {
   async forget(subscriptionId: string): Promise<void> {
     if (!subscriptionId) return
     try {
-      await this.send({ forget: subscriptionId })
+      // Use manager's unsubscribe to handle reference counting
+      await this.manager.unsubscribe(subscriptionId)
       this.subscriptions.delete(subscriptionId)
 
       for (const [key, value] of this.activeSubscriptions.entries()) {

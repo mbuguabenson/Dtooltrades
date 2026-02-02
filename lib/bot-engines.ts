@@ -1,17 +1,8 @@
 // 4 Core Bot Engines for Deriv Trading
 // Even/Odd, Over/Under, Differs, Matches
 
-import type { AnalysisSnapshot, PowerTrend } from './core-analytics-engine'
-
-export interface BotSignal {
-  botType: 'even_odd' | 'over_under' | 'differs' | 'matches'
-  action: 'trade' | 'wait' | 'skip'
-  prediction: number | number[] // digit(s) to trade
-  confidence: number // 0-100
-  reason: string
-  powerThreshold: boolean
-  trendCondition: boolean
-}
+import type { AnalysisSnapshot, PowerTrend, BotSignal } from './core-analytics-engine'
+export type { BotSignal }
 
 export interface BotState {
   isActive: boolean
@@ -63,7 +54,7 @@ export class EvenOddBot {
     // Determine prediction (which even/odd digits)
     const lastDigits = snapshot.lastDigits
     const lastDigit = lastDigits[lastDigits.length - 1]
-    
+
     let predictionDigits: number[]
     if (dominant === 'even') {
       predictionDigits = [0, 2, 4, 6, 8]
@@ -104,6 +95,11 @@ export class EvenOddBot {
     this.state.consecutiveLosses++
     this.state.consecutiveWins = 0
     this.state.runsCount++
+  }
+
+  recordResult(won: boolean, _confidence: number): void {
+    if (won) this.recordWin()
+    else this.recordLoss()
   }
 
   reset(): void {
@@ -190,6 +186,11 @@ export class OverUnderBot {
     this.state.consecutiveLosses++
     this.state.consecutiveWins = 0
     this.state.runsCount++
+  }
+
+  recordResult(won: boolean, _confidence: number): void {
+    if (won) this.recordWin()
+    else this.recordLoss()
   }
 
   reset(): void {
@@ -294,6 +295,11 @@ export class DiffersBot {
     this.state.runsCount++
   }
 
+  recordResult(won: boolean, _confidence: number): void {
+    if (won) this.recordWin()
+    else this.recordLoss()
+  }
+
   reset(): void {
     this.state = {
       isActive: false,
@@ -387,6 +393,11 @@ export class MatchesBot {
     if (this.state.runsCount >= this.maxRuns) {
       this.reset()
     }
+  }
+
+  recordResult(won: boolean, _confidence: number): void {
+    if (won) this.recordWin()
+    else this.recordLoss()
   }
 
   reset(): void {

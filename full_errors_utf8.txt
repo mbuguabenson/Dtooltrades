@@ -1,0 +1,58 @@
+﻿components/tabs/autobot-tab.tsx(560,37): error TS2345: Argument of type '{ wins: number; losses: number; profitLoss: number; isAnalyzing: true; isTrading: false; lastTrade: null; }' is not assignable to parameter of type 'AutoBotState'.
+  Type '{ wins: number; losses: number; profitLoss: number; isAnalyzing: true; isTrading: false; lastTrade: null; }' is missing the following properties from type 'AutoBotState': isRunning, totalRuns, profitLossPercent, currentStake, and 2 more.
+components/tabs/autobot-tab.tsx(585,39): error TS2551: Property 'contractType' does not exist on type 'TradeLog'. Did you mean 'contract'?
+components/tabs/autobot-tab.tsx(587,36): error TS2339: Property 'entrySpot' does not exist on type 'TradeLog'.
+components/tabs/autobot-tab.tsx(588,35): error TS2339: Property 'exitSpot' does not exist on type 'TradeLog'.
+components/tabs/autobot-tab.tsx(590,37): error TS2339: Property 'isWin' does not exist on type 'TradeLog'.
+components/tabs/autobot-tab.tsx(591,41): error TS2339: Property 'profit' does not exist on type 'TradeLog'.
+components/tabs/autobot-tab.tsx(595,31): error TS2339: Property 'isWin' does not exist on type 'TradeLog'.
+components/tabs/autobot-tab.tsx(596,41): error TS2339: Property 'profit' does not exist on type 'TradeLog'.
+components/ui/calendar.tsx(57,9): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+components/ui/chart.tsx(119,7): error TS2339: Property 'payload' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; allowEscapeViewBox?: AllowInDimension | undefined; ... 24 more ...; wrapperStyle?: CSSProperties | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(124,7): error TS2339: Property 'label' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; allowEscapeViewBox?: AllowInDimension | undefined; ... 24 more ...; wrapperStyle?: CSSProperties | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(188,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/chart.tsx(188,31): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/ui/chart.tsx(264,41): error TS2344: Type '"payload" | "verticalAlign"' does not satisfy the constraint '"string" | "media" | "filter" | "fill" | "values" | "content" | "slot" | "style" | "clipPath" | "mask" | "path" | "key" | "type" | "suppressHydrationWarning" | "className" | "id" | ... 433 more ... | "onBBoxUpdate"'.
+  Type '"payload"' is not assignable to type '"string" | "media" | "filter" | "fill" | "values" | "content" | "slot" | "style" | "clipPath" | "mask" | "path" | "key" | "type" | "suppressHydrationWarning" | "className" | "id" | ... 433 more ... | "onBBoxUpdate"'.
+components/ui/chart.tsx(275,19): error TS2339: Property 'length' does not exist on type '{}'.
+components/ui/chart.tsx(288,18): error TS2339: Property 'map' does not exist on type '{}'.
+components/ui/chart.tsx(288,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/pagination.tsx(5,10): error TS2305: Module '"@/components/ui/button"' has no exported member 'ButtonProps'.
+components/ui/pagination.tsx(68,5): error TS2783: 'size' is specified more than once, so this usage will be overwritten.
+components/ui/pagination.tsx(84,5): error TS2783: 'size' is specified more than once, so this usage will be overwritten.
+components/ui/resizable.tsx(11,51): error TS2339: Property 'PanelGroup' does not exist on type 'typeof import("F:/Trading Site/Feb 2026/Dtooltrades/node_modules/react-resizable-panels/dist/react-resizable-panels")'.
+components/ui/resizable.tsx(12,23): error TS2339: Property 'PanelGroup' does not exist on type 'typeof import("F:/Trading Site/Feb 2026/Dtooltrades/node_modules/react-resizable-panels/dist/react-resizable-panels")'.
+components/ui/resizable.tsx(27,51): error TS2339: Property 'PanelResizeHandle' does not exist on type 'typeof import("F:/Trading Site/Feb 2026/Dtooltrades/node_modules/react-resizable-panels/dist/react-resizable-panels")'.
+components/ui/resizable.tsx(30,23): error TS2339: Property 'PanelResizeHandle' does not exist on type 'typeof import("F:/Trading Site/Feb 2026/Dtooltrades/node_modules/react-resizable-panels/dist/react-resizable-panels")'.
+components/ui/resizable.tsx(42,24): error TS2339: Property 'PanelResizeHandle' does not exist on type 'typeof import("F:/Trading Site/Feb 2026/Dtooltrades/node_modules/react-resizable-panels/dist/react-resizable-panels")'.
+hooks/use-smartauto24.ts(5,33): error TS2305: Module '"@/lib/core-analytics-engine"' has no exported member 'BotSignal'.
+hooks/use-smartauto24.ts(37,23): error TS2554: Expected 3 arguments, but got 2.
+hooks/use-unified-engine.ts(47,61): error TS7006: Parameter 'data' implicitly has an 'any' type.
+hooks/use-unified-engine.ts(51,67): error TS7006: Parameter 'sigs' implicitly has an 'any' type.
+hooks/use-unified-engine.ts(56,69): error TS7006: Parameter 'newState' implicitly has an 'any' type.
+hooks/use-unified-engine.ts(64,71): error TS7006: Parameter 'trade' implicitly has an 'any' type.
+hooks/use-unified-engine.ts(68,70): error TS7006: Parameter 'result' implicitly has an 'any' type.
+lib/automated-trades-bots.ts(1,32): error TS7016: Could not find a declaration file for module '@deriv/deriv-api/dist/DerivAPIBasic'. 'F:/Trading Site/Feb 2026/Dtooltrades/node_modules/@deriv/deriv-api/dist/DerivAPIBasic.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/deriv__deriv-api` if it exists or add a new declaration (.d.ts) file containing `declare module '@deriv/deriv-api/dist/DerivAPIBasic';`
+lib/clean-trade-engine.ts(86,35): error TS2339: Property 'entry_tick_display_value' does not exist on type 'ContractUpdate'.
+lib/clean-trade-engine.ts(87,34): error TS2339: Property 'exit_tick_display_value' does not exist on type 'ContractUpdate'.
+lib/smartauto24-engine-integration.ts(92,25): error TS2339: Property 'recordResult' does not exist on type 'EvenOddBot'.
+lib/smartauto24-engine-integration.ts(95,27): error TS2339: Property 'recordResult' does not exist on type 'OverUnderBot'.
+lib/smartauto24-engine-integration.ts(98,25): error TS2339: Property 'recordResult' does not exist on type 'DiffersBot'.
+lib/smartauto24-engine-integration.ts(101,25): error TS2339: Property 'recordResult' does not exist on type 'MatchesBot'.
+lib/trade-executor.ts(139,38): error TS2339: Property 'sell_price' does not exist on type 'ContractUpdate'.
+lib/trade-executor.ts(144,49): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'number' have no overlap.
+lib/trade-executor.ts(148,47): error TS2339: Property 'sell_price' does not exist on type 'ContractUpdate'.
+lib/trade-executor.ts(153,40): error TS2339: Property 'sell_price' does not exist on type 'ContractUpdate'.
+lib/trading-bot.ts(179,14): error TS18048: 'result.profit' is possibly 'undefined'.
+lib/trading-bot.ts(180,7): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+lib/trading/db.ts(2,22): error TS7016: Could not find a declaration file for module 'better-sqlite3'. 'F:/Trading Site/Feb 2026/Dtooltrades/node_modules/better-sqlite3/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/better-sqlite3` if it exists or add a new declaration (.d.ts) file containing `declare module 'better-sqlite3';`
+lib/unified-trading-engine.ts(95,12): error TS2551: Property 'riskMetrics' does not exist on type 'UnifiedTradingEngine'. Did you mean 'getRiskMetrics'?
+lib/unified-trading-engine.ts(96,37): error TS2551: Property 'riskMetrics' does not exist on type 'UnifiedTradingEngine'. Did you mean 'getRiskMetrics'?
+lib/websocket-connection-verifier.ts(109,7): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+tailwind.config.ts(4,3): error TS2322: Type '["class"]' is not assignable to type 'DarkModeStrategy | undefined'.
+  Type '["class"]' is not assignable to type '["class", string]'.
+    Source has 1 element(s) but target requires 2.

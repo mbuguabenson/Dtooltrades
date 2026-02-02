@@ -24,6 +24,13 @@ interface ManualTraderProps {
   selectedSymbol?: string
 }
 
+interface ContractType {
+  value: string
+  label: string
+  requiresBarrier: boolean
+  barrierType?: "digit" | "price" | "range"
+}
+
 interface TradeRecord {
   id: string
   contractType: string
@@ -61,18 +68,18 @@ const TRADE_TYPES = {
     contracts: [
       { value: "DIGITOVER", label: "Over", requiresBarrier: true, barrierType: "digit" },
       { value: "DIGITUNDER", label: "Under", requiresBarrier: true, barrierType: "digit" },
-      { value: "DIGITEVEN", label: "Even", requiresBarrier: false },
-      { value: "DIGITODD", label: "Odd", requiresBarrier: false },
+      { value: "DIGITEVEN", label: "Even", requiresBarrier: false, barrierType: undefined },
+      { value: "DIGITODD", label: "Odd", requiresBarrier: false, barrierType: undefined },
       { value: "DIGITMATCH", label: "Matches", requiresBarrier: true, barrierType: "digit" },
       { value: "DIGITDIFF", label: "Differs", requiresBarrier: true, barrierType: "digit" },
-    ],
+    ] as ContractType[],
   },
   RISE_FALL: {
     label: "Rise/Fall",
     contracts: [
-      { value: "CALL", label: "Rise", requiresBarrier: false },
-      { value: "PUT", label: "Fall", requiresBarrier: false },
-    ],
+      { value: "CALL", label: "Rise", requiresBarrier: false, barrierType: undefined },
+      { value: "PUT", label: "Fall", requiresBarrier: false, barrierType: undefined },
+    ] as ContractType[],
   },
   HIGHER_LOWER: {
     label: "Higher/Lower",
@@ -104,42 +111,42 @@ const TRADE_TYPES = {
   },
   ACCUMULATORS: {
     label: "Accumulators",
-    contracts: [{ value: "ACCU", label: "Accumulator", requiresBarrier: false }],
+    contracts: [{ value: "ACCU", label: "Accumulator", requiresBarrier: false, barrierType: undefined }] as ContractType[],
   },
   MULTIPLIERS: {
     label: "Multipliers",
     contracts: [
-      { value: "MULTUP", label: "Up", requiresBarrier: false },
-      { value: "MULTDOWN", label: "Down", requiresBarrier: false },
-    ],
+      { value: "MULTUP", label: "Up", requiresBarrier: false, barrierType: undefined },
+      { value: "MULTDOWN", label: "Down", requiresBarrier: false, barrierType: undefined },
+    ] as ContractType[],
   },
   RESET: {
     label: "Reset Call/Put",
     contracts: [
-      { value: "RESETCALL", label: "Reset Call", requiresBarrier: false },
-      { value: "RESETPUT", label: "Reset Put", requiresBarrier: false },
-    ],
+      { value: "RESETCALL", label: "Reset Call", requiresBarrier: false, barrierType: undefined },
+      { value: "RESETPUT", label: "Reset Put", requiresBarrier: false, barrierType: undefined },
+    ] as ContractType[],
   },
   HIGHLOW_TICKS: {
     label: "High/Low Ticks",
     contracts: [
-      { value: "TICKHIGH", label: "High Tick", requiresBarrier: false },
-      { value: "TICKLOW", label: "Low Tick", requiresBarrier: false },
-    ],
+      { value: "TICKHIGH", label: "High Tick", requiresBarrier: false, barrierType: undefined },
+      { value: "TICKLOW", label: "Low Tick", requiresBarrier: false, barrierType: undefined },
+    ] as ContractType[],
   },
   ONLY_UPS_DOWNS: {
     label: "Only Ups/Downs",
     contracts: [
-      { value: "RUNS", label: "Only Ups", requiresBarrier: false },
-      { value: "RUNHIGH", label: "Only Downs", requiresBarrier: false },
-    ],
+      { value: "RUNS", label: "Only Ups", requiresBarrier: false, barrierType: undefined },
+      { value: "RUNHIGH", label: "Only Downs", requiresBarrier: false, barrierType: undefined },
+    ] as ContractType[],
   },
   ASIANS: {
     label: "Asians",
     contracts: [
-      { value: "ASIANU", label: "Asian Up", requiresBarrier: false },
-      { value: "ASIAND", label: "Asian Down", requiresBarrier: false },
-    ],
+      { value: "ASIANU", label: "Asian Up", requiresBarrier: false, barrierType: undefined },
+      { value: "ASIAND", label: "Asian Down", requiresBarrier: false, barrierType: undefined },
+    ] as ContractType[],
   },
 }
 

@@ -200,7 +200,8 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
         ) {
           const signalType = overPercent >= 56 ? "OVER" : "UNDER"
           const entryDigit = signalType === "OVER" ? analysis?.strongestOver : analysis?.strongestUnder
-          setSignal({
+          setSignal((prev) => ({
+            ...prev,
             status: "RUN NOW",
             color: "orange",
             type: signalType,
@@ -209,7 +210,7 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
             confirmedTicks: 15,
             tradingTicksRemaining: TRADING_TICKS_MAX,
             entryPoint: `Enter ${signalType} position targeting digit ${entryDigit}`,
-          })
+          }))
 
           return
         } else if (overPercent >= 56 || underPercent >= 56) {
@@ -230,7 +231,8 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
       }))
 
       if (signal.tradingTicksRemaining <= 0 || (!underIncreasing && !overIncreasing)) {
-        setSignal({
+        setSignal((prev) => ({
+          ...prev,
           status: "EXIT",
           color: "red",
           type: null,
@@ -238,7 +240,7 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
           phase: 1,
           confirmedTicks: 0,
           tradingTicksRemaining: 0,
-        })
+        }))
       }
     }
   }
@@ -258,7 +260,8 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
   }
 
   const handleExit = () => {
-    setSignal({
+    setSignal((prev) => ({
+      ...prev,
       status: "EXIT",
       color: "red",
       type: null,
@@ -266,7 +269,7 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
       phase: 1,
       confirmedTicks: 0,
       tradingTicksRemaining: 0,
-    })
+    }))
   }
 
   if (!analysis) {
@@ -280,11 +283,10 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
   return (
     <div className="space-y-6">
       <div
-        className={`rounded-xl p-4 sm:p-6 border ${
-          theme === "dark"
+        className={`rounded-xl p-4 sm:p-6 border ${theme === "dark"
             ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
             : "bg-white border-gray-200"
-        }`}
+          }`}
       >
         <h2
           className={`text-2xl sm:text-3xl font-bold text-center mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -294,8 +296,7 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
 
         <div className="flex justify-center mb-6">
           <Badge
-            className={`text-lg px-6 py-3 font-bold animate-pulse ${
-              signal.status === "RUN NOW"
+            className={`text-lg px-6 py-3 font-bold animate-pulse ${signal.status === "RUN NOW"
                 ? "bg-orange-500/30 text-orange-300 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.6)]"
                 : signal.status === "READY"
                   ? "bg-cyan-500/30 text-cyan-300 border-cyan-500/50"
@@ -306,7 +307,7 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
                       : signal.status === "EXIT"
                         ? "bg-red-500/30 text-red-300 border-red-500/50"
                         : "bg-gray-500/30 text-gray-300 border-gray-500/50"
-            }`}
+              }`}
           >
             {signal.status}
             {signal.status === "RUN NOW" && ` - Confidence: ${signal.confidence.toFixed(0)}%`}
@@ -316,11 +317,10 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
 
         {signal.status === "RUN NOW" && signal.entryPoint && (
           <div
-            className={`rounded-lg p-4 mb-6 border animate-pulse ${
-              theme === "dark"
+            className={`rounded-lg p-4 mb-6 border animate-pulse ${theme === "dark"
                 ? "bg-orange-500/20 border-orange-500/40 shadow-[0_0_20px_rgba(249,115,22,0.4)]"
                 : "bg-orange-100 border-orange-300"
-            }`}
+              }`}
           >
             <h3 className={`text-lg font-bold mb-2 ${theme === "dark" ? "text-orange-300" : "text-orange-800"}`}>
               📍 Entry Point
@@ -333,15 +333,14 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
 
         {signal.status === "EXIT" && signal.totalTrades > 0 && (
           <div
-            className={`rounded-lg p-4 mb-6 border ${
-              signal.accuracy >= 70
+            className={`rounded-lg p-4 mb-6 border ${signal.accuracy >= 70
                 ? theme === "dark"
                   ? "bg-green-500/20 border-green-500/40"
                   : "bg-green-100 border-green-300"
                 : theme === "dark"
                   ? "bg-red-500/20 border-red-500/40"
                   : "bg-red-100 border-red-300"
-            }`}
+              }`}
           >
             <h3 className={`text-lg font-bold mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
               Signal Accuracy Report
@@ -372,11 +371,10 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
 
       {last20Digits.length > 0 && (
         <div
-          className={`rounded-xl p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
               : "bg-white border-gray-200 shadow-lg"
-          }`}
+            }`}
         >
           <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
             Last 20 Digits
@@ -386,11 +384,10 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
       )}
 
       <div
-        className={`rounded-xl p-4 sm:p-6 border grid grid-cols-1 md:grid-cols-2 gap-6 ${
-          theme === "dark"
+        className={`rounded-xl p-4 sm:p-6 border grid grid-cols-1 md:grid-cols-2 gap-6 ${theme === "dark"
             ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
             : "bg-white border-gray-200"
-        }`}
+          }`}
       >
         <div className="space-y-4">
           <div className="text-center">
@@ -456,11 +453,10 @@ export function MoneyMakerTab({ theme = "dark", recentDigits = [] }: MoneyMakerT
       </div>
 
       <div
-        className={`rounded-xl p-4 sm:p-6 border grid grid-cols-3 gap-4 ${
-          theme === "dark"
+        className={`rounded-xl p-4 sm:p-6 border grid grid-cols-3 gap-4 ${theme === "dark"
             ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
             : "bg-white border-gray-200"
-        }`}
+          }`}
       >
         <Card
           className={`p-3 text-center ${theme === "dark" ? "bg-purple-500/10 border-purple-500/30" : "bg-purple-50 border-purple-200"}`}

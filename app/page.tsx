@@ -34,11 +34,12 @@ import { ResponsiveTabs } from "@/components/responsive-tabs"
 import { MoneyMakerTab } from "@/components/tabs/money-maker-tab"
 import { TradeNowTab } from "@/components/tabs/trade-now-tab"
 import { ToolsInfoTab } from "@/components/tabs/tools-info-tab"
-import { MarketDataMonitor } from "@/components/market-data-monitor"
 import { UnifiedTradingDashboard } from "@/components/unified-trading-dashboard"
+import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
 
 export default function DerivAnalysisApp() {
   const [theme, setTheme] = useState<"light" | "dark">("dark")
+  const [activeTab, setActiveTab] = useState("smart-analysis")
   const [isLoading, setIsLoading] = useState(true)
   const [showTradingSlider, setShowTradingSlider] = useState(true)
   const [initError, setInitError] = useState<string | null>(null)
@@ -149,17 +150,16 @@ export default function DerivAnalysisApp() {
 
   return (
     <div
-      className={`min-h-screen ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
+      className={`min-h-screen overflow-x-hidden ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
     >
       <header
-        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
-          theme === "dark" 
-            ? "glass-fintech border-blue-500/10 bg-[#0a1128]/80" 
-            : "bg-white/90 border-gray-200"
-        } backdrop-blur-xl`}
+        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${theme === "dark"
+          ? "glass-fintech border-blue-500/10 bg-[#0a1128]/80"
+          : "bg-white/90 border-gray-200"
+          } backdrop-blur-xl`}
       >
-        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 sm:h-20 items-center justify-between gap-4">
+        <div className="mx-auto w-full px-3 sm:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-20 items-center justify-between gap-2 sm:gap-4">
             {/* Left: Logo & Home */}
             <div className="flex items-center gap-3 sm:gap-6">
               <div className="relative group">
@@ -167,24 +167,22 @@ export default function DerivAnalysisApp() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
-                    theme === "dark"
-                      ? "bg-[#0f172a] text-blue-400 border border-blue-500/20 hover:border-blue-400/50"
-                      : "bg-white text-blue-600 border border-gray-200 hover:border-blue-300"
-                  }`}
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${theme === "dark"
+                    ? "bg-[#0f172a] text-blue-400 border border-blue-500/20 hover:border-blue-400/50"
+                    : "bg-white text-blue-600 border border-gray-200 hover:border-blue-300"
+                    }`}
                 >
                   <Home className="h-5 w-5" />
                 </Button>
               </div>
 
               <div className="flex flex-col">
-                <h1 className={`text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2 ${
-                  theme === "dark" 
-                    ? "bg-linear-to-r from-cyan-400 via-emerald-400 to-blue-500 bg-clip-text text-transparent animate-pulse" 
-                    : "text-slate-900"
-                }`}>
-                  <span className="text-2xl">💎</span>
-                  Profit Hub
+                <h1 className={`text-base sm:text-2xl font-black tracking-tight flex items-center gap-1.5 sm:gap-2 ${theme === "dark"
+                  ? "bg-linear-to-r from-cyan-400 via-emerald-400 to-blue-500 bg-clip-text text-transparent animate-pulse"
+                  : "text-slate-900"
+                  }`}>
+                  <span className="text-xl sm:text-2xl">💎</span>
+                  <span className="hidden xs:inline">Profit Hub</span>
                 </h1>
                 <span className={`text-[10px] font-bold uppercase tracking-[0.2em] hidden sm:block ${theme === "dark" ? "text-blue-400/60" : "text-slate-500"}`}>
                   Advanced Trading Terminal
@@ -198,11 +196,10 @@ export default function DerivAnalysisApp() {
               <div className="hidden lg:flex items-center gap-4">
                 <Button
                   asChild
-                  className={`relative group px-5 py-2 overflow-hidden rounded-xl font-bold transition-all duration-300 ${
-                    theme === "dark"
-                      ? "bg-slate-900 text-white border border-red-500/50 hover:border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                      : "bg-red-600 text-white hover:bg-red-700"
-                  }`}
+                  className={`relative group px-5 py-2 overflow-hidden rounded-xl font-bold transition-all duration-300 ${theme === "dark"
+                    ? "bg-slate-900 text-white border border-red-500/50 hover:border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                    : "bg-red-600 text-white hover:bg-red-700"
+                    }`}
                 >
                   <a
                     href="https://track.deriv.com/_1mHiO0UpCX6NhxmBqQyZL2Nd7ZgqdRLk/1/"
@@ -226,8 +223,8 @@ export default function DerivAnalysisApp() {
               <DerivAuth theme={theme} />
 
               <div className="flex items-center gap-2">
-                {/* Market Module */}
-                <div className="hidden md:block">
+                {/* Market Module - Now in Ticker on mobile/desktop */}
+                <div className="hidden lg:flex items-center">
                   {availableSymbols.length > 0 ? (
                     <MarketSelector
                       symbols={availableSymbols}
@@ -236,18 +233,17 @@ export default function DerivAnalysisApp() {
                       theme={theme}
                     />
                   ) : (
-                    <div className="animate-pulse h-9 w-40 rounded-lg bg-blue-500/10 border border-blue-500/20" />
+                    <div className="animate-pulse h-9 w-32 sm:w-40 rounded-lg bg-blue-500/10 border border-blue-500/20" />
                   )}
                 </div>
 
-                {/* Info Cards */}
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Info Cards - Hidden on Mobile to reduce clutter (LiveTicker shows them) */}
+                <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
                   {/* Price Card */}
-                  <div className={`px-2.5 sm:px-4 py-1.5 rounded-xl border transition-all duration-300 ${
-                    theme === "dark"
-                      ? "bg-blue-500/5 border-blue-500/20 hover:border-blue-400 group shadow-[0_0_15px_rgba(59,130,246,0.1)]"
-                      : "bg-blue-50 border-blue-200"
-                  }`}>
+                  <div className={`px-2.5 sm:px-4 py-1.5 rounded-xl border transition-all duration-300 ${theme === "dark"
+                    ? "bg-blue-500/5 border-blue-500/20 hover:border-blue-400 group shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                    : "bg-blue-50 border-blue-200"
+                    }`}>
                     <div className="flex flex-col items-center sm:items-start min-w-[60px] sm:min-w-[100px]">
                       <span className={`text-[9px] font-bold uppercase tracking-wider ${theme === "dark" ? "text-blue-400/70" : "text-blue-600"}`}>
                         Live Price
@@ -259,11 +255,10 @@ export default function DerivAnalysisApp() {
                   </div>
 
                   {/* Digit Card */}
-                  <div className={`px-2.5 sm:px-3 py-1.5 rounded-xl border transition-all duration-300 ${
-                    theme === "dark"
-                      ? "bg-orange-500/5 border-orange-500/20 hover:border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.1)]"
-                      : "bg-orange-50 border-orange-200"
-                  }`}>
+                  <div className={`px-2.5 sm:px-3 py-1.5 rounded-xl border transition-all duration-300 ${theme === "dark"
+                    ? "bg-orange-500/5 border-orange-500/20 hover:border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.1)]"
+                    : "bg-orange-50 border-orange-200"
+                    }`}>
                     <div className="flex flex-col items-center">
                       <span className={`text-[9px] font-bold uppercase tracking-wider ${theme === "dark" ? "text-orange-400/70" : "text-orange-600"}`}>
                         Digit
@@ -281,11 +276,10 @@ export default function DerivAnalysisApp() {
                     variant="ghost"
                     size="icon"
                     onClick={toggleTheme}
-                    className={`h-9 w-9 rounded-xl transition-all ${
-                      theme === "dark"
-                        ? "text-yellow-400 hover:bg-yellow-400/10"
-                        : "text-indigo-600 hover:bg-indigo-50"
-                    }`}
+                    className={`h-9 w-9 rounded-xl transition-all ${theme === "dark"
+                      ? "text-yellow-400 hover:bg-yellow-400/10"
+                      : "text-indigo-600 hover:bg-indigo-50"
+                      }`}
                   >
                     {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                   </Button>
@@ -299,11 +293,10 @@ export default function DerivAnalysisApp() {
                       </Badge>
                     </div>
                   ) : (
-                    <Badge variant="outline" className={`animate-pulse px-2 py-0.5 h-6 ${
-                      connectionStatus === "reconnecting" 
-                        ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10" 
-                        : "border-red-500/50 text-red-400 bg-red-500/10"
-                    }`}>
+                    <Badge variant="outline" className={`animate-pulse px-2 py-0.5 h-6 ${connectionStatus === "reconnecting"
+                      ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10"
+                      : "border-red-500/50 text-red-400 bg-red-500/10"
+                      }`}>
                       <span className="text-[10px] uppercase">{connectionStatus}</span>
                     </Badge>
                   )}
@@ -315,17 +308,28 @@ export default function DerivAnalysisApp() {
       </header>
 
       <div
-        className={`border-b ${theme === "dark" ? "border-green-500/20 bg-[#0a0e27]/80" : "border-gray-200 bg-white/80"} backdrop-blur-md px-2 sm:px-3 md:px-4 py-2 sm:py-3`}
+        className={`px-3 py-2 border-b ${theme === "dark" ? "bg-[#0a0e27]/80 border-blue-500/10" : "bg-white/80 border-gray-200"
+          } backdrop-blur-md`}
       >
-        <LiveTicker price={currentPrice ?? undefined} digit={currentDigit} theme={theme} symbol={symbol} />
+        <LiveTicker price={currentPrice ?? undefined} digit={currentDigit} theme={theme} symbol={symbol}>
+          {availableSymbols.length > 0 && (
+            <MarketSelector
+              symbols={availableSymbols}
+              currentSymbol={symbol}
+              onSymbolChange={changeSymbol}
+              theme={theme}
+            />
+          )}
+        </LiveTicker>
       </div>
 
-      <Tabs defaultValue="smart-analysis" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div
           className={`border-b ${theme === "dark" ? "border-green-500/20 bg-[#0a0e27]/60" : "border-gray-200 bg-white/60"} backdrop-blur-sm sticky top-[56px] sm:top-[64px] md:top-[72px] z-40 overflow-x-auto`}
         >
-          <ResponsiveTabs theme={theme}>
+          <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
             {[
+              "smart-adaptive",
               "smart-analysis",
               "signals",
               "pro-signals",
@@ -348,55 +352,56 @@ export default function DerivAnalysisApp() {
               <TabsTrigger
                 key={tab}
                 value={tab}
-                className={`shrink-0 rounded-none border-b-2 border-transparent text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-2 sm:py-3 whitespace-nowrap transition-all capitalize font-medium ${
-                  tab === "smartauto24"
-                    ? "data-[state=active]:border-yellow-500 data-[state=active]:text-yellow-500 data-[state=active]:shadow-[0_2px_10px_rgba(234,179,8,0.3)]"
-                    : tab === "autobot" || tab === "automated" || tab === "automated-trades"
-                      ? "data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
-                      : tab === "tools-info"
-                        ? "data-[state=active]:border-purple-500 data-[state=active]:text-purple-500 data-[state=active]:shadow-[0_2px_10px_rgba(168,85,247,0.3)]"
-                        : tab === "trade-now"
-                          ? "data-[state=active]:border-green-500 data-[state=active]:text-green-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,197,94,0.3)]"
-                          : "data-[state=active]:border-green-400 data-[state=active]:text-green-400 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
-                } data-[state=active]:bg-transparent ${theme === "dark" ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
+                className={`shrink-0 rounded-none border-b-2 border-transparent text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-2 sm:py-3 whitespace-nowrap transition-all capitalize font-medium ${tab === "smartauto24"
+                  ? "data-[state=active]:border-yellow-500 data-[state=active]:text-yellow-500 data-[state=active]:shadow-[0_2px_10px_rgba(234,179,8,0.3)]"
+                  : tab === "autobot" || tab === "automated" || tab === "automated-trades"
+                    ? "data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
+                    : tab === "tools-info"
+                      ? "data-[state=active]:border-purple-500 data-[state=active]:text-purple-500 data-[state=active]:shadow-[0_2px_10px_rgba(168,85,247,0.3)]"
+                      : tab === "trade-now"
+                        ? "data-[state=active]:border-green-500 data-[state=active]:text-green-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,197,94,0.3)]"
+                        : "data-[state=active]:border-green-400 data-[state=active]:text-green-400 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
+                  } data-[state=active]:bg-transparent ${theme === "dark" ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
               >
-                {tab === "smart-analysis"
-                  ? "Smart Analysis 📊"
-                  : tab === "signals"
-                    ? "Signals 📈"
-                    : tab === "pro-signals"
-                      ? "Pro Signals 🎯"
-                      : tab === "super-signals"
-                        ? "Super Signals ⚡"
-                        : tab === "even-odd"
-                          ? "Even/Odd 🔀"
-                          : tab === "over-under"
-                            ? "Over/Under 📉"
-                            : tab === "advanced-over-under"
-                              ? "Advanced O/U 📊"
-                              : tab === "matches"
-                                ? "Matches 🎲"
-                                : tab === "differs"
-                                  ? "Differs ❌"
-                                  : tab === "rise-fall"
-                                    ? "Rise/Fall 📈"
-                                    : tab === "ai-analysis"
-                                      ? "AI Analysis 🤖"
-                                      : tab === "autobot"
-                                        ? "AutoBot 🤖"
-                                        : tab === "automated"
-                                          ? "Automated 🚀"
-                                          : tab === "automated-trades"
-                                            ? "Auto Trades 💎"
-                                            : tab === "trading-view"
-                                              ? "Trading View 📈"
-                                              : tab === "trade-now"
-                                                ? "Trade Now 🚀"
-                                                : tab === "smartauto24"
-                                                  ? "SmartAuto24 ⭐"
-                                                  : tab === "tools-info"
-                                                    ? "Tools & Info 🛠️"
-                                                    : tab.replace(/-/g, " ")}
+                {tab === "smart-adaptive"
+                  ? "Smart Adaptive ⭐"
+                  : tab === "smart-analysis"
+                    ? "Smart Analysis 📊"
+                    : tab === "signals"
+                      ? "Signals 📈"
+                      : tab === "pro-signals"
+                        ? "Pro Signals 🎯"
+                        : tab === "super-signals"
+                          ? "Super Signals ⚡"
+                          : tab === "even-odd"
+                            ? "Even/Odd 🔀"
+                            : tab === "over-under"
+                              ? "Over/Under 📉"
+                              : tab === "advanced-over-under"
+                                ? "Advanced O/U 📊"
+                                : tab === "matches"
+                                  ? "Matches 🎲"
+                                  : tab === "differs"
+                                    ? "Differs ❌"
+                                    : tab === "rise-fall"
+                                      ? "Rise/Fall 📈"
+                                      : tab === "ai-analysis"
+                                        ? "AI Analysis 🤖"
+                                        : tab === "autobot"
+                                          ? "AutoBot 🤖"
+                                          : tab === "automated"
+                                            ? "Automated 🚀"
+                                            : tab === "automated-trades"
+                                              ? "Auto Trades 💎"
+                                              : tab === "trading-view"
+                                                ? "Trading View 📈"
+                                                : tab === "trade-now"
+                                                  ? "Trade Now 🚀"
+                                                  : tab === "smartauto24"
+                                                    ? "SmartAuto24 ⭐"
+                                                    : tab === "tools-info"
+                                                      ? "Tools & Info 🛠️"
+                                                      : tab.replace(/-/g, " ")}
               </TabsTrigger>
             ))}
           </ResponsiveTabs>
@@ -686,6 +691,11 @@ export default function DerivAnalysisApp() {
                 <SmartAuto24Tab theme={theme} />
               </TabsContent>
 
+
+              <TabsContent value="smart-adaptive" className="mt-0">
+                <SmartAdaptiveTradingTab />
+              </TabsContent>
+
               <TabsContent value="tools-info" className="mt-0">
                 <ToolsInfoTab theme={theme} connectionLogs={connectionLogs} />
               </TabsContent>
@@ -746,9 +756,6 @@ export default function DerivAnalysisApp() {
           </div>
         </div>
       </footer>
-
-      {/* Market Data Monitor for debugging */}
-      <MarketDataMonitor theme={theme} />
     </div>
   )
 }

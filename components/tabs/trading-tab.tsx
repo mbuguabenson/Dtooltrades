@@ -4,11 +4,20 @@ import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Settings, AlertCircle } from "lucide-react"
+import { Settings, AlertCircle, TrendingUp } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card } from "@/components/ui/card"
+import { TradingJournal } from "@/lib/trading-journal"
+import { RiskManagementTab } from "./risk-management-tab"
+import { DigitPowerVisualizer } from "../digit-power-visualizer"
+import { powerEngine, type PowerSnapshot } from "@/lib/high-speed/power-analytics-engine"
+import { StrategyRouter, type TradeStrategy } from "@/lib/high-speed/strategy-router"
+import { LayoutDashboard, Zap, ShieldCheck } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import { ManualTrader } from "./manual-trader"
 import { AutoRunBot } from "./autorun-bot"
 import { SpeedBot } from "./speedbot"
-import { TradingJournal } from "@/lib/trading-journal"
+import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 
 interface TradingTabProps {
   theme?: "light" | "dark"
@@ -52,6 +61,27 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
 
   const [currentTick, setCurrentTick] = useState<number | null>(null)
   const [tickTimestamp, setTickTimestamp] = useState<string>("")
+
+  // High-Speed Engine State
+  const [powerSnapshot, setPowerSnapshot] = useState<PowerSnapshot | null>(null)
+  const [selectedStrategy, setSelectedStrategy] = useState<TradeStrategy>("EVEN_ODD")
+  const [autoBotConfig, setAutoBotConfig] = useState({
+    stake: 1,
+    martingale: 2.1,
+    duration: 1,
+    durationUnit: "t",
+    autoBotEnabled: false,
+    marketSwitchOnLoss: false,
+    maxLossEnabled: false,
+    maxLossAmount: 10
+  })
+
+  // Initialize Strategy Router
+  const [strategyRouter] = useState(() => new StrategyRouter(autoBotConfig))
+
+  useEffect(() => {
+    strategyRouter.setConfig(autoBotConfig)
+  }, [autoBotConfig, strategyRouter])
 
   const logJournal = useCallback((message: string, type: "info" | "success" | "error" | "warn" = "info") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
@@ -221,6 +251,15 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
           if (tick.quote) {
             setCurrentTick(tick.quote)
             setTickTimestamp(new Date(tick.epoch * 1000).toLocaleTimeString())
+
+            // Trigger Power Engine
+            const price = tick.quote
+            const lastDigit = derivWebSocket.extractLastDigit(price)
+            const snapshot = powerEngine.addDigit(lastDigit)
+            setPowerSnapshot(snapshot)
+
+            // Trigger Strategy Router
+            strategyRouter.onTickUpdate(snapshot, selectedStrategy, selectedSymbol)
           }
         })
       } catch (error: any) {
@@ -232,7 +271,7 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
 
     return () => {
       if (tickSubscriptionId && apiClient) {
-        apiClient.forget(tickSubscriptionId).catch(() => {})
+        apiClient.forget(tickSubscriptionId).catch(() => { })
       }
     }
   }, [apiClient, selectedSymbol, isConnected, isAuthorized])
@@ -359,6 +398,54 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
         </div>
       ) : (
         <>
+          <Card
+            className={`p-4 border mb-4 ${currentTheme === "dark" ? "bg-[#0a0e27]/50 border-blue-500/20" : "bg-gray-50 border-gray-200"}`}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market</label>
+                <Select value={selectedMarket} onValueChange={handleMarketChange}>
+                  <SelectTrigger className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
+                    <SelectValue placeholder="Select Market" />
+                  </SelectTrigger>
+                  <SelectContent className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
+                    {markets.map((m) => (
+                      <SelectItem key={m} value={m}>{m.replace(/_/g, " ").toUpperCase()}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Submarket</label>
+                <Select value={selectedSubmarket} onValueChange={handleSubmarketChange}>
+                  <SelectTrigger className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
+                    <SelectValue placeholder="Select Submarket" />
+                  </SelectTrigger>
+                  <SelectContent className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
+                    {submarkets[selectedMarket]?.map((sm) => (
+                      <SelectItem key={sm} value={sm}>{sm.replace(/_/g, " ").toUpperCase()}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Symbol</label>
+                <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
+                  <SelectTrigger className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white font-bold" : ""}>
+                    <SelectValue placeholder="Select Symbol" />
+                  </SelectTrigger>
+                  <SelectContent className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
+                    {instruments[`${selectedMarket}_${selectedSubmarket}`]?.map((s) => (
+                      <SelectItem key={s.symbol} value={s.symbol}>{s.display_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+
           {currentTick !== null && (
             <div
               className={`p-4 rounded-lg border mb-4 ${currentTheme === "dark" ? "bg-linear-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30" : "bg-linear-to-r from-blue-50 to-purple-50 border-blue-200"}`}
@@ -402,27 +489,102 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
             <TabsList
-              className={`grid w-full grid-cols-3 mb-6 h-12 ${currentTheme === "dark" ? "bg-[#0a0e27]/50 border border-blue-500/20" : "bg-gray-100"}`}
+              className={`grid w-full grid-cols-4 mb-6 h-12 ${currentTheme === "dark" ? "bg-[#0a0e27]/50 border border-blue-500/20" : "bg-gray-100"}`}
             >
               <TabsTrigger
                 value="manual"
-                className="text-sm font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                className="text-xs sm:text-sm font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white gap-2"
               >
-                Manual Trading
+                <LayoutDashboard className="w-4 h-4 hidden sm:block" />
+                Manual
               </TabsTrigger>
               <TabsTrigger
-                value="autorun"
-                className="text-sm font-semibold data-[state=active]:bg-green-500 data-[state=active]:text-white"
+                value="autobot"
+                className="text-xs sm:text-sm font-semibold data-[state=active]:bg-orange-500 data-[state=active]:text-white gap-2"
               >
-                AutoRun
+                <Zap className="w-4 h-4 hidden sm:block" />
+                Auto-Bot (Power)
+              </TabsTrigger>
+              <TabsTrigger
+                value="risk"
+                className="text-xs sm:text-sm font-semibold data-[state=active]:bg-indigo-500 data-[state=active]:text-white gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 hidden sm:block" />
+                Risk Planning
               </TabsTrigger>
               <TabsTrigger
                 value="speedbot"
-                className="text-sm font-semibold data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+                className="text-xs sm:text-sm font-semibold data-[state=active]:bg-purple-500 data-[state=active]:text-white gap-2"
               >
                 SpeedBot
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="autobot" className="space-y-6 mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <DigitPowerVisualizer snapshot={powerSnapshot} theme={currentTheme} />
+                </div>
+                <Card className="p-6 bg-black/40 border-white/5 backdrop-blur-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-orange-400">Bot Controls</h3>
+                    <Button
+                      variant={autoBotConfig.autoBotEnabled ? "destructive" : "default"}
+                      size="sm"
+                      onClick={() => setAutoBotConfig(prev => ({ ...prev, autoBotEnabled: !prev.autoBotEnabled }))}
+                    >
+                      {autoBotConfig.autoBotEnabled ? "STOP BOT" : "START BOT"}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-500">STRATEGY</label>
+                    <Select value={selectedStrategy} onValueChange={(v: any) => setSelectedStrategy(v)}>
+                      <SelectTrigger className="bg-white/5 border-white/10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EVEN_ODD">Even / Odd Power</SelectItem>
+                        <SelectItem value="OVER_UNDER">Over / Under Power</SelectItem>
+                        <SelectItem value="DIFFERS">Smart Differs (2-7)</SelectItem>
+                        <SelectItem value="MATCHES">High-Speed Matches</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-500">STAKE ($)</label>
+                      <Input
+                        type="number"
+                        value={autoBotConfig.stake}
+                        onChange={(e) => setAutoBotConfig(prev => ({ ...prev, stake: Number(e.target.value) }))}
+                        className="bg-white/5 border-white/10 h-8"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-500">MARTINGALE</label>
+                      <Input
+                        type="number"
+                        value={autoBotConfig.martingale}
+                        onChange={(e) => setAutoBotConfig(prev => ({ ...prev, martingale: Number(e.target.value) }))}
+                        className="bg-white/5 border-white/10 h-8"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                    <p className="text-[10px] text-orange-400 leading-relaxed uppercase font-bold text-center">
+                      {autoBotConfig.autoBotEnabled ? "Bot is scanning markets..." : "Configure & Start to Automate"}
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="risk" className="mt-4">
+              <RiskManagementTab />
+            </TabsContent>
 
             <TabsContent value="manual" className="space-y-4 mt-4">
               <ManualTrader

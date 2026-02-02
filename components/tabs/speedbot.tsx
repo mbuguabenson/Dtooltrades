@@ -111,6 +111,7 @@ export function SpeedBot({
   const failedTradesRef = useRef(0)
   const maxFailedTradesRef = useRef(3)
   const processedTicksRef = useRef(new Set<string>())
+  const executorRef = useRef<TradeExecutor | null>(null)
 
   const logJournal = useCallback(
     (message: string, type: "info" | "success" | "error" | "warn" = "info") => {
@@ -341,18 +342,20 @@ export function SpeedBot({
       return
     }
 
-    const lastDigit = Math.floor((tradeData.price * 100) % 10)
-    if (lastDigit === null || lastDigit === undefined || lastDigit < 0 || lastDigit > 9) {
+    const lastDigit = Number(tradeData.price.toString().slice(-1))
+    if (isNaN(lastDigit) || lastDigit < 0 || lastDigit > 9) {
       logJournal(`Tick ${tradeData.tickId}: Invalid digit ${lastDigit} - skipping`, "warn")
       processingRef.current = false
       return
     }
 
     try {
-      setBotStatus(`Executing tick ${tradeData.tickId}...`)
-      logJournal(`SpeedBot executing tick ${tradeData.tickId} at ${tradeData.price} (digit: ${lastDigit})`, "info")
+      if (!executorRef.current) {
+        executorRef.current = new TradeExecutor(apiClient)
+      }
+      const tradeExecutor = executorRef.current
 
-      const tradeExecutor = new TradeExecutor(apiClient)
+      setBotStatus(`Executing tick ${tradeData.tickId}...`)
       const tradeConfig = {
         symbol: market,
         contractType,
@@ -370,7 +373,7 @@ export function SpeedBot({
         return
       }
 
-      const actualPayout = result.sell_price || result.payout || 0
+      const actualPayout = result.payout || 0
       const profit = actualPayout - currentStakeRef.current
 
       setStats((prev) => {
@@ -457,7 +460,7 @@ export function SpeedBot({
     } finally {
       processingRef.current = false
       if (isRunningRef.current && tradeQueueRef.current.length > 0) {
-        setTimeout(() => processTradeQueue(), 100)
+        processTradeQueue()
       }
     }
   }, [apiClient, isAuthorized, market, contractType, currency, stake, martingale, tp, sl, logJournal, journal])
@@ -519,8 +522,8 @@ export function SpeedBot({
       processedTicksRef.current.clear()
       if (tickSubscriptionRef.current && apiClient) {
         try {
-          apiClient.forget(tickSubscriptionRef.current).catch(() => {})
-        } catch (e) {}
+          apiClient.forget(tickSubscriptionRef.current).catch(() => { })
+        } catch (e) { }
       }
       tradeQueueRef.current = []
     }
@@ -592,7 +595,7 @@ export function SpeedBot({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className={theme === "dark" ? "bg-[#0a0e27] border-purple-500/30" : "bg-white"}>
-                  {contractTypes.map((ct) => (
+                  {contractTypes.map((ct: any) => (
                     <SelectItem key={ct.value} value={ct.value} className="text-xs">
                       {ct.label}
                     </SelectItem>

@@ -175,11 +175,12 @@ export class TradingBot {
     const result = await this.monitorContract(contract.contract_id)
     console.log("[v0] 📈 Trade completed:", result)
 
+    const profit = Number(result.profit || 0)
     return {
-      isWin: result.profit > 0,
-      profit: result.profit,
-      buyPrice: result.buy_price,
-      sellPrice: result.payout || 0,
+      isWin: profit > 0,
+      profit: profit,
+      buyPrice: Number(result.buy_price || 0),
+      sellPrice: Number(result.payout || 0),
     }
   }
 
@@ -191,7 +192,7 @@ export class TradingBot {
           if (contract.is_sold) {
             // Unsubscribe when contract is sold
             if (this.currentSubscriptionId) {
-              this.api.forget(this.currentSubscriptionId).catch(() => {})
+              this.api.forget(this.currentSubscriptionId).catch(() => { })
               this.currentSubscriptionId = null
             }
             resolve(contract)

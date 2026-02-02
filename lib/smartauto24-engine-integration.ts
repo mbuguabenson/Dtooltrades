@@ -9,11 +9,11 @@ export class SmartAuto24Engine {
   private overUnderBot: OverUnderBot
   private differsBot: DiffersBot
   private matchesBot: MatchesBot
-  
+
   private currentSnapshot: AnalysisSnapshot | null = null
   private signals: BotSignal[] = []
   private activeBots: Set<string> = new Set()
-  
+
   constructor(maxTicks: number = 100) {
     this.analyticsEngine = new CoreAnalyticsEngine(maxTicks)
     this.evenOddBot = new EvenOddBot()
@@ -26,30 +26,30 @@ export class SmartAuto24Engine {
   processTick(price: number): { digit: number; snapshot: AnalysisSnapshot; signals: BotSignal[] } {
     const digit = this.analyticsEngine.addTick(price)
     this.currentSnapshot = this.analyticsEngine.analyze()
-    
+
     // Generate signals from all active bots
     this.signals = []
-    
+
     if (this.activeBots.has('even_odd')) {
       const signal = this.evenOddBot.analyze(this.currentSnapshot)
       this.signals.push(signal)
     }
-    
+
     if (this.activeBots.has('over_under')) {
       const signal = this.overUnderBot.analyze(this.currentSnapshot)
       this.signals.push(signal)
     }
-    
+
     if (this.activeBots.has('differs')) {
       const signal = this.differsBot.analyze(this.currentSnapshot)
       this.signals.push(signal)
     }
-    
+
     if (this.activeBots.has('matches')) {
       const signal = this.matchesBot.analyze(this.currentSnapshot)
       this.signals.push(signal)
     }
-    
+
     return {
       digit,
       snapshot: this.currentSnapshot,
@@ -86,8 +86,8 @@ export class SmartAuto24Engine {
   }
 
   // Record trade result for bot learning
-  recordTradeResult(botType: string, won: boolean, confidence: number): void {
-    switch(botType) {
+  recordTradeResult(botType: string, won: boolean, confidence: number = 0): void {
+    switch (botType) {
       case 'even_odd':
         this.evenOddBot.recordResult(won, confidence)
         break
@@ -105,7 +105,7 @@ export class SmartAuto24Engine {
 
   // Get bot state info
   getBotState(botType: string) {
-    switch(botType) {
+    switch (botType) {
       case 'even_odd':
         return this.evenOddBot.getState()
       case 'over_under':

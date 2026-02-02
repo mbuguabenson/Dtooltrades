@@ -83,8 +83,8 @@ export class CleanTradeEngine {
               win,
               profit,
               payout: contract.payout || buyResponse.payout,
-              entrySpot: contract.entry_tick_display_value || contract.entry_tick,
-              exitSpot: contract.exit_tick_display_value || contract.exit_tick,
+              entrySpot: (contract as any).entry_tick_display_value || contract.entry_tick,
+              exitSpot: (contract as any).exit_tick_display_value || contract.exit_tick,
             }
 
             console.log(`[v0] CleanTradeEngine: Trade closed - ${win ? "WIN" : "LOSS"} | Profit: ${profit.toFixed(2)}`)

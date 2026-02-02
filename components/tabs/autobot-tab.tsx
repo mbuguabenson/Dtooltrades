@@ -47,49 +47,49 @@ const BOT_STRATEGIES: {
   description: string
   condition: string
 }[] = [
-  {
-    id: "EVEN_ODD",
-    name: "EVEN/ODD Bot",
-    description: "Analyzes Even/Odd digit bias over last 50 ticks",
-    condition: "Entry: When even/odd reaches 56%+ and increasing. Wait at 50-56%. Exit after 1 tick.",
-  },
-  {
-    id: "OVER3_UNDER6",
-    name: "OVER3/UNDER6 Bot",
-    description: "Trades Over 3 (4-9) vs Under 6 (0-5)",
-    condition: "Entry: 60%+ = STRONG signal. 56-60% = TRADE NOW. 53-56% = WAIT. Exit after 1 tick.",
-  },
-  {
-    id: "OVER2_UNDER7",
-    name: "OVER2/UNDER7 Bot",
-    description: "Trades Over 2 (3-9) vs Under 7 (0-6)",
-    condition: "Entry: When 0-6 dominates 60%+, trade Under 7. When 3-9 dominates, trade Over 2.",
-  },
-  {
-    id: "OVER1_UNDER8",
-    name: "OVER1/UNDER8 Bot",
-    description: "Advanced Over 1 (2-9) vs Under 8 (0-7)",
-    condition: "Entry: Analyzes last 25 ticks. 60%+ threshold. Exit after 1 tick.",
-  },
-  {
-    id: "UNDER6",
-    name: "UNDER6 Bot",
-    description: "Specialized for digits 0-6",
-    condition: "Entry: When 0-4 appears 50%+, trade Under 6. Wait for predictable patterns.",
-  },
-  {
-    id: "DIFFERS",
-    name: "DIFFERS Bot",
-    description: "Selects digits 2-7 with <10% frequency",
-    condition: "Entry: Decreasing power + increasing most appearing digit = trade. 3-tick wait if stable.",
-  },
-  {
-    id: "SUPER_DIFFERS",
-    name: "SUPER DIFFERS Bot",
-    description: "High-precision entry using least frequent digit (2-7)",
-    condition: "Entry: <10% digit, wait 3 ticks without appearance. If appears, restart cycle. Exit after 1 tick.",
-  },
-]
+    {
+      id: "EVEN_ODD",
+      name: "EVEN/ODD Bot",
+      description: "Analyzes Even/Odd digit bias over last 50 ticks",
+      condition: "Entry: When even/odd reaches 56%+ and increasing. Wait at 50-56%. Exit after 1 tick.",
+    },
+    {
+      id: "OVER3_UNDER6",
+      name: "OVER3/UNDER6 Bot",
+      description: "Trades Over 3 (4-9) vs Under 6 (0-5)",
+      condition: "Entry: 60%+ = STRONG signal. 56-60% = TRADE NOW. 53-56% = WAIT. Exit after 1 tick.",
+    },
+    {
+      id: "OVER2_UNDER7",
+      name: "OVER2/UNDER7 Bot",
+      description: "Trades Over 2 (3-9) vs Under 7 (0-6)",
+      condition: "Entry: When 0-6 dominates 60%+, trade Under 7. When 3-9 dominates, trade Over 2.",
+    },
+    {
+      id: "OVER1_UNDER8",
+      name: "OVER1/UNDER8 Bot",
+      description: "Advanced Over 1 (2-9) vs Under 8 (0-7)",
+      condition: "Entry: Analyzes last 25 ticks. 60%+ threshold. Exit after 1 tick.",
+    },
+    {
+      id: "UNDER6",
+      name: "UNDER6 Bot",
+      description: "Specialized for digits 0-6",
+      condition: "Entry: When 0-4 appears 50%+, trade Under 6. Wait for predictable patterns.",
+    },
+    {
+      id: "DIFFERS",
+      name: "DIFFERS Bot",
+      description: "Selects digits 2-7 with <10% frequency",
+      condition: "Entry: Decreasing power + increasing most appearing digit = trade. 3-tick wait if stable.",
+    },
+    {
+      id: "SUPER_DIFFERS",
+      name: "SUPER DIFFERS Bot",
+      description: "High-precision entry using least frequent digit (2-7)",
+      condition: "Entry: <10% digit, wait 3 ticks without appearance. If appears, restart cycle. Exit after 1 tick.",
+    },
+  ]
 
 const USD_TO_KES_RATE = 129.5
 
@@ -103,6 +103,7 @@ const calculateSuggestedMartingale = (strategy: BotStrategy, stake: number): num
     OVER1_UNDER8: 1.8,
     UNDER6: 1.85,
     DIFFERS: 9.0, // DIFFERS has much higher payout
+    SUPER_DIFFERS: 9.0,
     OVER_UNDER_ADVANCED: 1.85,
   }
 
@@ -123,13 +124,13 @@ const calculateSuggestedMartingale = (strategy: BotStrategy, stake: number): num
 }
 
 export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
-  const { 
-    apiClient, 
-    isConnected, 
-    isAuthorized, 
+  const {
+    apiClient,
+    isConnected,
+    isAuthorized,
     error: apiError,
     balance,
-    isLoggedIn 
+    isLoggedIn
   } = useDerivAPI()
 
   const [activeBots, setActiveBots] = useState<Map<BotStrategy, AutoBot>>(new Map())
@@ -557,9 +558,15 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
 
       setBotStates((prev) =>
         new Map(prev).set(strategy, {
+          isRunning: true,
+          totalRuns: 0,
           wins: 0,
           losses: 0,
           profitLoss: 0,
+          profitLossPercent: 0,
+          currentStake: validatedStake,
+          consecutiveLosses: 0,
+          trades: [],
           isAnalyzing: true,
           isTrading: false,
           lastTrade: null,
@@ -583,8 +590,8 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
             strategy: BOT_STRATEGIES.find((s) => s.id === strategy)?.name || strategy,
             contract: state.lastTrade.contractType || "N/A",
             predicted: state.lastTrade.prediction || "N/A",
-            entry: state.lastTrade.entrySpot?.toString() || "N/A",
-            exit: state.lastTrade.exitSpot?.toString() || "N/A",
+            entry: state.lastTrade.entrySpot || "N/A",
+            exit: state.lastTrade.exitSpot || "N/A",
             stake: state.lastTrade.stake || 0,
             result: state.lastTrade.isWin ? "win" : "loss",
             profitLoss: state.lastTrade.profit || 0,
@@ -592,7 +599,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
           setTradeLogs((prev) => [logEntry, ...prev.slice(0, 99)])
 
           if (state.lastTrade.isWin && state.profitLoss >= (botConfig.tpPercent / 100) * botConfig.initialStake) {
-            setTpAmount(state.lastTrade.profit || 0)
+            setTpAmount(state.lastTrade.profit)
             setShowTPPopup(true)
           }
         }
@@ -766,15 +773,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
           return (
             <Card
               key={strategy.id}
-              className={`${
-                isReady && !isRunning
-                  ? theme === "dark"
-                    ? "bg-linear-to-br from-green-500/20 to-emerald-500/10 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.4)] animate-pulse"
-                    : "bg-linear-to-br from-green-50 to-emerald-50 border-green-400"
-                  : theme === "dark"
-                    ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
-                    : "bg-white border-gray-200"
-              }`}
+              className={`${isReady && !isRunning
+                ? theme === "dark"
+                  ? "bg-linear-to-br from-green-500/20 to-emerald-500/10 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.4)] animate-pulse"
+                  : "bg-linear-to-br from-green-50 to-emerald-50 border-green-400"
+                : theme === "dark"
+                  ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
+                  : "bg-white border-gray-200"
+                }`}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -792,13 +798,12 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                   <div className="flex flex-col gap-2">
                     {status && (
                       <Badge
-                        className={`${
-                          status === "In Progress"
-                            ? "bg-blue-500 text-white"
-                            : status.includes("Signal Found")
-                              ? "bg-yellow-500 text-white animate-pulse"
-                              : "bg-gray-500 text-white"
-                        }`}
+                        className={`${status === "In Progress"
+                          ? "bg-blue-500 text-white"
+                          : status.includes("Signal Found")
+                            ? "bg-yellow-500 text-white animate-pulse"
+                            : "bg-gray-500 text-white"
+                          }`}
                       >
                         {status}
                       </Badge>
@@ -859,7 +864,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                             return entries.map(({ digit, count }) => {
                               let colorClass = theme === "dark" ? "text-white" : "text-gray-900"
                               let bgClass = ""
-                              
+
                               if (digit === currentLastDigit) {
                                 colorClass = "text-yellow-500 font-extrabold"
                                 bgClass = "bg-yellow-500/20"
@@ -1035,9 +1040,8 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                       console.log(`[v0] Start button clicked for ${strategy.id}`)
                       handleStartBot(strategy.id)
                     }}
-                    className={`w-full gap-2 ${
-                      isReady ? "bg-green-500 hover:bg-green-600 animate-pulse" : "bg-blue-500 hover:bg-blue-600"
-                    }`}
+                    className={`w-full gap-2 ${isReady ? "bg-green-500 hover:bg-green-600 animate-pulse" : "bg-blue-500 hover:bg-blue-600"
+                      }`}
                     disabled={!isConnected || !isAuthorized || tickData.length < 25}
                     size="sm"
                   >
@@ -1053,11 +1057,10 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
 
       {tradeLogs.length > 0 && (
         <Card
-          className={`border ${
-            theme === "dark"
-              ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
-              : "bg-white border-gray-200"
-          }`}
+          className={`border ${theme === "dark"
+            ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
+            : "bg-white border-gray-200"
+            }`}
         >
           <CardHeader>
             <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Trade Log</CardTitle>
@@ -1113,29 +1116,27 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                       </td>
                       <td className="py-3 px-2">
                         <Badge
-                          className={`text-xs ${
-                            trade.result === "win"
-                              ? theme === "dark"
-                                ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                : "bg-green-100 text-green-700 border-green-200"
-                              : theme === "dark"
-                                ? "bg-red-500/20 text-red-400 border-red-500/30"
-                                : "bg-red-100 text-red-700 border-red-200"
-                          }`}
+                          className={`text-xs ${trade.result === "win"
+                            ? theme === "dark"
+                              ? "bg-green-500/20 text-green-400 border-green-500/30"
+                              : "bg-green-100 text-green-700 border-green-200"
+                            : theme === "dark"
+                              ? "bg-red-500/20 text-red-400 border-red-500/30"
+                              : "bg-red-100 text-red-700 border-red-200"
+                            }`}
                         >
                           {trade.result.toUpperCase()}
                         </Badge>
                       </td>
                       <td
-                        className={`py-3 px-2 text-xs font-bold text-right ${
-                          trade.profitLoss >= 0
-                            ? theme === "dark"
-                              ? "text-green-400"
-                              : "text-green-600"
-                            : theme === "dark"
-                              ? "text-red-400"
-                              : "text-red-600"
-                        }`}
+                        className={`py-3 px-2 text-xs font-bold text-right ${trade.profitLoss >= 0
+                          ? theme === "dark"
+                            ? "text-green-400"
+                            : "text-green-600"
+                          : theme === "dark"
+                            ? "text-red-400"
+                            : "text-red-600"
+                          }`}
                       >
                         {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
                       </td>

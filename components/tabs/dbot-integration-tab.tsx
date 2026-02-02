@@ -5,31 +5,26 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
-import { useGlobalTradingContext } from "@/hooks/use-global-trading-context"
+import { useDerivAPI } from "@/lib/deriv-api-context"
 
 interface DBotIntegrationTabProps {
   theme?: "light" | "dark"
 }
 
 export function DBotIntegrationTab({ theme = "dark" }: DBotIntegrationTabProps) {
-  const [isConnected, setIsConnected] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const { isAuthorized, token, balance } = useDerivAPI()
   const [dbotStatus, setDbotStatus] = useState("disconnected")
-  const globalContext = useGlobalTradingContext()
+  const [isLoading, setIsLoading] = useState(false)
 
   const connectDBot = async () => {
-    if (!globalContext.apiToken) {
+    if (!isAuthorized) {
       alert("Please authenticate with Deriv first")
       return
     }
 
-    setIsLoading(true)
-    console.log("[v0] 🔌 Connecting to DBot system...")
-
     try {
       // Simulate DBot connection with global API token
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      setIsConnected(true)
       setDbotStatus("connected")
       console.log("[v0] ✅ DBot connected successfully with API token")
     } catch (error) {
@@ -41,7 +36,6 @@ export function DBotIntegrationTab({ theme = "dark" }: DBotIntegrationTabProps) 
   }
 
   const disconnectDBot = () => {
-    setIsConnected(false)
     setDbotStatus("disconnected")
     console.log("[v0] 🔌 DBot disconnected")
   }
@@ -62,17 +56,16 @@ export function DBotIntegrationTab({ theme = "dark" }: DBotIntegrationTabProps) 
           <div className="text-center space-y-3">
             <div>
               <Badge
-                className={`text-lg px-6 py-2 ${
-                  isConnected
-                    ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)]"
-                    : "bg-slate-500 text-white"
-                }`}
+                className={`text-lg px-6 py-2 ${dbotStatus === "connected"
+                  ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)]"
+                  : "bg-slate-500 text-white"
+                  }`}
               >
-                {isConnected ? "Connected" : "Disconnected"}
+                {dbotStatus === "connected" ? "Connected" : "Disconnected"}
               </Badge>
             </div>
 
-            {globalContext.apiToken ? (
+            {isAuthorized ? (
               <div className={`text-sm ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
                 API Token: Authenticated
               </div>
@@ -89,14 +82,14 @@ export function DBotIntegrationTab({ theme = "dark" }: DBotIntegrationTabProps) 
           <div className="flex gap-3">
             <Button
               onClick={connectDBot}
-              disabled={isLoading || isConnected || !globalContext.apiToken}
+              disabled={isLoading || dbotStatus === "connected" || !isAuthorized}
               className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold"
             >
               {isLoading ? "Connecting..." : "Connect DBot"}
             </Button>
             <Button
               onClick={disconnectDBot}
-              disabled={!isConnected}
+              disabled={dbotStatus !== "connected"}
               className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold"
             >
               Disconnect
@@ -112,16 +105,13 @@ export function DBotIntegrationTab({ theme = "dark" }: DBotIntegrationTabProps) 
             <div className={`space-y-2 text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
               <div>
                 <span className="font-semibold">Authentication:</span>{" "}
-                {globalContext.isAuthorized ? "✓ Authorized" : "✗ Not Authorized"}
+                {isAuthorized ? "✓ Authorized" : "✗ Not Authorized"}
               </div>
               <div>
-                <span className="font-semibold">Balance:</span> {globalContext.balance.toFixed(2)}
+                <span className="font-semibold">Balance:</span> {balance?.amount.toFixed(2) || "0.00"}
               </div>
               <div>
-                <span className="font-semibold">Selected Market:</span> {globalContext.selectedMarket}
-              </div>
-              <div>
-                <span className="font-semibold">Selected Strategy:</span> {globalContext.selectedStrategy}
+                <span className="font-semibold">Balance:</span> {balance?.amount.toFixed(2) || "0.00"}
               </div>
               <div>
                 <span className="font-semibold">Connection Status:</span> {dbotStatus.toUpperCase()}

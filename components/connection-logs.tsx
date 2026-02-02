@@ -17,7 +17,7 @@ export function ConnectionLogs({ logs, onClear }: ConnectionLogsProps) {
 
   const copyLogs = () => {
     const logText = logs
-      .map((log) => `[${log.type.toUpperCase()}] ${log.timestamp.toLocaleTimeString()} - ${log.message}`)
+      .map((log) => `[${log.type.toUpperCase()}] ${new Date(log.timestamp).toLocaleTimeString()} - ${log.message}`)
       .join("\n")
     navigator.clipboard.writeText(logText)
     setCopied(true)
@@ -70,17 +70,16 @@ export function ConnectionLogs({ logs, onClear }: ConnectionLogsProps) {
               logs.map((log, index) => (
                 <div key={index} className="flex items-start gap-3 text-sm">
                   <Badge
-                    className={`${
-                      log.type === "error"
-                        ? "bg-red-500/20 text-red-400 border-red-500/30"
-                        : log.type === "warning"
-                          ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                          : "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                    }`}
+                    className={`${log.type === "error"
+                      ? "bg-red-500/20 text-red-400 border-red-500/30"
+                      : log.type === "warning"
+                        ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                        : "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                      }`}
                   >
                     {log.type.toUpperCase()}
                   </Badge>
-                  <span className="text-gray-400 text-xs">{log.timestamp.toLocaleTimeString()}</span>
+                  <span className="text-gray-400 text-xs">{new Date(log.timestamp).toLocaleTimeString()}</span>
                   <span className="text-white flex-1">{log.message}</span>
                 </div>
               ))

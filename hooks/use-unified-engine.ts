@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { getOrCreateEngine, type UnifiedTradingEngine, type EngineState } from '@/lib/unified-trading-engine'
-import type { AnalysisSnapshot, PowerTrend } from '@/lib/core-analytics-engine'
-import type { BotSignal } from '@/lib/bot-engines'
+import type { AnalysisSnapshot, PowerTrend, BotSignal } from '@/lib/core-analytics-engine'
 import type { Trade, RiskMetrics } from '@/lib/trade-execution-engine'
 
 export interface UseUnifiedEngineReturn {
@@ -44,16 +43,16 @@ export const useUnifiedEngine = (): UseUnifiedEngineReturn => {
       console.log('[v0] Unified trading engine initialized')
 
       // Subscribe to engine events
-      const unsubscribeTick = engineRef.current.on('tick', (data) => {
+      const unsubscribeTick = engineRef.current.on('data_updated', (data: any) => {
         console.log('[v0] Tick processed:', data)
       })
 
-      const unsubscribeSignals = engineRef.current.on('signals', (sigs) => {
+      const unsubscribeSignals = engineRef.current.on('signals_updated', (sigs: any) => {
         setSignals(sigs)
         console.log('[v0] Bot signals updated:', sigs)
       })
 
-      const unsubscribeState = engineRef.current.on('stateChange', (newState) => {
+      const unsubscribeState = engineRef.current.on('state_updated', (newState: any) => {
         setState(newState)
         setAnalysis(newState.currentAnalysis)
         setRiskMetrics(newState.riskMetrics)
@@ -61,11 +60,11 @@ export const useUnifiedEngine = (): UseUnifiedEngineReturn => {
         setStats(engineRef.current?.getStats())
       })
 
-      const unsubscribeTrade = engineRef.current.on('tradeExecuted', (trade) => {
+      const unsubscribeTrade = engineRef.current.on('trade_placed', (trade: any) => {
         console.log('[v0] Trade executed:', trade)
       })
 
-      const unsubscribeResult = engineRef.current.on('tradeResult', (result) => {
+      const unsubscribeResult = engineRef.current.on('trade_completed', (result: any) => {
         console.log('[v0] Trade result recorded:', result)
       })
 

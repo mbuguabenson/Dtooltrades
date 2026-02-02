@@ -16,26 +16,36 @@ export interface DigitPower {
   color: 'green' | 'amber' | 'red' | 'purple'
 }
 
+export interface BotSignal {
+  botType: 'even_odd' | 'over_under' | 'differs' | 'matches'
+  action: 'trade' | 'wait' | 'skip'
+  prediction: number | number[] // digit(s) to trade
+  confidence: number // 0-100
+  reason: string
+  powerThreshold: boolean
+  trendCondition: boolean
+}
+
 export interface AnalysisSnapshot {
   timestamp: number
   totalTicks: number
   currentDigit: number
   lastDigits: number[]
   digitPowers: DigitPower[]
-  
+
   // Even/Odd analysis
   even: { count: number; power: number; trend: number }
   odd: { count: number; power: number; trend: number }
-  
+
   // Over/Under analysis (0-4 vs 5-9)
   under: { count: number; power: number; trend: number } // 0-4
   over: { count: number; power: number; trend: number }  // 5-9
-  
+
   // Dominant patterns
   strongest: { digit: number; power: number }
   weakest: { digit: number; power: number }
   secondStrongest: { digit: number; power: number }
-  
+
   // Quality metrics
   entropy: number // randomness score 0-1
   powerGap: number // difference between strongest and weakest
@@ -165,7 +175,7 @@ export class CoreAnalyticsEngine {
       currentDigit,
       lastDigits: [...this.digits.slice(-15)],
       digitPowers,
-      
+
       even: {
         count: evenCount,
         power: Math.round(evenPower * 100) / 100,
@@ -176,7 +186,7 @@ export class CoreAnalyticsEngine {
         power: Math.round(oddPower * 100) / 100,
         trend: Math.round((oddPower - previousOddPower) * 100) / 100,
       },
-      
+
       under: {
         count: underCount,
         power: Math.round(underPower * 100) / 100,
@@ -187,7 +197,7 @@ export class CoreAnalyticsEngine {
         power: Math.round(overPower * 100) / 100,
         trend: Math.round((overPower - previousOverPower) * 100) / 100,
       },
-      
+
       strongest: {
         digit: strongest.digit,
         power: strongest.power,
@@ -200,7 +210,7 @@ export class CoreAnalyticsEngine {
         digit: weakest.digit,
         power: weakest.power,
       },
-      
+
       entropy,
       powerGap: Math.round(powerGap * 100) / 100,
       isBalanced: powerGap < 15,
@@ -223,16 +233,16 @@ export class CoreAnalyticsEngine {
         trend: 0,
         color: 'red' as const,
       })),
-      
+
       even: { count: 0, power: 0, trend: 0 },
       odd: { count: 0, power: 0, trend: 0 },
       under: { count: 0, power: 0, trend: 0 },
       over: { count: 0, power: 0, trend: 0 },
-      
+
       strongest: { digit: 0, power: 0 },
       secondStrongest: { digit: 0, power: 0 },
       weakest: { digit: 0, power: 0 },
-      
+
       entropy: 0,
       powerGap: 0,
       isBalanced: true,

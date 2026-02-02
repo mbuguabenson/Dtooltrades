@@ -46,7 +46,7 @@ export function MarketSelector({ symbols, currentSymbol, onSymbolChange, theme =
 
     const groups: Record<string, DerivSymbol[]> = {}
     otherSymbols.forEach((symbol) => {
-      const market = symbol.market_display_name || symbol.market
+      const market = symbol.market_display_name || symbol.market || "Other"
       if (!groups[market]) {
         groups[market] = []
       }
@@ -80,27 +80,25 @@ export function MarketSelector({ symbols, currentSymbol, onSymbolChange, theme =
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={`w-[180px] sm:w-[220px] h-12 sm:h-auto py-2 px-4 rounded-xl justify-between transition-all duration-300 ${
-            theme === "dark"
-              ? "bg-blue-500/5 border-blue-500/20 text-white hover:bg-blue-500/10 hover:border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
-              : "bg-blue-50 border-blue-200 text-slate-900 hover:bg-blue-100"
-          }`}
+          className={`w-[130px] sm:w-[220px] h-9 sm:h-auto py-1 sm:py-2 px-2 sm:px-4 rounded-xl justify-between transition-all duration-300 ${theme === "dark"
+            ? "bg-blue-500/5 border-blue-500/20 text-white hover:bg-blue-500/10 hover:border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+            : "bg-blue-50 border-blue-200 text-slate-900 hover:bg-blue-100"
+            }`}
         >
           <div className="flex flex-col items-start min-w-0">
-             <span className={`text-[9px] font-bold uppercase tracking-wider ${theme === "dark" ? "text-blue-400/70" : "text-blue-600"}`}>
-                Market
-              </span>
-             <span className="truncate w-full text-left font-bold sm:font-black text-xs sm:text-sm">
-                {currentSymbolData?.display_name || currentSymbol}
-             </span>
+            <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider hidden sm:block ${theme === "dark" ? "text-blue-400/70" : "text-blue-600"}`}>
+              Market
+            </span>
+            <span className="truncate w-full text-left font-bold sm:font-black text-[10px] sm:text-sm">
+              {currentSymbolData?.display_name || currentSymbol}
+            </span>
           </div>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={`w-[320px] p-0 max-h-[450px] overflow-y-auto ${
-          theme === "dark" ? "bg-[#0a0e27] border-blue-500/30" : "bg-white border-gray-300"
-        }`}
+        className={`w-[320px] p-0 max-h-[450px] overflow-y-auto ${theme === "dark" ? "bg-[#0a0e27] border-blue-500/30" : "bg-white border-gray-300"
+          }`}
       >
         <Command className={theme === "dark" ? "bg-[#0a0e27]" : "bg-white"}>
           <CommandInput placeholder="Search markets..." className={theme === "dark" ? "text-white" : "text-gray-900"} />
@@ -129,9 +127,8 @@ export function MarketSelector({ symbols, currentSymbol, onSymbolChange, theme =
                     }
                   >
                     <Check
-                      className={`mr-2 h-4 w-4 ${
-                        currentSymbol === symbol.symbol ? "opacity-100 text-green-400" : "opacity-0"
-                      }`}
+                      className={`mr-2 h-4 w-4 ${currentSymbol === symbol.symbol ? "opacity-100 text-green-400" : "opacity-0"
+                        }`}
                     />
                     {symbol.display_name}
                   </CommandItem>

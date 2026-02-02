@@ -179,7 +179,7 @@ export function AutoRunBot({
           setTradeHistory((prev) => [
             ...newTrades.map((t) => ({
               id: t.id,
-              contractType: t.contract,
+              contractType: t.contractType,
               market,
               entry: new Date(t.timestamp).toLocaleTimeString(),
               stake: t.stake,
@@ -272,6 +272,7 @@ export function AutoRunBot({
     OVER3_UNDER6: "Trades OVER3/UNDER6 range",
     UNDER6: "Trades UNDER6 when 50%+ detected",
     DIFFERS: "Trades DIFFERS on rarest digits (2-7)",
+    SUPER_DIFFERS: "High-precision DIFFERS using least frequent digit (2-7)",
     OVER_UNDER_ADVANCED: "Advanced OVER/UNDER with multi-level signals",
   }
 

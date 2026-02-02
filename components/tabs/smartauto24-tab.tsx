@@ -40,19 +40,15 @@ interface BotStats {
 }
 
 export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
-  const { 
-    apiClient, 
-    isConnected, 
-    isAuthorized, 
-    balance, 
-    isLoggedIn, 
-    submitApiToken, 
-    token 
+  const {
+    apiClient,
+    isConnected,
+    isAuthorized,
+    balance,
+    isLoggedIn,
+    submitApiToken,
+    token
   } = useDerivAPI()
-
-  const [apiTokenInput, setApiTokenInput] = useState("")
-  const [showToken, setShowToken] = useState(false)
-  const [tokenConnected, setTokenConnected] = useState(!!token)
 
   const [allMarkets, setAllMarkets] = useState<Array<{ symbol: string; display_name: string }>>([])
   const [loadingMarkets, setLoadingMarkets] = useState(true)
@@ -121,7 +117,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   const journalRef = useRef<TradingJournal>(new TradingJournal("smartauto24"))
   const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  
+
   // SmartAuto24 Engine
   const smartAuto24Engine = useSmartAuto24(market, isConnected)
 
@@ -172,11 +168,11 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
       try {
         tickSubscriptionId = await apiClient.subscribeTicks(market, (tick) => {
           setMarketPrice(tick.quote)
-          
+
           // Extract last digit properly - handles zero correctly
           const lastDigitValue = Math.floor(tick.quote * 10) % 10
           setLastDigit(lastDigitValue >= 0 ? lastDigitValue : 0)
-          
+
           // Process through SmartAuto24 engine
           if (isRunning) {
             const result = smartAuto24Engine.processTick(tick.quote)
@@ -248,14 +244,6 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
     }
   }, [apiClient, isConnected, market, differsWaitingForEntry, differsSelectedDigit, lastDigitWasEven])
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem("deriv_api_token_smartauto24")
-    if (savedToken && !tokenConnected) {
-      setApiTokenInput(savedToken)
-      handleConnectToken(savedToken)
-    }
-  }, [])
-
   const addAnalysisLog = (message: string, type: "info" | "success" | "warning" = "info") => {
     setAnalysisLog((prev) => [
       {
@@ -267,22 +255,6 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
     ])
   }
 
-  const handleConnectToken = async (tokenToUse?: string) => {
-    const tokenValue = tokenToUse || apiTokenInput
-    if (!tokenValue) {
-      addAnalysisLog("API token cannot be empty.", "warning")
-      return
-    }
-    try {
-      await submitApiToken(tokenValue)
-      setTokenConnected(true)
-      addAnalysisLog("API token connected successfully.", "success")
-      localStorage.setItem("deriv_api_token_smartauto24", tokenValue)
-    } catch (error) {
-      console.error("Failed to connect token:", error)
-      addAnalysisLog(`Failed to connect token: ${error}`, "warning")
-    }
-  }
 
   const handleStartAnalysis = async () => {
     if (!isLoggedIn || !apiClient || !isConnected) {
@@ -541,9 +513,9 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
         const martingaleMultiplier = martingaleRatios[selectedStrategy] || 2.0
         const baseStake = Number.parseFloat(stake)
-        
+
         // Calculate current stake based on consecutive losses
-        const currentCalculatedStake = stats.contractsLost > 0 
+        const currentCalculatedStake = stats.contractsLost > 0
           ? baseStake * Math.pow(martingaleMultiplier, stats.contractsLost)
           : baseStake
 
@@ -667,77 +639,38 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
   return (
     <div className="space-y-4">
-      {!tokenConnected ? (
+      {!isAuthorized ? (
         <Card
-          className={`p-6 border ${
-            theme === "dark"
-              ? "bg-linear-to-r from-red-500/20 via-orange-500/20 to-yellow-500/20 border-red-500/30"
-              : "bg-linear-to-r from-red-50 to-orange-50 border-red-200"
-          }`}
+          className={`p-12 border text-center ${theme === "dark"
+            ? "bg-[#0a0e27]/80 border-red-500/30"
+            : "bg-white border-gray-200"
+            }`}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <AlertCircle className={`w-6 h-6 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
-              <div>
-                <h3 className={`text-lg font-bold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>
-                  Connect API Token
-                </h3>
-                <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                  Enter your Deriv API token to start trading
-                </p>
-              </div>
+          <div className="flex flex-col items-center gap-4">
+            <AlertCircle className={`w-12 h-12 ${theme === "dark" ? "text-red-400" : "text-red-500"}`} />
+            <div>
+              <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                Authentication Required
+              </h3>
+              <p className={`text-gray-400 mt-2`}>
+                Please log in with your Deriv account to use SmartAuto24
+              </p>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="relative">
-              <label
-                className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}
-              >
-                API Token
-              </label>
-              <div className="relative">
-                <Input
-                  type={showToken ? "text" : "password"}
-                  value={apiTokenInput}
-                  onChange={(e) => setApiTokenInput(e.target.value)}
-                  placeholder="Paste your Deriv API token here..."
-                  className={`pr-10 ${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
-                />
-                <button
-                  onClick={() => setShowToken(!showToken)}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${theme === "dark" ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-900"}`}
-                >
-                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
             <Button
-              onClick={() => handleConnectToken()}
-              className={`w-full ${
-                theme === "dark"
-                  ? "bg-linear-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black font-bold"
-                  : "bg-yellow-500 hover:bg-yellow-600 text-white font-bold"
-              }`}
+              onClick={() => (window as any).location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${process.env.NEXT_PUBLIC_DERIV_APP_ID || "65416"}&l=en&brand=deriv`}
+              className="mt-4 bg-red-500 hover:bg-red-600 text-white"
             >
-              <Zap className="w-4 h-4 mr-2" />
-              Connect Token
+              Login to Deriv
             </Button>
           </div>
         </Card>
       ) : (
         <>
           <Card
-            className={`p-6 border ${
-              theme === "dark"
-                ? "bg-linear-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border-green-500/30"
-                : "bg-linear-to-r from-green-50 to-emerald-50 border-green-200"
-            }`}
+            className={`p-6 border ${theme === "dark"
+              ? "bg-linear-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border-green-500/30"
+              : "bg-linear-to-r from-green-50 to-emerald-50 border-green-200"
+              }`}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -750,11 +683,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                 </p>
               </div>
               <Badge
-                className={`text-lg px-4 py-2 ${
-                  theme === "dark"
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-green-100 text-green-700"
-                }`}
+                className={`text-lg px-4 py-2 ${theme === "dark"
+                  ? "bg-green-500/20 text-green-400 border-green-500/30"
+                  : "bg-green-100 text-green-700"
+                  }`}
               >
                 Connected
               </Badge>
@@ -763,11 +695,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
           {marketPrice !== null && (
             <Card
-              className={`p-6 border ${
-                theme === "dark"
-                  ? "bg-linear-to-r from-blue-500/20 via-cyan-500/20 to-teal-500/20 border-blue-500/30"
-                  : "bg-linear-to-r from-blue-50 to-cyan-50 border-blue-200"
-              }`}
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-r from-blue-500/20 via-cyan-500/20 to-teal-500/20 border-blue-500/30"
+                : "bg-linear-to-r from-blue-50 to-cyan-50 border-blue-200"
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -782,9 +713,8 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   </p>
                 </div>
                 <Badge
-                  className={`text-lg px-4 py-2 ${
-                    theme === "dark" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : "bg-blue-100 text-blue-700"
-                  }`}
+                  className={`text-lg px-4 py-2 ${theme === "dark" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : "bg-blue-100 text-blue-700"
+                    }`}
                 >
                   Live
                 </Badge>
@@ -794,11 +724,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
           {showAnalysisResults && analysisData && (
             <Card
-              className={`p-6 border ${
-                theme === "dark"
-                  ? "bg-linear-to-br from-purple-500/20 to-pink-500/20 border-purple-500/30"
-                  : "bg-purple-50 border-purple-200"
-              }`}
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-br from-purple-500/20 to-pink-500/20 border-purple-500/30"
+                : "bg-purple-50 border-purple-200"
+                }`}
             >
               <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                 Analysis Results - {analysisData.strategy}
@@ -806,9 +735,8 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div
-                  className={`p-4 rounded-lg ${
-                    theme === "dark" ? "bg-blue-500/10 border border-blue-500/30" : "bg-blue-50 border border-blue-200"
-                  }`}
+                  className={`p-4 rounded-lg ${theme === "dark" ? "bg-blue-500/10 border border-blue-500/30" : "bg-blue-50 border border-blue-200"
+                    }`}
                 >
                   <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Power</div>
                   <div className={`text-2xl font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
@@ -817,11 +745,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                 </div>
 
                 <div
-                  className={`p-4 rounded-lg ${
-                    theme === "dark"
-                      ? "bg-green-500/10 border border-green-500/30"
-                      : "bg-green-50 border border-green-200"
-                  }`}
+                  className={`p-4 rounded-lg ${theme === "dark"
+                    ? "bg-green-500/10 border border-green-500/30"
+                    : "bg-green-50 border border-green-200"
+                    }`}
                 >
                   <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Signal</div>
                   <div className={`text-2xl font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
@@ -830,11 +757,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                 </div>
 
                 <div
-                  className={`p-4 rounded-lg ${
-                    theme === "dark"
-                      ? "bg-yellow-500/10 border border-yellow-500/30"
-                      : "bg-yellow-50 border border-yellow-200"
-                  }`}
+                  className={`p-4 rounded-lg ${theme === "dark"
+                    ? "bg-yellow-500/10 border border-yellow-500/30"
+                    : "bg-yellow-50 border border-yellow-200"
+                    }`}
                 >
                   <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Confidence</div>
                   <div className={`text-2xl font-bold ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}>
@@ -843,11 +769,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                 </div>
 
                 <div
-                  className={`p-4 rounded-lg ${
-                    theme === "dark"
-                      ? "bg-purple-500/10 border border-purple-500/30"
-                      : "bg-purple-50 border border-purple-200"
-                  }`}
+                  className={`p-4 rounded-lg ${theme === "dark"
+                    ? "bg-purple-500/10 border border-purple-500/30"
+                    : "bg-purple-50 border border-purple-200"
+                    }`}
                 >
                   <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Ticks</div>
                   <div className={`text-2xl font-bold ${theme === "dark" ? "text-purple-400" : "text-purple-600"}`}>
@@ -857,9 +782,8 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
               </div>
 
               <div
-                className={`p-4 rounded-lg ${
-                  theme === "dark" ? "bg-gray-900/50 border border-gray-700" : "bg-gray-100 border border-gray-300"
-                }`}
+                className={`p-4 rounded-lg ${theme === "dark" ? "bg-gray-900/50 border border-gray-700" : "bg-gray-100 border border-gray-300"
+                  }`}
               >
                 <p className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
                   {analysisData.description}
@@ -870,11 +794,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
           {/* Configuration Panel */}
           <Card
-            className={`p-6 border ${
-              theme === "dark"
-                ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-yellow-500/20"
-                : "bg-white border-gray-200"
-            }`}
+            className={`p-6 border ${theme === "dark"
+              ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-yellow-500/20"
+              : "bg-white border-gray-200"
+              }`}
           >
             <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
               Configuration
@@ -889,11 +812,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                 </label>
                 <Select value={market} onValueChange={setMarket} disabled={loadingMarkets}>
                   <SelectTrigger
-                    className={`${
-                      theme === "dark"
-                        ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
+                    className={`${theme === "dark"
+                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                      }`}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -917,11 +839,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   type="number"
                   value={analysisTimeMinutes}
                   onChange={(e) => setAnalysisTimeMinutes(e.target.value)}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   min="1"
                   max="120"
                 />
@@ -937,11 +858,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   type="number"
                   value={ticksForEntry}
                   onChange={(e) => setTicksForEntry(e.target.value)}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   min="100"
                   step="100"
                 />
@@ -957,11 +877,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   type="number"
                   value={stake}
                   onChange={(e) => setStake(e.target.value)}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   step="0.01"
                   min="0.01"
                 />
@@ -977,11 +896,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   type="number"
                   value={targetProfit}
                   onChange={(e) => setTargetProfit(e.target.value)}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   step="0.1"
                   min="0.1"
                 />
@@ -995,11 +913,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                 </label>
                 <Select value={selectedStrategy} onValueChange={setSelectedStrategy}>
                   <SelectTrigger
-                    className={`${
-                      theme === "dark"
-                        ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
+                    className={`${theme === "dark"
+                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                      }`}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -1026,11 +943,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                     const newRatio = Number.parseFloat(e.target.value) || 2.0
                     setMartingaleRatios((prev) => ({ ...prev, [selectedStrategy]: newRatio }))
                   }}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   step="0.1"
                   min="1.5"
                   max="5"
@@ -1047,11 +963,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   type="number"
                   value={ticksPerTrade}
                   onChange={(e) => setTicksPerTrade(Number.parseInt(e.target.value))}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   min="1"
                   max="100"
                 />
@@ -1067,11 +982,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   type="number"
                   value={stopLossPercent}
                   onChange={(e) => setStopLossPercent(e.target.value)}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   step="5"
                   min="10"
                   max="90"
@@ -1083,11 +997,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
               <Button
                 onClick={handleStartAnalysis}
                 disabled={isRunning || !isLoggedIn || loadingMarkets}
-                className={`flex-1 ${
-                  theme === "dark"
-                    ? "bg-linear-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black font-bold"
-                    : "bg-yellow-500 hover:bg-yellow-600 text-white font-bold"
-                }`}
+                className={`flex-1 ${theme === "dark"
+                  ? "bg-linear-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black font-bold"
+                  : "bg-yellow-500 hover:bg-yellow-600 text-white font-bold"
+                  }`}
               >
                 <Play className="w-4 h-4 mr-2" />
                 Start Analysis
@@ -1108,11 +1021,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
           {/* Analysis Progress */}
           {status === "analyzing" && (
             <Card
-              className={`p-6 border ${
-                theme === "dark"
-                  ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-yellow-500/20"
-                  : "bg-white border-gray-200"
-              }`}
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-yellow-500/20"
+                : "bg-white border-gray-200"
+                }`}
             >
               <h3 className={`text-lg font-bold mb-6 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                 Analysis in Progress
@@ -1139,9 +1051,8 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
               {/* Analysis Log */}
               <div
-                className={`p-4 rounded-lg ${
-                  theme === "dark" ? "bg-gray-900/50 border border-gray-700" : "bg-gray-900 border border-gray-800"
-                }`}
+                className={`p-4 rounded-lg ${theme === "dark" ? "bg-gray-900/50 border border-gray-700" : "bg-gray-900 border border-gray-800"
+                  }`}
               >
                 <h4 className={`text-sm font-bold mb-3 ${theme === "dark" ? "text-gray-300" : "text-gray-300"}`}>
                   Analysis Log
@@ -1153,13 +1064,12 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                     analysisLog.map((log, idx) => (
                       <div
                         key={idx}
-                        className={`${
-                          log.type === "success"
-                            ? "text-green-400"
-                            : log.type === "warning"
-                              ? "text-yellow-400"
-                              : "text-gray-400"
-                        }`}
+                        className={`${log.type === "success"
+                          ? "text-green-400"
+                          : log.type === "warning"
+                            ? "text-yellow-400"
+                            : "text-gray-400"
+                          }`}
                       >
                         <span className="text-gray-600">[{log.timestamp.toLocaleTimeString()}]</span> {log.message}
                       </div>
@@ -1173,11 +1083,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
           {/* Statistical Progress Analysis */}
           {status === "trading" && analysisData && (
             <Card
-              className={`p-6 border ${
-                theme === "dark"
-                  ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
-                  : "bg-white border-gray-200"
-              }`}
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
+                : "bg-white border-gray-200"
+                }`}
             >
               <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                 Statistical Progress Analysis
@@ -1285,11 +1194,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
           {/* Session Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card
-              className={`p-6 border ${
-                theme === "dark"
-                  ? "bg-linear-to-br from-green-500/10 to-green-500/10 border-green-500/30"
-                  : "bg-green-50 border-green-200"
-              }`}
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-br from-green-500/10 to-green-500/10 border-green-500/30"
+                : "bg-green-50 border-green-200"
+                }`}
             >
               <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Session Profit</div>
               <div
@@ -1300,11 +1208,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
             </Card>
 
             <Card
-              className={`p-6 border ${
-                theme === "dark"
-                  ? "bg-linear-to-br from-blue-500/10 to-blue-500/10 border-blue-500/30"
-                  : "bg-blue-50 border-blue-200"
-              }`}
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-br from-blue-500/10 to-blue-500/10 border-blue-500/30"
+                : "bg-blue-50 border-blue-200"
+                }`}
             >
               <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Trades Executed</div>
               <div className={`text-3xl font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
@@ -1313,11 +1220,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
             </Card>
 
             <Card
-              className={`p-6 border ${
-                theme === "dark"
-                  ? "bg-linear-to-br from-yellow-500/10 to-yellow-500/10 border-yellow-500/30"
-                  : "bg-yellow-50 border-yellow-200"
-              }`}
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-br from-yellow-500/10 to-yellow-500/10 border-yellow-500/30"
+                : "bg-yellow-50 border-yellow-200"
+                }`}
             >
               <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Status</div>
               <div className={`text-lg font-bold ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}>
