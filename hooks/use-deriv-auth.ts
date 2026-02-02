@@ -28,7 +28,85 @@ export function useDerivAuth() {
   const [showApprovalModal, setShowApprovalModal] = useState(false)
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [balanceSubscribed, setBalanceSubscribed] = useState(false)
+  const balanceSubscribedRef = useRef(false)
   const manager = DerivWebSocketManager.getInstance()
+
+  // 1. Stable listener for auth and balance updates
+  useEffect(() => {
+    const handleAuthMessages = (data: any) => {
+      if (data.msg_type === "authorize") {
+        if (data.error) {
+          console.error("[v0] ❌ Auth error:", data.error.message)
+          if (data.error.code === "InvalidToken") {
+            setShowTokenModal(true)
+            setIsLoggedIn(false)
+          }
+          return
+        }
+
+        const { authorize } = data
+        const accType = authorize.is_virtual ? "Demo" : "Real"
+
+        console.log("[v0] ✅ Authorized:", authorize.loginid, `(${accType})`)
+        setAccountType(accType)
+        setActiveLoginId(authorize.loginid)
+        activeLoginIdRef.current = authorize.loginid
+        setAccountCode(authorize.loginid || "")
+        setIsLoggedIn(true)
+        setShowTokenModal(false)
+
+        if (authorize.balance !== undefined) {
+          setBalance({
+            amount: Number(authorize.balance),
+            currency: authorize.currency || "USD",
+          })
+        }
+
+        if (authorize.account_list && Array.isArray(authorize.account_list)) {
+          const formatted = authorize.account_list.map((acc: any) => ({
+            id: acc.loginid,
+            type: acc.is_virtual ? "Demo" : "Real",
+            currency: acc.currency,
+            balance: Number(acc.balance) || 0,
+          }))
+          setAccounts(formatted)
+        }
+
+        if (!balanceSubscribedRef.current) {
+          manager.send({ balance: 1, subscribe: 1 })
+          balanceSubscribedRef.current = true
+          setBalanceSubscribed(true)
+          console.log("[v0] ✅ Balance subscription started")
+        }
+      }
+
+      if (data.msg_type === "balance" && data.balance) {
+        const msgLoginId = data.balance.loginid || activeLoginIdRef.current
+
+        if (msgLoginId === activeLoginIdRef.current) {
+          setBalance({
+            amount: data.balance.balance,
+            currency: data.balance.currency,
+          })
+        }
+
+        setAccounts(prev => prev.map(acc => {
+          if (acc.id === msgLoginId) {
+            return { ...acc, balance: data.balance.balance }
+          }
+          return acc
+        }))
+      }
+    }
+
+    manager.on("authorize", handleAuthMessages)
+    manager.on("balance", handleAuthMessages)
+
+    return () => {
+      manager.off("authorize", handleAuthMessages)
+      manager.off("balance", handleAuthMessages)
+    }
+  }, []) // Mount-only registration
 
   useEffect(() => {
     activeLoginIdRef.current = activeLoginId
@@ -90,82 +168,7 @@ export function useDerivAuth() {
     console.log("[v0] 🔌 Connecting via manager...")
     await manager.connect()
 
-    const authorizeHandler = (data: any) => {
-      // 1. Handle Authorization Specific messages (Success or Error)
-      if (data.msg_type === "authorize") {
-        if (data.error) {
-          console.error("[v0] ❌ Auth error:", data.error.message)
-          if (data.error.code === "InvalidToken") {
-            setShowTokenModal(true)
-            setIsLoggedIn(false)
-          }
-          return
-        }
-
-        const { authorize } = data
-        const accType = authorize.is_virtual ? "Demo" : "Real"
-        const accCode = authorize.loginid || ""
-
-        console.log("[v0] ✅ Authorized:", authorize.loginid, `(${accType})`)
-        setAccountType(accType)
-        setActiveLoginId(authorize.loginid)
-        activeLoginIdRef.current = authorize.loginid
-        setAccountCode(accCode)
-        setIsLoggedIn(true)
-        setShowTokenModal(false)
-
-        if (authorize.balance !== undefined) {
-          setBalance({
-            amount: Number(authorize.balance),
-            currency: authorize.currency || "USD",
-          })
-        }
-
-        if (authorize.account_list && Array.isArray(authorize.account_list)) {
-          const formatted = authorize.account_list.map((acc: any) => ({
-            id: acc.loginid,
-            type: acc.is_virtual ? "Demo" : "Real",
-            currency: acc.currency,
-            balance: Number(acc.balance) || 0,
-          }))
-          setAccounts(formatted)
-        }
-
-        if (!balanceSubscribed) {
-          manager.send({ balance: 1, subscribe: 1 })
-          setBalanceSubscribed(true)
-          console.log("[v0] ✅ Balance subscription started")
-        }
-      }
-
-      // 2. Handle Balance updates
-      if (data.msg_type === "balance" && data.balance) {
-        const msgLoginId = data.balance.loginid || activeLoginIdRef.current
-
-        // Update current account balance
-        if (msgLoginId === activeLoginIdRef.current) {
-          setBalance({
-            amount: data.balance.balance,
-            currency: data.balance.currency,
-          })
-        }
-
-        // Update list of accounts balance
-        setAccounts(prev => prev.map(acc => {
-          if (acc.id === msgLoginId) {
-            return { ...acc, balance: data.balance.balance }
-          }
-          return acc
-        }))
-      }
-    }
-
-    // Use a specific event for ticks if possible, but keep wildcard if necessary.
-    // For Auth, we actually only care about authorize and balance messages.
-    manager.on("authorize", authorizeHandler)
-    manager.on("balance", authorizeHandler)
-
-    // Initial authorization
+    // Authorization message
     manager.send({ authorize: apiToken })
   }
 
