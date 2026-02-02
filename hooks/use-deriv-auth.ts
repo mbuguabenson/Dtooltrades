@@ -109,9 +109,17 @@ export function useDerivAuth() {
         console.log("[v0] ✅ Authorized:", authorize.loginid, `(${accType})`)
         setAccountType(accType)
         setActiveLoginId(authorize.loginid)
+        activeLoginIdRef.current = authorize.loginid
         setAccountCode(accCode)
         setIsLoggedIn(true)
         setShowTokenModal(false)
+
+        if (authorize.balance !== undefined) {
+          setBalance({
+            amount: Number(authorize.balance),
+            currency: authorize.currency || "USD",
+          })
+        }
 
         if (authorize.account_list && Array.isArray(authorize.account_list)) {
           const formatted = authorize.account_list.map((acc: any) => ({
