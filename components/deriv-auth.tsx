@@ -88,16 +88,20 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
             <div className={`w-px h-5 sm:h-6 ${theme === "dark" ? "bg-slate-800" : "bg-slate-200"}`} />
 
             {/* Balance Badge */}
-            {balance && (
-              <div className="flex flex-col">
-                <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-slate-500" : "text-slate-400"}`}>
-                  Capital
-                </span>
+            <div className="flex flex-col min-w-[80px]">
+              <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-slate-500" : "text-slate-400"}`}>
+                Capital
+              </span>
+              {balance ? (
                 <span className={`text-[10px] sm:text-xs font-black tabular-nums ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"}`}>
-                  {balance.amount.toFixed(2)} <span className="hidden xs:inline">{balance.currency}</span>
+                  {Number(balance.amount).toFixed(2)} <span className="hidden xs:inline">{balance.currency}</span>
                 </span>
-              </div>
-            )}
+              ) : (
+                <span className={`text-[10px] sm:text-xs font-bold animate-pulse ${theme === "dark" ? "text-slate-600" : "text-slate-400"}`}>
+                  Syncing...
+                </span>
+              )}
+            </div>
 
             {accounts.length > 1 && (
               <Select value={activeLoginId || ""} onValueChange={switchAccount}>

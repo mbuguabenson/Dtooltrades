@@ -56,10 +56,12 @@ export function useDerivAuth() {
         setShowTokenModal(false)
 
         if (authorize.balance !== undefined) {
-          setBalance({
+          const initialBalance = {
             amount: Number(authorize.balance),
             currency: authorize.currency || "USD",
-          })
+          }
+          console.log("[v0] 💰 Setting initial balance from authorize:", initialBalance)
+          setBalance(initialBalance)
         }
 
         if (authorize.account_list && Array.isArray(authorize.account_list)) {
@@ -73,15 +75,16 @@ export function useDerivAuth() {
         }
 
         if (!balanceSubscribedRef.current) {
+          console.log("[v0] 📡 Requesting balance subscription...")
           manager.send({ balance: 1, subscribe: 1 })
           balanceSubscribedRef.current = true
           setBalanceSubscribed(true)
-          console.log("[v0] ✅ Balance subscription started")
         }
       }
 
       if (data.msg_type === "balance" && data.balance) {
         const msgLoginId = data.balance.loginid || activeLoginIdRef.current
+        console.log(`[v0] 💰 Balance update received for ${msgLoginId}:`, data.balance.balance)
 
         if (msgLoginId === activeLoginIdRef.current) {
           setBalance({

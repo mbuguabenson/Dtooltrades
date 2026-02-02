@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { SmartIntelligenceEngine, type MarketScore } from "@/lib/trading/smart-intelligence-engine"
 import { SmartPatternEngine, type PatternMatch } from "@/lib/trading/smart-pattern-engine"
@@ -13,6 +13,7 @@ export function useSmartAdaptiveTrading() {
 
     const [marketScores, setMarketScores] = useState<MarketScore[]>([])
     const [selectedMarket, setSelectedMarket] = useState("R_100")
+    const [selectedStrategy, setSelectedStrategy] = useState<string>("All")
     const [patterns, setPatterns] = useState<PatternMatch[]>([])
     const [signals, setSignals] = useState<StrategySignal[]>([])
     const [stats, setStats] = useState<any>(null)
@@ -49,17 +50,12 @@ export function useSmartAdaptiveTrading() {
 
         const unsub = intelligenceRef.current.onUpdate((scores) => {
             setMarketScores(scores)
-
-            const structured = scores.filter(s => s.state === 'Structured')
-            if (structured.length > 0) {
-                // Periodically log found structured markets or only on change
-            }
         })
 
         addLog("Neural connection established. Pulse sync active.", "system")
 
         return () => {
-            unsub()
+            if (unsub) unsub()
             if (intelligenceRef.current) {
                 intelligenceRef.current.stopScanning()
             }
@@ -119,6 +115,12 @@ export function useSmartAdaptiveTrading() {
         }
     }, [apiClient, isConnected, isAuthorized, selectedMarket, tickDuration])
 
+    // Filter signals based on selected strategy
+    const filteredSignals = useMemo(() => {
+        if (selectedStrategy === "All") return signals
+        return signals.filter(s => s.strategy === selectedStrategy)
+    }, [signals, selectedStrategy])
+
     const tradeOnce = useCallback(async (signal: StrategySignal) => {
         if (!tradingRef.current) return
         addLog(`Manual execution: ${signal.strategy} - ${signal.type}`, "trade")
@@ -127,19 +129,23 @@ export function useSmartAdaptiveTrading() {
 
     const startAutoTrade = useCallback(() => {
         if (!tradingRef.current) return
-        addLog("PI Auto Engine ENGAGED", "system")
+        addLog(`PI Auto Engine ENGAGED: ${selectedStrategy} only`, "system")
         tradingRef.current.startAutoTrade(selectedMarket, () => {
-            // Get the top signal
             const currentPatterns = patternRef.current.analyze()
             const currentSignals = strategyRef.current.getSignals(currentPatterns)
-            const signal = currentSignals.length > 0 ? currentSignals[0] : null
+
+            const possibleSignals = selectedStrategy === "All"
+                ? currentSignals
+                : currentSignals.filter(s => s.strategy === selectedStrategy)
+
+            const signal = possibleSignals.length > 0 ? possibleSignals[0] : null
 
             if (signal && signal.entryStatus === "Confirmed") {
                 addLog(`Auto-executing: ${signal.strategy} - ${signal.type}`, "trade")
             }
             return signal
         })
-    }, [selectedMarket])
+    }, [selectedMarket, selectedStrategy])
 
     const addLog = (message: string, type = "info") => {
         setLogs(prev => [{ message, type, timestamp: Date.now() }, ...prev].slice(0, 50))
@@ -159,8 +165,10 @@ export function useSmartAdaptiveTrading() {
         marketScores,
         selectedMarket,
         setSelectedMarket,
+        selectedStrategy,
+        setSelectedStrategy,
         patterns,
-        signals,
+        signals: filteredSignals,
         stats,
         tradingStatus,
         tickDuration,

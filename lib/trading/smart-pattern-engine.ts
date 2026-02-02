@@ -37,52 +37,23 @@ export class SmartPatternEngine {
 
         if (this.tickWindow.length < 10) return []
 
-        // 1. Detect Clustering
-        const clustering = this.detectClustering()
-        if (clustering) patterns.push(clustering)
-
-        // 2. Detect Cluster Rejection
+        // 1. Detect Cluster Rejection
         const rejection = this.detectClusterRejection()
         if (rejection) patterns.push(rejection)
 
-        // 3. Detect Alternating Cycles
+        // 2. Detect Alternating Cycles
         const cycles = this.detectAlternatingCycles()
         if (cycles) patterns.push(cycles)
 
-        // 4. Detect Even/Odd Imbalance
+        // 3. Detect Even/Odd Imbalance
         const imbalance = this.detectEvenOddImbalance()
         if (imbalance) patterns.push(imbalance)
 
-        // 5. Detect Extreme Compression
+        // 4. Detect Extreme Compression
         const compression = this.detectExtremeCompression()
         if (compression) patterns.push(compression)
 
-        // 6. Detect Micro-Repetition
-        const repetition = this.detectMicroRepetition()
-        if (repetition) patterns.push(repetition)
-
         return patterns.sort((a, b) => b.confidence - a.confidence)
-    }
-
-    private detectClustering(): PatternMatch | null {
-        const lastDigit = this.tickWindow[this.tickWindow.length - 1]
-        let clusterCount = 0
-        for (let i = this.tickWindow.length - 1; i >= this.tickWindow.length - 10; i--) {
-            if (this.tickWindow[i] === lastDigit) clusterCount++
-            else break
-        }
-
-        if (clusterCount >= 2) {
-            return {
-                type: "Clustering",
-                strength: (clusterCount / 5) * 100,
-                confidence: 60 + (clusterCount * 10),
-                description: `Digit ${lastDigit} is clustering (${clusterCount} appearances)`,
-                suggestion: "Consider 'Matches' strategy for continuation.",
-                metadata: { digit: lastDigit, count: clusterCount }
-            }
-        }
-        return null
     }
 
     private detectClusterRejection(): PatternMatch | null {
@@ -165,24 +136,6 @@ export class SmartPatternEngine {
                 description: "Extreme compression on digits 8-9",
                 suggestion: "Over 7 ↔ Under 7 Reversion strategy.",
                 metadata: { zone: "high", count: highCount }
-            }
-        }
-        return null
-    }
-
-    private detectMicroRepetition(): PatternMatch | null {
-        const last6 = this.tickWindow.slice(-6)
-        if (last6.length < 6) return null
-
-        // Check for ABC ABC
-        if (last6[0] === last6[3] && last6[1] === last6[4] && last6[2] === last6[5]) {
-            return {
-                type: "MicroRepetition",
-                strength: 95,
-                confidence: 90,
-                description: "Rare series repetition detected (ABC-ABC)",
-                suggestion: "Extreme structure alignment - High confidence continuation.",
-                metadata: { series: last6.slice(0, 3) }
             }
         }
         return null

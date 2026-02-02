@@ -1,6 +1,6 @@
 import type { PatternMatch } from "./smart-pattern-engine"
 
-export type TradeStrategy = "OverUnder" | "EvenOdd" | "Matches" | "Differs"
+export type TradeStrategy = "OverUnder" | "EvenOdd" | "Differs"
 
 export interface StrategySignal {
     strategy: TradeStrategy
@@ -24,8 +24,7 @@ export class AdaptiveStrategyManager {
             }
         }
 
-        // Mutual Exclusion: Matches and Differs must never trigger together
-        return this.resolveConflicts(signals)
+        return signals
     }
 
     private mapPatternToSignal(pattern: PatternMatch): StrategySignal | null {
@@ -50,16 +49,6 @@ export class AdaptiveStrategyManager {
                     entryStatus: pattern.confidence >= 70 ? "Confirmed" : "Waiting"
                 }
 
-            case "Clustering":
-                return {
-                    strategy: "Matches",
-                    type: "DIGITMATCH",
-                    barrier: pattern.metadata.digit.toString(),
-                    confidence: pattern.confidence,
-                    description: `Following cluster momentum for digit ${pattern.metadata.digit}.`,
-                    entryStatus: pattern.confidence >= 75 ? "Confirmed" : "Waiting"
-                }
-
             case "ClusterRejection":
                 return {
                     strategy: "Differs",
@@ -70,37 +59,8 @@ export class AdaptiveStrategyManager {
                     entryStatus: pattern.confidence >= 65 ? "Confirmed" : "Waiting"
                 }
 
-            case "MicroRepetition":
-                return {
-                    strategy: "Matches",
-                    type: "DIGITMATCH",
-                    barrier: pattern.metadata.series[pattern.metadata.series.length - 1].toString(),
-                    confidence: pattern.confidence,
-                    description: "High-probability repetition continuation.",
-                    entryStatus: "Confirmed"
-                }
-
             default:
                 return null
         }
-    }
-
-    private resolveConflicts(signals: StrategySignal[]): StrategySignal[] {
-        let hasMatches = signals.some(s => s.strategy === "Matches")
-        let hasDiffers = signals.some(s => s.strategy === "Differs")
-
-        if (hasMatches && hasDiffers) {
-            // Pick the one with higher confidence
-            const bestMatch = signals.filter(s => s.strategy === "Matches").sort((a, b) => b.confidence - a.confidence)[0]
-            const bestDiffer = signals.filter(s => s.strategy === "Differs").sort((a, b) => b.confidence - a.confidence)[0]
-
-            if (bestMatch.confidence >= bestDiffer.confidence) {
-                return signals.filter(s => s.strategy !== "Differs")
-            } else {
-                return signals.filter(s => s.strategy !== "Matches")
-            }
-        }
-
-        return signals
     }
 }

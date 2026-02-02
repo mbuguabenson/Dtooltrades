@@ -49,6 +49,8 @@ export default function SmartAdaptiveTradingTab() {
         marketScores,
         selectedMarket,
         setSelectedMarket,
+        selectedStrategy,
+        setSelectedStrategy,
         patterns,
         signals,
         stats,
@@ -246,41 +248,58 @@ export default function SmartAdaptiveTradingTab() {
                         </AnimatePresence>
                     </div>
 
-                    <div className="min-h-[160px] flex flex-col justify-center relative z-10">
-                        {topSignal ? (
-                            <motion.div
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className="space-y-6"
-                            >
-                                <div>
-                                    <div className="text-[10px] uppercase font-black tracking-[0.5em] text-sky-500 mb-2">Strategic Forecast</div>
-                                    <div className="text-6xl font-black text-white italic tracking-tighter leading-none flex items-center gap-4">
-                                        {topSignal.type === 'DIGITOVER' ? 'OVER' : topSignal.type === 'DIGITUNDER' ? 'UNDER' : topSignal.strategy.toUpperCase()}
-                                        <span className="text-sky-500 not-italic">{topSignal.barrier}</span>
-                                    </div>
-                                    <p className="text-lg text-slate-400 mt-4 font-medium leading-tight max-w-xl">{topSignal.description}</p>
-                                </div>
+                    <div className="flex flex-col gap-4 relative z-10">
+                        {signals.length > 0 ? (
+                            <AnimatePresence mode="popLayout">
+                                {signals.map((signal, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ x: -20, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        className={`p-6 rounded-[2rem] border transition-all duration-500 ${signal.entryStatus === 'Confirmed'
+                                            ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+                                            : 'bg-slate-950/40 border-slate-800'
+                                            }`}
+                                    >
+                                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <Badge className={`px-3 py-0.5 rounded-full text-[9px] font-black italic ${signal.entryStatus === 'Confirmed' ? 'bg-emerald-500' : 'bg-slate-800'}`}>
+                                                        {signal.strategy.toUpperCase()}
+                                                    </Badge>
+                                                    <span className="text-[10px] font-black text-sky-500/70 uppercase tracking-widest">{signal.type}</span>
+                                                </div>
+                                                <div className="text-3xl font-black text-white italic tracking-tighter">
+                                                    TARGET BARRIER: <span className="text-sky-500 not-italic ml-2">{signal.barrier}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-400 mt-2 font-medium">{signal.description}</p>
+                                            </div>
 
-                                <motion.div
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="flex items-center gap-4"
-                                >
-                                    {topSignal.entryStatus === 'Confirmed' ? (
-                                        <Button
-                                            onClick={() => tradeOnce(topSignal)}
-                                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white h-20 rounded-[2rem] text-xl font-black italic shadow-2xl shadow-emerald-500/20 transition-all"
-                                        >
-                                            <Target className="w-8 h-8 mr-4" /> INITIATE STRIKE
-                                        </Button>
-                                    ) : (
-                                        <div className="flex-1 h-20 rounded-[2rem] border-2 border-dashed border-slate-800 flex items-center justify-center gap-4 text-slate-500 font-black italic text-xl bg-slate-950/20">
-                                            <Lock className="w-6 h-6" /> LOCKING TARGET...
+                                            <div className="w-full md:w-auto flex items-center gap-4">
+                                                <div className="flex flex-col items-end px-4">
+                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Strength</span>
+                                                    <span className="text-xl font-mono font-black text-white">{signal.confidence}%</span>
+                                                </div>
+                                                <Button
+                                                    onClick={() => tradeOnce(signal)}
+                                                    disabled={signal.entryStatus !== 'Confirmed'}
+                                                    className={`h-16 px-8 rounded-2xl font-black italic shadow-xl transition-all ${signal.entryStatus === 'Confirmed'
+                                                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border-none'
+                                                        }`}
+                                                >
+                                                    {signal.entryStatus === 'Confirmed' ? (
+                                                        <><Zap className="w-5 h-5 mr-3" /> MANUAL STRIKE</>
+                                                    ) : (
+                                                        <><Lock className="w-5 h-5 mr-3" /> LOCKED</>
+                                                    )}
+                                                </Button>
+                                            </div>
                                         </div>
-                                    )}
-                                </motion.div>
-                            </motion.div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 gap-4">
                                 <motion.div
@@ -290,7 +309,7 @@ export default function SmartAdaptiveTradingTab() {
                                 >
                                     <Search className="w-12 h-12 text-slate-800" />
                                 </motion.div>
-                                <p className="text-slate-600 font-black italic tracking-widest uppercase">PROBING MARKET STRUCTURE</p>
+                                <p className="text-slate-600 font-black italic tracking-widest uppercase text-sm">Targeting structural resonance...</p>
                             </div>
                         )}
                     </div>
@@ -382,6 +401,21 @@ export default function SmartAdaptiveTradingTab() {
                                     className="bg-slate-950/80 border-slate-800 h-14 rounded-2xl font-mono font-black border-none text-center"
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Active Strategy Cluster</span>
+                            <Select value={selectedStrategy} onValueChange={setSelectedStrategy}>
+                                <SelectTrigger className="bg-slate-950/80 border-slate-800 h-14 rounded-2xl font-black text-xs italic">
+                                    <SelectValue placeholder="Select Strategy" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-900 border-slate-800">
+                                    <SelectItem value="All">All Intelligence</SelectItem>
+                                    <SelectItem value="OverUnder">Over/Under Reversion</SelectItem>
+                                    <SelectItem value="EvenOdd">Even/Odd Reversion</SelectItem>
+                                    <SelectItem value="Differs">Cluster Fading (Differs)</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div>
