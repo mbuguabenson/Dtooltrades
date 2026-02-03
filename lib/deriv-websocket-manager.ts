@@ -253,11 +253,19 @@ export class DerivWebSocketManager {
           const symbol = message.echo_req?.ticks || message.echo_req?.active_symbols;
           if (symbol && typeof symbol === 'string') {
             const subscriptionId = message.subscription.id;
-            console.log(`[v0] Recovered subscription ID for ${symbol}: ${subscriptionId} (from req_id ${req_id})`);
-            this.subscriptions.set(subscriptionId, symbol);
-            this.symbolToSubscriptionMap.set(symbol, subscriptionId);
-            if (!this.subscriptionRefCount.has(subscriptionId)) {
-              this.subscriptionRefCount.set(subscriptionId, 1);
+
+            // Deduplicate: If we already have a subscription for this symbol, kill the ghost
+            const existingId = this.symbolToSubscriptionMap.get(symbol);
+            if (existingId && existingId !== subscriptionId) {
+              console.log(`[v0] Killing redundant ghost subscription ${subscriptionId} for ${symbol}`);
+              this.send({ forget: subscriptionId, req_id: this.getNextReqId() });
+            } else {
+              console.log(`[v0] Recovered subscription ID for ${symbol}: ${subscriptionId} (from req_id ${req_id})`);
+              this.subscriptions.set(subscriptionId, symbol);
+              this.symbolToSubscriptionMap.set(symbol, subscriptionId);
+              if (!this.subscriptionRefCount.has(subscriptionId)) {
+                this.subscriptionRefCount.set(subscriptionId, 1);
+              }
             }
           }
         }
@@ -401,10 +409,14 @@ export class DerivWebSocketManager {
           const id = this.symbolToSubscriptionMap.get(symbol)
           if (id) {
             clearInterval(check)
+            // Fix: Must increment ref count even if we waited
+            const currentRef = this.subscriptionRefCount.get(id) || 0
+            this.subscriptionRefCount.set(id, currentRef + 1)
+            console.log(`[v0] Shared concurrent subscription for ${symbol}: ${id} (Refs: ${currentRef + 1})`)
             resolve(id)
           }
         }, 200)
-        setTimeout(() => { clearInterval(check); resolve("") }, 10000)
+        setTimeout(() => { clearInterval(check); resolve("") }, 15000)
       })
     }
 
@@ -427,6 +439,21 @@ export class DerivWebSocketManager {
 
         if (response.subscription?.id) {
           const subscriptionId = response.subscription.id
+
+          // Deduplicate retry: If a ghost arrived while we were waiting for this retry, use the ghost instead
+          const existingId = this.symbolToSubscriptionMap.get(symbol)
+          if (existingId && existingId !== subscriptionId) {
+            console.log(`[v0] Deduplicating retry. Already have ${existingId} for ${symbol}. Killing new sub ${subscriptionId}`);
+            this.send({ forget: subscriptionId, req_id: this.getNextReqId() });
+
+            // Increment ref count for the one we are keeping
+            const currentRef = this.subscriptionRefCount.get(existingId) || 0
+            this.subscriptionRefCount.set(existingId, currentRef + 1)
+
+            this.activeSubscriptions.delete(symbol)
+            return existingId
+          }
+
           this.subscriptions.set(subscriptionId, symbol)
           this.symbolToSubscriptionMap.set(symbol, subscriptionId)
           this.subscriptionRefCount.set(subscriptionId, 1)
@@ -501,6 +528,7 @@ export class DerivWebSocketManager {
     const currentRef = this.subscriptionRefCount.get(subscriptionId) || 1
     if (currentRef > 1) {
       this.subscriptionRefCount.set(subscriptionId, currentRef - 1)
+      console.log(`[v0] Released subscription reference for ${symbol} (Remaining: ${currentRef - 1})`)
       return
     }
 
