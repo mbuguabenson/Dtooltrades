@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Loader2 } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 
 interface LoadingStep {
   id: string
@@ -14,58 +13,53 @@ interface LoadingScreenProps {
   onComplete: () => void
 }
 
-// ... imports ...
-
 export function LoadingScreen({ onComplete }: LoadingScreenProps) {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  // ... state and useEffect (keep existing logic) ...
   const [steps, setSteps] = useState<LoadingStep[]>([
-    { id: "connect", label: "Connecting to Deriv API", status: "pending" },
-    { id: "markets", label: "Initializing market data", status: "pending" },
-    { id: "servers", label: "Setting up data from servers", status: "pending" },
-    { id: "account", label: "Connecting accounts", status: "pending" },
-    { id: "finalize", label: "Finalizing setup", status: "pending" },
+    { id: "connect", label: "Establishing Secure Link", status: "pending" },
+    { id: "markets", label: "Calibrating Market Feeds", status: "pending" },
+    { id: "analyze", label: "Initializing Quantum Analysis", status: "pending" },
+    { id: "account", label: "Verifying Credentials", status: "pending" },
+    { id: "finalize", label: "Launching Platform", status: "pending" },
   ])
 
   useEffect(() => {
     const loadingSequence = async () => {
       try {
-        console.log("[v0] LoadingScreen: Starting initialization sequence")
+        console.log("[v0] Loader: Quantum Sequence Initiated")
 
-        // Step 1: Connect to Deriv API (0-20%)
+        // Step 1: Secure Link
         setSteps((prev) => prev.map((s, i) => (i === 0 ? { ...s, status: "loading" } : s)))
-        await animateProgress(0, 20, 800)
+        await animateProgress(0, 25, 800)
         setSteps((prev) => prev.map((s, i) => (i === 0 ? { ...s, status: "complete" } : s)))
 
-        // Step 2: Initialize market data (20-40%)
+        // Step 2: Market Feeds
         setSteps((prev) => prev.map((s, i) => (i === 1 ? { ...s, status: "loading" } : s)))
-        await animateProgress(20, 40, 600)
+        await animateProgress(25, 45, 700)
         setSteps((prev) => prev.map((s, i) => (i === 1 ? { ...s, status: "complete" } : s)))
 
-        // Step 3: Setting up data from servers (40-65%)
+        // Step 3: Analysis
         setSteps((prev) => prev.map((s, i) => (i === 2 ? { ...s, status: "loading" } : s)))
-        await animateProgress(40, 65, 700)
+        await animateProgress(45, 70, 900)
         setSteps((prev) => prev.map((s, i) => (i === 2 ? { ...s, status: "complete" } : s)))
 
-        // Step 4: Connecting accounts (65-85%)
+        // Step 4: Verification
         setSteps((prev) => prev.map((s, i) => (i === 3 ? { ...s, status: "loading" } : s)))
-        await animateProgress(65, 85, 600)
+        await animateProgress(70, 90, 600)
         setSteps((prev) => prev.map((s, i) => (i === 3 ? { ...s, status: "complete" } : s)))
 
-        // Step 5: Finalizing setup (85-100%)
+        // Step 5: Finalize
         setSteps((prev) => prev.map((s, i) => (i === 4 ? { ...s, status: "loading" } : s)))
-        await animateProgress(85, 100, 500)
+        await animateProgress(90, 100, 500)
         setSteps((prev) => prev.map((s, i) => (i === 4 ? { ...s, status: "complete" } : s)))
 
-        // Wait a moment to show completion
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        console.log("[v0] LoadingScreen: Initialization complete, calling onComplete")
+        await new Promise((resolve) => setTimeout(resolve, 800))
         onComplete()
       } catch (err) {
-        console.error("[v0] LoadingScreen: Initialization error:", err)
-        setError(err instanceof Error ? err.message : "Failed to initialize application")
+        console.error("[v0] Loader Error:", err)
+        setError("Initialization Sequence Failed")
       }
     }
 
@@ -74,7 +68,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
   const animateProgress = (from: number, to: number, duration: number) => {
     return new Promise<void>((resolve) => {
-      const steps = 20
+      const steps = 30
       const increment = (to - from) / steps
       const delay = duration / steps
       let current = from
@@ -86,7 +80,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
           clearInterval(interval)
           resolve()
         } else {
-          setProgress(Math.round(current))
+          setProgress(current)
         }
       }, delay)
     })
@@ -94,129 +88,84 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0e17]">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-red-900/20 via-[#0a0e17] to-[#0a0e17]" />
-        <div className="w-full max-w-md px-6 relative z-10">
-          <div className="bg-[#111827]/80 backdrop-blur-md border border-red-500/30 rounded-2xl p-8 shadow-2xl shadow-red-500/10">
-            <div className="text-center mb-6">
-              <div className="text-5xl mb-4">⚠️</div>
-              <h2 className="text-2xl font-bold text-white mb-2">Initialization Failed</h2>
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full px-6 py-3 bg-linear-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-full font-semibold transition-all shadow-lg hover:shadow-red-500/25"
-            >
-              Retry Connection
-            </button>
-          </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505] text-white">
+        <div className="text-center p-8 border border-red-500/20 bg-red-950/10 rounded-xl backdrop-blur-xl">
+          <h2 className="text-2xl font-light mb-4 text-red-400">System Halted</h2>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded text-sm tracking-widest uppercase transition-all">
+            Reboot System
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050b14] overflow-hidden">
-      {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-blue-900/10 via-[#050b14] to-[#050b14]" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-[100px] animate-pulse delay-1000" />
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#020408] overflow-hidden">
+      {/* Ambient Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.03),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(168,85,247,0.03),transparent_60%)] animate-spin-slow" />
 
-      <div className="w-full max-w-xl px-6 relative z-10">
-        {/* Logo & Title */}
-        <div className="text-center mb-10">
-          <div className="relative inline-block mb-6 group">
-            <div className="absolute inset-0 bg-blue-500/30 rounded-full blur-xl animate-pulse group-hover:bg-blue-400/40 transition-all duration-500" />
-
-            {/* Fintech Logo: Abstract Graph Pulse */}
-            <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 drop-shadow-2xl">
-              <circle cx="50" cy="50" r="45" fill="url(#bg-grad)" stroke="url(#stroke-grad)" strokeWidth="2" />
-              <path d="M30 65 L45 50 L60 58 L75 35" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="animate-[dash_1.5s_ease-in-out_infinite]" />
-              <circle cx="75" cy="35" r="3" fill="white" className="animate-ping" />
-              <defs>
-                <linearGradient id="bg-grad" x1="0" y1="0" x2="100" y2="100">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#06b6d4" />
-                </linearGradient>
-                <linearGradient id="stroke-grad" x1="0" y1="0" x2="100" y2="100">
-                  <stop offset="0%" stopColor="#60a5fa" />
-                  <stop offset="100%" stopColor="#22d3ee" />
-                </linearGradient>
-              </defs>
-            </svg>
+      <div className="relative z-10 w-full max-w-sm px-6">
+        {/* Quantum Core Logo */}
+        <div className="flex justify-center mb-12 relative">
+          <div className="absolute inset-0 bg-blue-500/20 blur-[60px] rounded-full animate-pulse" />
+          <div className="w-24 h-24 relative">
+            <div className="absolute inset-0 border-t border-b border-blue-500/30 rounded-full animate-spin-slow" />
+            <div className="absolute inset-2 border-l border-r border-cyan-400/30 rounded-full animate-spin-reverse-slow" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_20px_white] animate-pulse" />
+            </div>
+            {/* Orbital Rings */}
+            <div className="absolute inset-[-10px] border border-blue-500/10 rounded-full animate-ping-slow" />
           </div>
+        </div>
 
-          <h1 className="text-5xl font-bold mb-3 tracking-tight">
-            <span className="bg-linear-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              Profit Hub
-            </span>
+        {/* Title */}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-light tracking-[0.2em] text-white mb-2">
+            PROFIT<span className="font-bold text-blue-400">HUB</span>
           </h1>
-          <p className="text-slate-400 text-lg font-light tracking-wide mb-1">
-            Advanced Trading Intelligence
+          <p className="text-[10px] uppercase tracking-[0.4em] text-gray-500">
+            Quantum Trading Interface
           </p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="space-y-4 mb-10">
-          <div className="relative h-2 bg-slate-800/50 rounded-full overflow-hidden backdrop-blur-sm border border-slate-700/30">
+        {/* Progress Bar - Minimal */}
+        <div className="mb-8">
+          <div className="flex justify-between text-[10px] uppercase tracking-widest text-gray-400 mb-2">
+            <span>System Integrity</span>
+            <span className="text-blue-400">{Math.round(progress)}%</span>
+          </div>
+          <div className="h-[2px] w-full bg-gray-800 rounded-full overflow-hidden">
             <div
-              className="absolute inset-0 bg-linear-to-r from-blue-600 via-cyan-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(34,211,238,0.5)]"
+              className="h-full bg-linear-to-r from-blue-600 via-cyan-400 to-white transition-all duration-300 ease-out shadow-[0_0_10px_rgba(34,211,238,0.5)]"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-cyan-400 font-medium animate-pulse">Initializing...</span>
-            <span className="text-slate-300 font-mono">{progress}%</span>
-          </div>
         </div>
 
-        {/* Loading Steps */}
-        <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/50 rounded-2xl p-6 shadow-xl mb-6">
-          <div className="space-y-4">
-            {steps.map((step) => (
-              <div
-                key={step.id}
-                className={`flex items-center gap-4 transition-all duration-300 ${step.status === "loading"
-                    ? "opacity-100 translate-x-2"
-                    : step.status === "complete"
-                      ? "opacity-60"
-                      : "opacity-40"
-                  }`}
-              >
-                <div className="shrink-0 w-6 h-6 flex items-center justify-center">
-                  {step.status === "complete" ? (
-                    <div className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/50">
-                      <CheckCircle2 className="w-3 h-3" />
-                    </div>
-                  ) : step.status === "loading" ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-t-cyan-400 border-r-transparent border-b-cyan-400/30 border-l-transparent animate-spin" />
-                  ) : (
-                    <div className="w-2 h-2 rounded-full bg-slate-600" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p
-                    className={`text-sm font-medium ${step.status === "loading"
-                        ? "text-cyan-300"
-                        : step.status === "complete"
-                          ? "text-slate-400"
-                          : "text-slate-600"
-                      }`}
-                  >
-                    {step.label}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Steps */}
+        <div className="space-y-3">
+          {steps.map((step) => (
+            <div key={step.id} className="flex items-center gap-3">
+              <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${step.status === "complete" ? "bg-cyan-400 shadow-[0_0_8px_cyan]" :
+                  step.status === "loading" ? "bg-blue-500 animate-pulse" : "bg-gray-800"
+                }`} />
+              <span className={`text-[10px] uppercase tracking-wider transition-colors duration-300 ${step.status === "complete" ? "text-gray-400" :
+                  step.status === "loading" ? "text-blue-300" : "text-gray-700"
+                }`}>
+                {step.label}
+              </span>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Footer */}
-        <div className="text-center">
-          <p className="text-[10px] text-slate-600 uppercase tracking-widest">
-            Secure Connection • Encrypted Data
-          </p>
-        </div>
+      <div className="absolute bottom-8 left-0 right-0 text-center">
+        <p className="text-[9px] text-gray-700 uppercase tracking-[0.3em]">
+          Encrypted End-to-End
+        </p>
       </div>
     </div>
   )

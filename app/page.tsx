@@ -153,154 +153,68 @@ export default function DerivAnalysisApp() {
       className={`min-h-screen overflow-x-hidden ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
     >
       <header
-        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${theme === "dark"
-          ? "glass-fintech border-blue-500/10 bg-[#0a1128]/80"
-          : "bg-white/90 border-gray-200"
-          } backdrop-blur-xl`}
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ${theme === "dark"
+          ? "bg-[#050505]/80 border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+          : "bg-white/90 border-b border-gray-200"
+          } backdrop-blur-2xl`}
       >
-        <div className="mx-auto w-full px-3 sm:px-6 lg:px-8">
-          <div className="flex h-14 sm:h-20 items-center justify-between gap-2 sm:gap-4">
-            {/* Left: Logo & Home */}
-            <div className="flex items-center gap-3 sm:gap-6">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-linear-to-r from-cyan-500 to-blue-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${theme === "dark"
-                    ? "bg-[#0f172a] text-blue-400 border border-blue-500/20 hover:border-blue-400/50"
-                    : "bg-white text-blue-600 border border-gray-200 hover:border-blue-300"
-                    }`}
-                >
-                  <Home className="h-5 w-5" />
-                </Button>
-              </div>
-
-              <div className="flex flex-col">
-                <h1 className={`text-base sm:text-2xl font-black tracking-tight flex items-center gap-1.5 sm:gap-2 ${theme === "dark"
-                  ? "bg-linear-to-r from-cyan-400 via-emerald-400 to-blue-500 bg-clip-text text-transparent animate-pulse"
-                  : "text-slate-900"
-                  }`}>
-                  <span className="text-xl sm:text-2xl">💎</span>
-                  <span className="hidden xs:inline">Profit Hub</span>
-                </h1>
-                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] hidden sm:block ${theme === "dark" ? "text-blue-400/60" : "text-slate-500"}`}>
-                  Advanced Trading Terminal
-                </span>
+        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            {/* Left: Premium Brand */}
+            <div className="flex items-center gap-4">
+              <div className="relative group cursor-pointer">
+                <div className="absolute -inset-2 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-linear-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <span className="text-white font-bold text-lg">P</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <h1 className={`text-xl font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                      PROFIT<span className="text-blue-500">HUB</span>
+                    </h1>
+                    <span className="text-[9px] uppercase tracking-[0.3em] text-gray-500 font-medium">
+                      Quantum Terminal
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Right: Controls & Info */}
-            <div className="flex items-center gap-2 sm:gap-4 flex-nowrap">
-              {/* Desktop Only Area */}
-              <div className="hidden lg:flex items-center gap-4">
-                <Button
-                  asChild
-                  className={`relative group px-5 py-2 overflow-hidden rounded-xl font-bold transition-all duration-300 ${theme === "dark"
-                    ? "bg-slate-900 text-white border border-red-500/50 hover:border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                    : "bg-red-600 text-white hover:bg-red-700"
-                    }`}
-                >
-                  <a
-                    href="https://track.deriv.com/_1mHiO0UpCX6NhxmBqQyZL2Nd7ZgqdRLk/1/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    <div className="absolute inset-0 bg-linear-to-r from-red-500 to-rose-600 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                    <span className="relative z-10 flex items-center gap-2">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
-                      </svg>
-                      Real Account
+            {/* Right: Modern Controls */}
+            <div className="flex items-center gap-3 sm:gap-6">
+              {/* Desktop Ticker/Stats - Minimal */}
+              <div className="hidden lg:flex items-center gap-4 mr-4">
+                <div className={`flex items-center gap-3 px-4 py-1.5 rounded-full border ${theme === "dark" ? "bg-white/5 border-white/10" : "bg-gray-100 border-gray-200"}`}>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Market</span>
+                    <span className={`text-xs font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                      {symbol.replace("1HZ", "").replace("R_", "Vol_")}
                     </span>
-                  </a>
-                </Button>
-
-                <div className={`h-10 w-px ${theme === "dark" ? "bg-blue-500/20" : "bg-gray-200"}`}></div>
+                  </div>
+                  <div className={`w-px h-6 ${theme === "dark" ? "bg-white/10" : "bg-gray-300"}`} />
+                  <div className="flex flex-col items-start min-w-[60px]">
+                    <span className="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Price</span>
+                    <span className={`text-sm font-bold tabular-nums ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+                      {currentPrice?.toFixed(2) || "---"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <DerivAuth theme={theme} />
-
               <div className="flex items-center gap-2">
-                {/* Market Module - Now in Ticker on mobile/desktop */}
-                <div className="hidden lg:flex items-center">
-                  {availableSymbols.length > 0 ? (
-                    <MarketSelector
-                      symbols={availableSymbols}
-                      currentSymbol={symbol}
-                      onSymbolChange={changeSymbol}
-                      theme={theme}
-                    />
-                  ) : (
-                    <div className="animate-pulse h-9 w-32 sm:w-40 rounded-lg bg-blue-500/10 border border-blue-500/20" />
-                  )}
-                </div>
+                <DerivAuth theme={theme} />
 
-                {/* Info Cards - Hidden on Mobile to reduce clutter (LiveTicker shows them) */}
-                <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
-                  {/* Price Card */}
-                  <div className={`px-2.5 sm:px-4 py-1.5 rounded-xl border transition-all duration-300 ${theme === "dark"
-                    ? "bg-blue-500/5 border-blue-500/20 hover:border-blue-400 group shadow-[0_0_15px_rgba(59,130,246,0.1)]"
-                    : "bg-blue-50 border-blue-200"
-                    }`}>
-                    <div className="flex flex-col items-center sm:items-start min-w-[60px] sm:min-w-[100px]">
-                      <span className={`text-[9px] font-bold uppercase tracking-wider ${theme === "dark" ? "text-blue-400/70" : "text-blue-600"}`}>
-                        Live Price
-                      </span>
-                      <span className={`text-xs sm:text-sm font-black tabular-nums ${theme === "dark" ? "text-white" : "text-blue-900"}`}>
-                        {currentPrice?.toFixed(5) || "-----.--"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Digit Card */}
-                  <div className={`px-2.5 sm:px-3 py-1.5 rounded-xl border transition-all duration-300 ${theme === "dark"
-                    ? "bg-orange-500/5 border-orange-500/20 hover:border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.1)]"
-                    : "bg-orange-50 border-orange-200"
-                    }`}>
-                    <div className="flex flex-col items-center">
-                      <span className={`text-[9px] font-bold uppercase tracking-wider ${theme === "dark" ? "text-orange-400/70" : "text-orange-600"}`}>
-                        Digit
-                      </span>
-                      <span className={`text-xs sm:text-sm font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"} animate-pulse`}>
-                        {currentDigit !== null ? currentDigit : "0"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleTheme}
-                    className={`h-9 w-9 rounded-xl transition-all ${theme === "dark"
-                      ? "text-yellow-400 hover:bg-yellow-400/10"
-                      : "text-indigo-600 hover:bg-indigo-50"
-                      }`}
-                  >
-                    {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                  </Button>
-
-                  {connectionStatus === "connected" ? (
-                    <div className="relative flex items-center justify-center">
-                      <div className="absolute h-3 w-3 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
-                      <Badge className="relative z-10 bg-emerald-500/20 text-emerald-400 border-emerald-500/30 font-bold px-2 py-0.5 h-6">
-                        <span className="hidden sm:inline text-[10px] uppercase">Stable</span>
-                        <span className="sm:hidden">●</span>
-                      </Badge>
-                    </div>
-                  ) : (
-                    <Badge variant="outline" className={`animate-pulse px-2 py-0.5 h-6 ${connectionStatus === "reconnecting"
-                      ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10"
-                      : "border-red-500/50 text-red-400 bg-red-500/10"
-                      }`}>
-                      <span className="text-[10px] uppercase">{connectionStatus}</span>
-                    </Badge>
-                  )}
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className={`h-9 w-9 rounded-full transition-all ${theme === "dark"
+                    ? "bg-white/5 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-300"
+                    : "bg-gray-100 text-indigo-600 hover:bg-indigo-50"
+                    }`}
+                >
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
               </div>
             </div>
           </div>
@@ -705,54 +619,30 @@ export default function DerivAnalysisApp() {
       </Tabs>
 
       <footer
-        className={`border-t ${theme === "dark" ? "border-blue-500/20 bg-[#0a0e27]/80" : "border-gray-200 bg-white/80"} backdrop-blur-md mt-6 sm:mt-8 glow-soft-blue`}
+        className={`border-t mt-4 py-4 transition-all duration-300 ${theme === "dark"
+          ? "bg-[#050505] border-white/5"
+          : "bg-white border-gray-100"
+          }`}
       >
-        <div className="w-full px-2 sm:px-3 md:px-4 py-4 sm:py-6 md:py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
-            <div className="text-center md:text-left">
-              <h3
-                className={`text-base sm:text-lg md:text-2xl font-bold mb-1 sm:mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
-              >
-                💰 Profit Hub
-              </h3>
-              <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                Advanced AI-Powered Trading Bot Simulator for Deriv Markets
-              </p>
+        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className={`font-bold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                PROFIT<span className="text-blue-500">HUB</span>
+              </span>
+              <span className="text-gray-500">•</span>
+              <span className="text-gray-500">Quantum Trading Terminal</span>
             </div>
-            <div className="text-center">
-              <h3
-                className={`text-base sm:text-lg font-bold mb-1 sm:mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
-              >
-                Contact Us
-              </h3>
-              <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                Email: mbuguabenson2020@gmail.com
-              </p>
-              <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                WhatsApp: +254757722344
-              </p>
+
+            <div className="flex items-center gap-4 text-gray-500">
+              <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-blue-500 transition-colors">Terms</a>
+              <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
             </div>
-            <div className="text-center md:text-right">
-              <h3
-                className={`text-base sm:text-lg font-bold mb-1 sm:mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
-              >
-                Follow Us
-              </h3>
-              <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}>
-                Twitter | Telegram
-              </p>
+
+            <div className="text-gray-600">
+              © 2026 Profit Hub. All rights reserved.
             </div>
-          </div>
-          <div
-            className="text-center border-t pt-3 sm:pt-4"
-            style={{ borderColor: theme === "dark" ? "rgba(59, 130, 246, 0.2)" : "rgba(229, 231, 235, 1)" }}
-          >
-            <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-              © 2025 Profit Hub. All rights reserved.
-            </p>
-            <p className={`text-xs mt-1 ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}>
-              Trading involves risk. Use signals responsibly.
-            </p>
           </div>
         </div>
       </footer>
