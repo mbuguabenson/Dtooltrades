@@ -37,11 +37,10 @@ export function useSmartAdaptiveTrading() {
             intelligenceRef.current = SmartIntelligenceEngine.getInstance()
         }
 
-        if (!tradingRef.current) {
-            tradingRef.current = new TradingManager(apiClient)
-        }
+        // Always sync the trading manager with the current apiClient
+        tradingRef.current = new TradingManager(apiClient)
 
-        addLog("System initialized. Multi-market intelligence active.", "system")
+        addLog("System synchronized. Multi-market intelligence active.", "system")
 
         if (!isScanningRef.current) {
             intelligenceRef.current.startScanning()

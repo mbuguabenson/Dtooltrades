@@ -74,7 +74,9 @@ export class DerivRealTrader extends EventEmitter {
         proposalRequest.barrier = config.barrier
       }
 
+      console.log("[v0] 📡 Requesting proposal:", proposalRequest)
       const proposal = await this.apiClient.getProposal(proposalRequest)
+      console.log("[v0] ✅ Proposal received:", proposal.id)
 
       console.log("[v0] Proposal received:", {
         id: proposal.id,
@@ -83,7 +85,9 @@ export class DerivRealTrader extends EventEmitter {
         spot: proposal.spot,
       })
 
+      console.log("[v0] 🛒 Buying contract for proposal:", proposal.id)
       const buyResponse = await this.apiClient.buyContract(proposal.id, proposal.ask_price)
+      console.log("[v0] ✅ Contract bought:", buyResponse.contract_id)
 
       console.log("[v0] Contract bought:", {
         contractId: buyResponse.contract_id,

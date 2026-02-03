@@ -129,22 +129,24 @@ export class DerivAPIClient {
 
   private handleMessage(response: any) {
     // Only handle errors if they belong to a request we sent
-    if (response.error && response.req_id && this.pendingRequests.has(response.req_id)) {
+    const req_id = response.req_id ? Number(response.req_id) : null
+
+    if (response.error && req_id && this.pendingRequests.has(req_id)) {
       if (this.onErrorCallback) {
         this.onErrorCallback(response.error)
       }
 
-      const promise = this.pendingRequests.get(response.req_id)!
+      const promise = this.pendingRequests.get(req_id)!
       promise.reject(response.error)
-      this.pendingRequests.delete(response.req_id)
+      this.pendingRequests.delete(req_id)
       return
     }
 
     // Success response for a pending request
-    if (response.req_id && this.pendingRequests.has(response.req_id)) {
-      const promise = this.pendingRequests.get(response.req_id)!
+    if (req_id && this.pendingRequests.has(req_id)) {
+      const promise = this.pendingRequests.get(req_id)!
       promise.resolve(response)
-      this.pendingRequests.delete(response.req_id)
+      this.pendingRequests.delete(req_id)
     }
 
     // Subscription updates (these often don't have req_id after the first message)
@@ -264,12 +266,21 @@ export class DerivAPIClient {
   }
 
   async buyContract(proposalId: string, askPrice?: number): Promise<BuyResponse> {
+    console.log("[v0] 🛒 buying contract:", proposalId, "at price:", askPrice)
     const buyRequest: any = { buy: proposalId }
     if (askPrice !== undefined && isFinite(askPrice)) {
       buyRequest.price = askPrice
     }
-    const response = await this.send(buyRequest)
-    return response.buy
+    try {
+      const response = await this.send(buyRequest)
+      if (response.error) {
+        throw new Error(response.error.message || "Buy request failed")
+      }
+      return response.buy
+    } catch (err) {
+      console.error("[v0] ❌ Buy execution failed:", err)
+      throw err
+    }
   }
 
   async subscribeBalance(callback: (balance: number, currency: string) => void): Promise<string> {
