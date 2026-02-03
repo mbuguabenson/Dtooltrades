@@ -338,30 +338,17 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
     if (analysis.status === "WAIT") {
       addAnalysisLog(`Strategy Status: WAIT - ${analysis.description}`, "warning")
-      addAnalysisLog("Restarting analysis in 5 seconds...", "info")
-
-      // Stop current timers but keep "isRunning" true
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-
-      // Restart analysis after delay
-      setTimeout(() => {
-        if (isRunning) { // Check if user hasn't stopped it manually
-          handleStartAnalysis()
-        }
-      }, 5000)
+      // Keep running but don't enter trade loop yet
+      // Just restart analysis for next cycle or wait
+      setIsRunning(false)
+      setStatus("idle")
       return
     }
 
     if (!analysis.signal || analysis.status === "NEUTRAL") {
-      addAnalysisLog(`Power ${analysis.power.toFixed(1)}% below threshold. Restarting analysis...`, "warning")
-
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-
-      setTimeout(() => {
-        if (isRunning) {
-          handleStartAnalysis()
-        }
-      }, 5000)
+      addAnalysisLog(`Power ${analysis.power.toFixed(1)}% below threshold. Stopping.`, "warning")
+      setIsRunning(false)
+      setStatus("idle")
       return
     }
 
