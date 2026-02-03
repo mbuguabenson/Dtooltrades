@@ -660,14 +660,20 @@ export class DerivWebSocketManager {
   public static subscribe(symbol: string, callback: (data: TickData) => void): () => void {
     const instance = DerivWebSocketManager.getInstance()
     let subscriptionId: string | null = null
+    let isCancelled = false
 
     instance
       .subscribeTicks(symbol, callback)
       .then((id: string) => {
+        if (isCancelled) {
+          if (id) instance.unsubscribe(id, callback)
+          return
+        }
         subscriptionId = id
       })
 
     return () => {
+      isCancelled = true
       if (subscriptionId) {
         instance.unsubscribe(subscriptionId, callback)
       }
