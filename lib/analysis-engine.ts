@@ -31,14 +31,14 @@ export interface AnalysisResult {
 
 export interface Signal {
   type:
-    | "even_odd"
-    | "over_under"
-    | "matches"
-    | "differs"
-    | "rise_fall"
-    | "pro_even_odd"
-    | "pro_over_under"
-    | "pro_differs"
+  | "even_odd"
+  | "over_under"
+  | "matches"
+  | "differs"
+  | "rise_fall"
+  | "pro_even_odd"
+  | "pro_over_under"
+  | "pro_differs"
   status: "TRADE NOW" | "WAIT" | "NEUTRAL"
   probability: number
   recommendation: string
@@ -85,7 +85,7 @@ export class AnalysisEngine {
     this.digitCounts.set(lastDigit, count + 1)
   }
 
-  private extractLastDigit(quote: number, pipSize = 2): number {
+  public extractLastDigit(quote: number, pipSize = 2): number {
     // Format with pip_size decimal places, then extract last character
     const formatted = quote.toFixed(pipSize)
     const lastChar = formatted.charAt(formatted.length - 1)

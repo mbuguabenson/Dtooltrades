@@ -12,7 +12,7 @@ import { DerivRealTrader } from "@/lib/deriv-real-trader"
 import { EvenOddStrategy } from "@/lib/even-odd-strategy"
 import { TradingJournal } from "@/lib/trading-journal"
 import { TradeResultModal } from "@/components/modals/trade-result-modal"
-import { TradingStrategies } from "@/lib/trading-strategies"
+import { AnalysisEngine, type Signal, type AnalysisResult } from "@/lib/analysis-engine"
 import { TradingStatsPanel } from "@/components/trading-stats-panel"
 import { TransactionHistory } from "@/components/transaction-history"
 import { TradingJournalPanel } from "@/components/trading-journal-panel"
@@ -61,7 +61,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   const [ticksForEntry, setTicksForEntry] = useState("36000")
   const [strategies] = useState<string[]>(["Even/Odd", "Over/Under", "Differs", "Matches"])
   const [selectedStrategy, setSelectedStrategy] = useState("Even/Odd")
-  const strategiesRef = useRef<TradingStrategies>(new TradingStrategies())
+  const strategiesRef = useRef<AnalysisEngine>(new AnalysisEngine())
 
   const [martingaleRatios, setMartingaleRatios] = useState<Record<string, number>>({
     "Even/Odd": 2.0,
@@ -169,9 +169,19 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
         tickSubscriptionId = await apiClient.subscribeTicks(market, (tick) => {
           setMarketPrice(tick.quote)
 
-          // Extract last digit properly - handles zero correctly
-          const lastDigitValue = Math.floor(tick.quote * 10) % 10
-          setLastDigit(lastDigitValue >= 0 ? lastDigitValue : 0)
+          // Feed the analysis engine
+          if (strategiesRef.current) {
+            strategiesRef.current.addTick({
+              epoch: tick.epoch,
+              quote: tick.quote,
+              symbol: market,
+              pipSize: 2
+            })
+          }
+
+          // Extract last digit properly using unified engine logic
+          const lastDigitValue = strategiesRef.current.extractLastDigit(tick.quote)
+          setLastDigit(lastDigitValue)
 
           // Process through SmartAuto24 engine
           if (isRunning) {
@@ -299,28 +309,82 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
     setStatus("trading")
     addAnalysisLog("Analysis complete! Analyzing with selected strategy...", "success")
 
-    const recentDigits: number[] = []
-    for (let i = 0; i < 10; i++) {
-      for (let j = 0; j < digitFrequencies[i]; j++) {
-        recentDigits.push(i)
-      }
-    }
+    // Generate signals using the unified AnalysisEngine
+    const signals = strategiesRef.current.generateSignals()
+    const currentAnalysis = strategiesRef.current.getAnalysis()
 
     let analysis: any = null
+
     if (selectedStrategy === "Differs") {
-      analysis = await analyzeDiffersStrategy(recentDigits)
-      if (!analysis) {
+      const signal = signals.find(s => s.type === "differs")
+      if (!signal || signal.status === "NEUTRAL") {
         addAnalysisLog("Differs strategy: No suitable digit found. Stopping.", "warning")
         setIsRunning(false)
         setStatus("idle")
         return
       }
+      analysis = {
+        signal: "DIFFERS",
+        power: signal.probability,
+        confidence: signal.probability,
+        description: signal.recommendation,
+        status: signal.status
+      }
+      if (signal.targetDigit !== undefined) {
+        setDiffersSelectedDigit(signal.targetDigit)
+      }
     } else if (selectedStrategy === "Even/Odd") {
-      analysis = strategiesRef.current!.analyzeEvenOdd(recentDigits)
-    } else if (selectedStrategy === "Over 3/Under 6") {
-      analysis = strategiesRef.current!.analyzeOver3Under6(recentDigits)
-    } else if (selectedStrategy === "Over 2/Under 7") {
-      analysis = strategiesRef.current!.analyzeOver2Under7(recentDigits)
+      const signal = signals.find(s => s.type === "even_odd")
+      if (!signal || signal.status === "NEUTRAL") {
+        addAnalysisLog("Even/Odd strategy: No clear signal. Stopping.", "warning")
+        setIsRunning(false)
+        setStatus("idle")
+        return
+      }
+      analysis = {
+        signal: currentAnalysis.evenPercentage > currentAnalysis.oddPercentage ? "EVEN" : "ODD",
+        power: signal.probability,
+        confidence: signal.probability,
+        description: signal.recommendation,
+        status: signal.status
+      }
+    } else if (selectedStrategy === "Over/Under") {
+      const signal = signals.find(s => s.type === "over_under")
+      if (!signal || signal.status === "NEUTRAL") {
+        addAnalysisLog("Over/Under strategy: No clear signal. Stopping.", "warning")
+        setIsRunning(false)
+        setStatus("idle")
+        return
+      }
+      analysis = {
+        signal: currentAnalysis.highPercentage > currentAnalysis.lowPercentage ? "OVER" : "UNDER",
+        power: signal.probability,
+        confidence: signal.probability,
+        description: signal.recommendation,
+        status: signal.status
+      }
+    } else if (selectedStrategy === "Matches") {
+      const signal = signals.find(s => s.type === "matches")
+      if (!signal || signal.status === "NEUTRAL") {
+        addAnalysisLog("Matches strategy: No clear signal. Stopping.", "warning")
+        setIsRunning(false)
+        setStatus("idle")
+        return
+      }
+      analysis = {
+        signal: "MATCHES",
+        power: signal.probability,
+        confidence: signal.probability,
+        description: signal.recommendation,
+        status: signal.status
+      }
+    }
+
+    if (!analysis) {
+      addAnalysisLog(`${selectedStrategy} strategy: Failed to generate analysis. Stopping.`, "warning")
+      setIsRunning(false)
+      setStatus("idle")
+      return
     }
 
     setAnalysisData({
@@ -329,7 +393,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
       signal: analysis.signal,
       confidence: analysis.confidence,
       description: analysis.description,
-      status: analysis.status, // Pass status to UI
+      status: analysis.status,
       digitFrequencies,
       ticksCollected,
       differsDigit: selectedStrategy === "Differs" ? differsSelectedDigit : undefined,
@@ -338,15 +402,6 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
     if (analysis.status === "WAIT") {
       addAnalysisLog(`Strategy Status: WAIT - ${analysis.description}`, "warning")
-      // Keep running but don't enter trade loop yet
-      // Just restart analysis for next cycle or wait
-      setIsRunning(false)
-      setStatus("idle")
-      return
-    }
-
-    if (!analysis.signal || analysis.status === "NEUTRAL") {
-      addAnalysisLog(`Power ${analysis.power.toFixed(1)}% below threshold. Stopping.`, "warning")
       setIsRunning(false)
       setStatus("idle")
       return
@@ -359,7 +414,6 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
       setDiffersTicksSinceAppearance(0)
       addAnalysisLog(`Waiting for digit ${differsSelectedDigit} to appear, then watching next 3 ticks...`, "info")
 
-      // Monitor for entry condition
       const checkEntryInterval = setInterval(() => {
         if (differsTicksSinceAppearance >= 3) {
           clearInterval(checkEntryInterval)
@@ -379,73 +433,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
     executeTrades(analysis)
   }
 
-  const analyzeDiffersStrategy = async (recentDigits: number[]) => {
-    const total = recentDigits.length
-    const frequencies = Array(10).fill(0)
-
-    recentDigits.forEach((d) => frequencies[d]++)
-
-    // Calculate percentages
-    const percentages = frequencies.map((f) => (f / total) * 100)
-
-    // Find most and least appearing
-    const maxFreq = Math.max(...frequencies)
-    const minFreq = Math.min(...frequencies)
-    const mostAppearing = frequencies.indexOf(maxFreq)
-    const leastAppearing = frequencies.indexOf(minFreq)
-
-    // Find suitable digit (2-7, not most/least, <10% power, decreasing)
-    let selectedDigit: number | null = null
-    let selectedPower = 0
-
-    for (let digit = 2; digit <= 7; digit++) {
-      const power = percentages[digit]
-
-      // Skip if most or least appearing
-      if (digit === mostAppearing || digit === leastAppearing) continue
-
-      // Must have less than 10% power
-      if (power >= 10) continue
-
-      // Check if decreasing (compare last 20% of data vs first 80%)
-      const splitPoint = Math.floor(recentDigits.length * 0.8)
-      const firstPart = recentDigits.slice(0, splitPoint).filter((d) => d === digit).length
-      const lastPart = recentDigits.slice(splitPoint).filter((d) => d === digit).length
-
-      const firstPartPercent = (firstPart / splitPoint) * 100
-      const lastPartPercent = (lastPart / (recentDigits.length - splitPoint)) * 100
-
-      // Must be decreasing (last part < first part)
-      if (lastPartPercent >= firstPartPercent) continue
-
-      // Found suitable digit
-      selectedDigit = digit
-      selectedPower = power
-      break
-    }
-
-    if (selectedDigit === null) {
-      return null
-    }
-
-    setDiffersSelectedDigit(selectedDigit)
-
-    addAnalysisLog(
-      `Selected digit ${selectedDigit} with ${selectedPower.toFixed(1)}% power (decreasing trend)`,
-      "success",
-    )
-
-    return {
-      signal: "DIFFERS",
-      power: 100 - selectedPower, // Invert power (lower frequency = higher power for differs)
-      confidence: 75,
-      description: `Differs strategy targeting digit ${selectedDigit} with ${selectedPower.toFixed(1)}% appearance rate (decreasing).`,
-    }
-  }
-
   const startDiffersTrades = (analysis: any) => {
     executeTrades(analysis)
   }
+
 
   const executeTrades = (analysis: any) => {
     let tradesExecuted = 0
@@ -478,7 +469,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
           } else {
             return // Wait for entry point
           }
-        } else if (selectedStrategy === "Over 3/Under 6" || selectedStrategy === "Over 2/Under 7") {
+        } else if (selectedStrategy === "Over/Under") {
           entryPointMet = true // Entry point logic simplified for now
         } else if (selectedStrategy === "Differs") {
           if (differsTicksSinceAppearance >= 3) {
@@ -501,21 +492,14 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
           barrier = differsSelectedDigit.toString()
         } else if (selectedStrategy === "Even/Odd") {
           contractType = analysis.signal === "EVEN" ? "DIGITEVEN" : "DIGITODD"
-        } else if (selectedStrategy === "Over 3/Under 6") {
-          if (analysis.signal === "OVER" || analysis.signal.includes("OVER")) {
-            contractType = "DIGITOVER"
-            barrier = "3"
+        } else if (selectedStrategy === "Over/Under") {
+          const isOver = analysis.signal === "OVER" || analysis.signal.includes("OVER")
+          contractType = isOver ? "DIGITOVER" : "DIGITUNDER"
+          // Use barriers from engine if possible, otherwise defaults
+          if (isOver) {
+            barrier = analysis.description.includes("Over 3") ? "3" : "2"
           } else {
-            contractType = "DIGITUNDER"
-            barrier = "6"
-          }
-        } else if (selectedStrategy === "Over 2/Under 7") {
-          if (analysis.signal === "OVER" || analysis.signal.includes("OVER")) {
-            contractType = "DIGITOVER"
-            barrier = "2"
-          } else {
-            contractType = "DIGITUNDER"
-            barrier = "7"
+            barrier = analysis.description.includes("Under 6") ? "6" : "7"
           }
         } else {
           contractType = analysis.signal === "BUY" ? "CALL" : "PUT"

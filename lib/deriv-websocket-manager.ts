@@ -297,7 +297,7 @@ export class DerivWebSocketManager {
   /**
    * Send a message and wait for its specific response using req_id
    */
-  public async sendAndWait(message: any, timeoutMs = 15000): Promise<any> {
+  public async sendAndWait(message: any, timeoutMs = 30000): Promise<any> {
     const req_id = message.req_id || this.getNextReqId();
     const payload = { ...message, req_id };
 
