@@ -338,17 +338,30 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
     if (analysis.status === "WAIT") {
       addAnalysisLog(`Strategy Status: WAIT - ${analysis.description}`, "warning")
-      // Keep running but don't enter trade loop yet
-      // Just restart analysis for next cycle or wait
-      setIsRunning(false)
-      setStatus("idle")
+      addAnalysisLog("Restarting analysis in 5 seconds...", "info")
+
+      // Stop current timers but keep "isRunning" true
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+
+      // Restart analysis after delay
+      setTimeout(() => {
+        if (isRunning) { // Check if user hasn't stopped it manually
+          handleStartAnalysis()
+        }
+      }, 5000)
       return
     }
 
     if (!analysis.signal || analysis.status === "NEUTRAL") {
-      addAnalysisLog(`Power ${analysis.power.toFixed(1)}% below threshold. Stopping.`, "warning")
-      setIsRunning(false)
-      setStatus("idle")
+      addAnalysisLog(`Power ${analysis.power.toFixed(1)}% below threshold. Restarting analysis...`, "warning")
+
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+
+      setTimeout(() => {
+        if (isRunning) {
+          handleStartAnalysis()
+        }
+      }, 5000)
       return
     }
 
@@ -763,8 +776,8 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Signal</div>
                   <div
                     className={`text-2xl font-bold ${analysisData.status === "WAIT"
-                        ? (theme === "dark" ? "text-yellow-400" : "text-yellow-600")
-                        : (theme === "dark" ? "text-green-400" : "text-green-600")
+                      ? (theme === "dark" ? "text-yellow-400" : "text-yellow-600")
+                      : (theme === "dark" ? "text-green-400" : "text-green-600")
                       }`}
                   >
                     {analysisData.status === "WAIT" ? "WAIT" : analysisData.signal}

@@ -106,6 +106,8 @@ export class AutoBot {
     }
   }
 
+  private tickSubscriptionId: string | null = null
+
   // Start the bot
   async start(onStateUpdate: (state: AutoBotState) => void) {
     if (this.state.isRunning) return
@@ -125,6 +127,12 @@ export class AutoBot {
       // Fetch initial tick history
       await this.fetchTickHistory()
 
+      // Subscribe to real-time ticks
+      this.tickSubscriptionId = await this.api.subscribeTicks(this.config.symbol, (tick) => {
+        this.processTick(tick)
+      })
+      console.log(`[v0] ✅ Subscribed to ticks for ${this.config.symbol}`)
+
       // Start continuous trading loop
       this.runTradingLoop()
     } catch (error: any) {
@@ -139,14 +147,40 @@ export class AutoBot {
   }
 
   // Stop the bot
-  stop() {
+  async stop() {
     this.state.isRunning = false
     if (this.minuteResetTimer) {
       clearInterval(this.minuteResetTimer)
       this.minuteResetTimer = null
     }
+
+    if (this.tickSubscriptionId) {
+      try {
+        await this.api.forget(this.tickSubscriptionId)
+        console.log(`[v0] Only Forgot tick subscription: ${this.tickSubscriptionId}`)
+      } catch (e) {
+        console.error("[v0] Failed to unsubscribe:", e)
+      }
+      this.tickSubscriptionId = null
+    }
+
     console.log(`[v0] ⏹️ ${this.strategy} bot stopped`)
     this.updateUI()
+  }
+
+  // Process incoming tick
+  private processTick(tick: any) {
+    if (!this.state.isRunning) return
+
+    const price = tick.quote
+    const priceStr = price.toFixed(5)
+    const lastDigit = Number.parseInt(priceStr[priceStr.length - 1])
+
+    // Update tick history
+    this.tickHistory.push(lastDigit)
+    if (this.tickHistory.length > this.config.historyCount) {
+      this.tickHistory.shift() // Keep history at fixed size
+    }
   }
 
   // Main trading loop
@@ -165,7 +199,8 @@ export class AutoBot {
       }
 
       try {
-        // Analyze and get trade signal
+        // Current tick history analysis
+        // We use local history updated by subscription
         const signal = await this.analyzeAndGetSignal()
 
         if (!signal) {
@@ -207,7 +242,7 @@ export class AutoBot {
     }
   }
 
-  // Fetch tick history
+  // Fetch tick history (initial only)
   private async fetchTickHistory() {
     try {
       const response = await this.api.getTickHistory(this.config.symbol, this.config.historyCount)
@@ -224,19 +259,8 @@ export class AutoBot {
 
   // Analyze market and get trade signal
   private async analyzeAndGetSignal(): Promise<{ contractType: string; prediction?: string } | null> {
-    try {
-      const response = await this.api.getTickHistory(this.config.symbol, 50)
-      const latestDigits = response.prices.map((price: number) => {
-        const priceStr = price.toFixed(5)
-        return Number.parseInt(priceStr[priceStr.length - 1])
-      })
-
-      // Update our tick history with latest data
-      this.tickHistory = [...this.tickHistory, ...latestDigits].slice(-this.config.historyCount)
-    } catch (error: any) {
-      console.error(`[v0] Failed to refresh tick history:`, error)
-      // Continue with existing history if update fails
-    }
+    // No more polling getTickHistory here!
+    // We rely on this.tickHistory being updated by processTick
 
     const last25 = this.tickHistory.slice(-25)
     const last50 = this.tickHistory.slice(-50)
