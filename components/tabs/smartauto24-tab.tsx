@@ -329,14 +329,24 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
       signal: analysis.signal,
       confidence: analysis.confidence,
       description: analysis.description,
+      status: analysis.status, // Pass status to UI
       digitFrequencies,
       ticksCollected,
       differsDigit: selectedStrategy === "Differs" ? differsSelectedDigit : undefined,
     })
     setShowAnalysisResults(true)
 
-    if (!analysis.signal) {
-      addAnalysisLog(`Power ${analysis.power.toFixed(1)}% below 55% threshold. Stopping.`, "warning")
+    if (analysis.status === "WAIT") {
+      addAnalysisLog(`Strategy Status: WAIT - ${analysis.description}`, "warning")
+      // Keep running but don't enter trade loop yet
+      // Just restart analysis for next cycle or wait
+      setIsRunning(false)
+      setStatus("idle")
+      return
+    }
+
+    if (!analysis.signal || analysis.status === "NEUTRAL") {
+      addAnalysisLog(`Power ${analysis.power.toFixed(1)}% below threshold. Stopping.`, "warning")
       setIsRunning(false)
       setStatus("idle")
       return
@@ -751,8 +761,13 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                     }`}
                 >
                   <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Signal</div>
-                  <div className={`text-2xl font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
-                    {analysisData.signal}
+                  <div
+                    className={`text-2xl font-bold ${analysisData.status === "WAIT"
+                        ? (theme === "dark" ? "text-yellow-400" : "text-yellow-600")
+                        : (theme === "dark" ? "text-green-400" : "text-green-600")
+                      }`}
+                  >
+                    {analysisData.status === "WAIT" ? "WAIT" : analysisData.signal}
                   </div>
                 </div>
 

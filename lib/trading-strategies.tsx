@@ -1,88 +1,133 @@
 export interface StrategyAnalysis {
   name: string
-  signal: "BUY" | "SELL" | null
+  signal: "BUY" | "SELL" | "WAIT" | null
   power: number
   confidence: number
   description: string
+  status: "WAIT" | "TRADE" | "NEUTRAL"
 }
 
 export class TradingStrategies {
-  // Strategy 1: Even/Odd
+  // Strategy 1: Even/Odd Advanced
   analyzeEvenOdd(digits: number[]): StrategyAnalysis {
-    if (digits.length === 0) {
-      return { name: "Even/Odd", signal: null, power: 0, confidence: 0, description: "No data" }
+    if (digits.length < 50) {
+      return {
+        name: "Even/Odd",
+        signal: null,
+        power: 0,
+        confidence: 0,
+        description: "Insufficient data (need 50 ticks)",
+        status: "NEUTRAL"
+      }
     }
 
-    const evenCount = digits.filter((d) => d % 2 === 0).length
-    const oddCount = digits.length - evenCount
-    const total = digits.length
+    const last10 = digits.slice(-10)
+    const last50 = digits.slice(-50)
 
-    const evenPercentage = (evenCount / total) * 100
-    const oddPercentage = (oddCount / total) * 100
+    const evenLast10 = last10.filter((d) => d % 2 === 0).length
+    const oddLast10 = 10 - evenLast10
 
-    const power = Math.max(evenPercentage, oddPercentage)
-    const signal = power >= 55 ? (evenPercentage > oddPercentage ? "BUY" : "SELL") : null
+    const evenLast50 = last50.filter((d) => d % 2 === 0).length
+    const evenPercentLast50 = (evenLast50 / 50) * 100
+
+    const evenPercent = (evenLast10 / 10) * 100
+    const oddPercent = (oddLast10 / 10) * 100
+
+    const isEvenBias = evenPercent > oddPercent
+    const currentPower = Math.max(evenPercent, oddPercent)
+
+    // Trend detection
+    const isTrendIncreasing = isEvenBias
+      ? evenPercent > evenPercentLast50
+      : oddPercent > (100 - evenPercentLast50)
+
+    let status: "WAIT" | "TRADE" | "NEUTRAL" = "NEUTRAL"
+    let description = `Even: ${evenPercent}% | Odd: ${oddPercent}%`
+
+    if (currentPower >= 60 && isTrendIncreasing) {
+      status = "TRADE"
+      description += " - Strong Trend Confirmed"
+    } else if (currentPower >= 56 && isTrendIncreasing) {
+      status = "WAIT" // Wait for 60% or specific setup
+      description += " - Weak Trend (Waiting for >60%)"
+    } else if (currentPower >= 53) {
+      status = "WAIT"
+      description += " - Potential Setup Forming"
+    }
 
     return {
       name: "Even/Odd",
-      signal,
-      power,
-      confidence: power - 50,
-      description: `Even: ${evenPercentage.toFixed(1)}% | Odd: ${oddPercentage.toFixed(1)}%`,
+      signal: status !== "NEUTRAL" ? (isEvenBias ? "BUY" : "SELL") : null,
+      power: currentPower,
+      confidence: currentPower, // Direct mapping for now
+      description,
+      status
     }
   }
 
   // Strategy 2: Over 3 / Under 6
   analyzeOver3Under6(digits: number[]): StrategyAnalysis {
-    if (digits.length === 0) {
-      return { name: "Over 3/Under 6", signal: null, power: 0, confidence: 0, description: "No data" }
-    }
-
-    const over3Count = digits.filter((d) => d > 3).length
-    const under6Count = digits.filter((d) => d < 6).length
-    const total = digits.length
-
-    const over3Percentage = (over3Count / total) * 100
-    const under6Percentage = (under6Count / total) * 100
-
-    const power = Math.max(over3Percentage, under6Percentage)
-    const signal = power >= 55 ? (over3Percentage > under6Percentage ? "BUY" : "SELL") : null
-
-    return {
-      name: "Over 3/Under 6",
-      signal,
-      power,
-      confidence: power - 50,
-      description: `Over 3: ${over3Percentage.toFixed(1)}% | Under 6: ${under6Percentage.toFixed(1)}%`,
-    }
+    return this.analyzeOverUnderGeneric(digits, 4, 5, "Over 3/Under 6")
   }
 
   // Strategy 3: Over 2 / Under 7
   analyzeOver2Under7(digits: number[]): StrategyAnalysis {
-    if (digits.length === 0) {
-      return { name: "Over 2/Under 7", signal: null, power: 0, confidence: 0, description: "No data" }
+    return this.analyzeOverUnderGeneric(digits, 3, 6, "Over 2/Under 7")
+  }
+
+  private analyzeOverUnderGeneric(digits: number[], overThreshold: number, underThreshold: number, name: string): StrategyAnalysis {
+    if (digits.length < 25) {
+      return {
+        name,
+        signal: null,
+        power: 0,
+        confidence: 0,
+        description: "Insufficient data",
+        status: "NEUTRAL"
+      }
     }
 
-    const over2Count = digits.filter((d) => d > 2).length
-    const under7Count = digits.filter((d) => d < 7).length
-    const total = digits.length
+    const last25 = digits.slice(-25)
 
-    const over2Percentage = (over2Count / total) * 100
-    const under7Percentage = (under7Count / total) * 100
+    const overCount = last25.filter(d => d >= overThreshold).length
+    const underCount = last25.filter(d => d <= underThreshold).length
 
-    const power = Math.max(over2Percentage, under7Percentage)
-    const signal = power >= 55 ? (over2Percentage > under7Percentage ? "BUY" : "SELL") : null
+    const overPercent = (overCount / 25) * 100
+    const underPercent = (underCount / 25) * 100
+
+    const maxPower = Math.max(overPercent, underPercent)
+    const isOverBias = overPercent > underPercent
+
+    let status: "WAIT" | "TRADE" | "NEUTRAL" = "NEUTRAL"
+    let description = `Over ${overThreshold - 1}: ${overPercent.toFixed(0)}% | Under ${underThreshold + 1}: ${underPercent.toFixed(0)}%`
+
+    // Multi-level thresholds
+    if (maxPower >= 60) {
+      status = "TRADE"
+      description += " - Strong Signal"
+    } else if (maxPower >= 56) {
+      status = "WAIT"
+      description += " - High Volatility (Waiting for 60%)"
+    } else if (maxPower >= 52) {
+      status = "WAIT"
+      description += " - Monitoring Trend"
+    }
 
     return {
-      name: "Over 2/Under 7",
-      signal,
-      power,
-      confidence: power - 50,
-      description: `Over 2: ${over2Percentage.toFixed(1)}% | Under 7: ${under7Percentage.toFixed(1)}%`,
+      name,
+      signal: status !== "NEUTRAL" ? (isOverBias ? "BUY" : "SELL") : null,
+      power: maxPower,
+      confidence: maxPower,
+      description,
+      status
     }
   }
 
   analyzeAllStrategies(digits: number[]): StrategyAnalysis[] {
-    return [this.analyzeEvenOdd(digits), this.analyzeOver3Under6(digits), this.analyzeOver2Under7(digits)]
+    return [
+      this.analyzeEvenOdd(digits),
+      this.analyzeOver3Under6(digits),
+      this.analyzeOver2Under7(digits)
+    ]
   }
 }
