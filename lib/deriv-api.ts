@@ -176,12 +176,12 @@ export class DerivAPIClient {
 
       setTimeout(() => {
         if (this.pendingRequests.has(req_id)) {
-          const errorMsg = `Request ${req_id} (${Object.keys(request)[0]}) timed out after 30000ms`;
+          const errorMsg = `Request ${req_id} (${Object.keys(request)[0]}) timed out after 60000ms`;
           console.error(`[v0] ${errorMsg}`);
           this.pendingRequests.get(req_id)!.reject(new Error(errorMsg))
           this.pendingRequests.delete(req_id)
         }
-      }, 30000)
+      }, 60000)
     })
   }
 

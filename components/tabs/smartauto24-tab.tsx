@@ -117,6 +117,9 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   const journalRef = useRef<TradingJournal>(new TradingJournal("smartauto24"))
   const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastDigitWasEvenRef = useRef<boolean | null>(null)
+  const differsWaitingForEntryRef = useRef(false)
+  const differsSelectedDigitRef = useRef<number | null>(null)
 
   // SmartAuto24 Engine
   const smartAuto24Engine = useSmartAuto24(market, isConnected)
@@ -139,6 +142,11 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
   // New state for stop loss percentage
   const [stopLossPercent, setStopLossPercent] = useState("50")
+
+  // Sync refs with state for use in stable tick callback
+  useEffect(() => { lastDigitWasEvenRef.current = lastDigitWasEven }, [lastDigitWasEven])
+  useEffect(() => { differsWaitingForEntryRef.current = differsWaitingForEntry }, [differsWaitingForEntry])
+  useEffect(() => { differsSelectedDigitRef.current = differsSelectedDigit }, [differsSelectedDigit])
 
   useEffect(() => {
     if (!apiClient || !isConnected || !isAuthorized) return
@@ -190,9 +198,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
           }
 
           const isEven = lastDigitValue % 2 === 0
-          if (lastDigitWasEven === null) {
+          const currentLastDigitWasEven = lastDigitWasEvenRef.current
+          if (currentLastDigitWasEven === null) {
             setLastDigitWasEven(isEven)
-          } else if (lastDigitWasEven === isEven) {
+          } else if (currentLastDigitWasEven === isEven) {
             // Same parity continues
             if (isEven) {
               setConsecutiveEvenCount((prev) => prev + 1)
@@ -230,8 +239,8 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
           setTicksCollected((prev) => prev + 1)
 
-          if (differsWaitingForEntry && differsSelectedDigit !== null) {
-            if (lastDigitValue === differsSelectedDigit) {
+          if (differsWaitingForEntryRef.current && differsSelectedDigitRef.current !== null) {
+            if (lastDigitValue === differsSelectedDigitRef.current) {
               // Reset if selected digit appears
               setDiffersTicksSinceAppearance(0)
             } else {
@@ -252,7 +261,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
         apiClient.forget(tickSubscriptionId).catch((err) => console.log("[v0] Forget error:", err))
       }
     }
-  }, [apiClient, isConnected, market, differsWaitingForEntry, differsSelectedDigit, lastDigitWasEven])
+  }, [apiClient, isConnected, market])
 
   const addAnalysisLog = (message: string, type: "info" | "success" | "warning" = "info") => {
     setAnalysisLog((prev) => [

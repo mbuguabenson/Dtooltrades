@@ -247,6 +247,21 @@ export class DerivWebSocketManager {
       if (message.req_id) {
         const req_id = Number(message.req_id);
         const callback = this.pendingRequests.get(req_id);
+
+        // Even if we don't have a callback (timed out), we should salvage subscription IDs
+        if (message.subscription && !message.error) {
+          const symbol = message.echo_req?.ticks || message.echo_req?.active_symbols;
+          if (symbol && typeof symbol === 'string') {
+            const subscriptionId = message.subscription.id;
+            console.log(`[v0] Recovered subscription ID for ${symbol}: ${subscriptionId} (from req_id ${req_id})`);
+            this.subscriptions.set(subscriptionId, symbol);
+            this.symbolToSubscriptionMap.set(symbol, subscriptionId);
+            if (!this.subscriptionRefCount.has(subscriptionId)) {
+              this.subscriptionRefCount.set(subscriptionId, 1);
+            }
+          }
+        }
+
         if (callback) {
           console.log(`[v0] Received response for req_id ${req_id}:`, message.msg_type || "unknown");
           this.pendingRequests.delete(req_id);

@@ -219,7 +219,7 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
           console.log("[v0] Attempting to reconnect...")
           setConnectionStatus("reconnecting")
           connectAndSubscribe()
-        }, 3000)
+        }, 10000)
       }
     }
 
