@@ -123,7 +123,19 @@ export function useSmartAdaptiveTrading() {
     const tradeOnce = useCallback(async (signal: StrategySignal) => {
         if (!tradingRef.current) return
         addLog(`Manual execution: ${signal.strategy} - ${signal.type}`, "trade")
-        return await tradingRef.current.tradeOnce(signal, selectedMarket)
+
+        try {
+            // For manual trades, bypass session limits
+            return await tradingRef.current.tradeOnce(signal, selectedMarket, true)
+        } catch (err: any) {
+            if (err?.message?.startsWith("SESSION_LIMIT")) {
+                addLog(`Session limit reached but executing manual trade anyway`, "warning")
+                // Try again with bypass
+                return await tradingRef.current.tradeOnce(signal, selectedMarket, true)
+            }
+            addLog(`Trade execution failed: ${err?.message || "Unknown error"}`, "error")
+            throw err
+        }
     }, [selectedMarket])
 
     const startAutoTrade = useCallback(() => {
@@ -160,6 +172,12 @@ export function useSmartAdaptiveTrading() {
         tradingRef.current.setConfig({ ...config, duration: tickDuration })
     }, [tickDuration])
 
+    const resetSession = useCallback(() => {
+        if (!tradingRef.current) return
+        tradingRef.current.resetSession()
+        addLog("Session statistics reset", "system")
+    }, [])
+
     return {
         marketScores,
         selectedMarket,
@@ -176,6 +194,7 @@ export function useSmartAdaptiveTrading() {
         startAutoTrade,
         stopAutoTrade,
         setConfig,
+        resetSession,
         isConnected,
         isAuthorized,
         balance,

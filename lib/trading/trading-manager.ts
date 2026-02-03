@@ -43,10 +43,13 @@ export class TradingManager {
         this.tickDuration = config.duration
     }
 
-    public async tradeOnce(signal: StrategySignal, symbol: string) {
-        if (this.stats.profit <= -this.maxLoss || this.stats.profit >= this.targetProfit) {
-            console.warn("[v0] Session limits reached.")
-            return
+    public async tradeOnce(signal: StrategySignal, symbol: string, bypassLimit = false) {
+        if (!bypassLimit && (this.stats.profit <= -this.maxLoss || this.stats.profit >= this.targetProfit)) {
+            const reason = this.stats.profit <= -this.maxLoss
+                ? `Max loss limit reached (${this.stats.profit.toFixed(2)})`
+                : `Target profit reached (${this.stats.profit.toFixed(2)})`
+            console.warn(`[v0] Session limits: ${reason}. Reset session to continue.`)
+            throw new Error(`SESSION_LIMIT: ${reason}`)
         }
 
         if (signal.entryStatus !== "Confirmed") {
@@ -55,6 +58,18 @@ export class TradingManager {
         }
 
         return this.execute(signal, symbol)
+    }
+
+    public resetSession() {
+        console.log("[v0] Session stats reset")
+        this.stats = {
+            trades: 0,
+            wins: 0,
+            losses: 0,
+            profit: 0,
+            highestWin: 0,
+            worstLoss: 0
+        }
     }
 
     public startAutoTrade(symbol: string, getSignal: () => StrategySignal | null) {
