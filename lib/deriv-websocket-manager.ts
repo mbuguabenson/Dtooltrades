@@ -131,6 +131,7 @@ export class DerivWebSocketManager {
           this.log("error", `WebSocket error: ${error}`)
           this.connectionPromise = null
           this.notifyConnectionStatus("disconnected")
+          this.rejectAllPendingRequests(new Error("WebSocket error occurred"))
           reject(error)
         }
 
@@ -147,6 +148,7 @@ export class DerivWebSocketManager {
           this.connectionPromise = null
           this.stopHeartbeat()
           this.notifyConnectionStatus("disconnected")
+          this.rejectAllPendingRequests(new Error("WebSocket connection closed"))
           this.handleReconnect()
         }
       } catch (error) {
@@ -154,6 +156,7 @@ export class DerivWebSocketManager {
         this.log("error", `Connection setup error: ${error}`)
         this.connectionPromise = null
         this.notifyConnectionStatus("disconnected")
+        this.rejectAllPendingRequests(error instanceof Error ? error : new Error(String(error)))
         reject(error)
       }
     })
@@ -245,11 +248,17 @@ export class DerivWebSocketManager {
         const req_id = Number(message.req_id);
         const callback = this.pendingRequests.get(req_id);
         if (callback) {
-          if (message.error || !message.subscription) {
-            this.pendingRequests.delete(req_id);
-          }
+          console.log(`[v0] Received response for req_id ${req_id}:`, message.msg_type || "unknown");
+          this.pendingRequests.delete(req_id);
           callback(message);
+        } else {
+          console.warn(`[v0] Received response for unknown/timed-out req_id ${req_id}`);
         }
+      } else if (message.subscription) {
+        // Log stream messages for debugging (optional, keep it quiet)
+        // console.log(`[v0] Received stream message for sub_id ${message.subscription.id}`);
+      } else {
+        console.log(`[v0] Received message without req_id:`, message.msg_type || "unknown");
       }
 
       // 2. Special handling for ticks (New robust way)
@@ -385,41 +394,66 @@ export class DerivWebSocketManager {
     }
 
     this.activeSubscriptions.add(symbol)
-    const requestId = this.getNextReqId()
 
-    try {
-      const response = await this.sendAndWait({
-        ticks: symbol,
-        subscribe: 1,
-        req_id: requestId,
-      })
+    // Retry logic for subscription
+    let lastError: any = null
+    const maxRetries = 3
 
-      if (response.subscription?.id) {
-        const subscriptionId = response.subscription.id
-        this.subscriptions.set(subscriptionId, symbol)
-        this.symbolToSubscriptionMap.set(symbol, subscriptionId)
-        this.subscriptionRefCount.set(subscriptionId, 1)
-        this.activeSubscriptions.delete(symbol)
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const requestId = this.getNextReqId()
+        console.log(`[v0] Subscribing to ${symbol} (attempt ${attempt}/${maxRetries}, req_id: ${requestId})`)
 
-        // Push initial tick if available
-        if (response.tick) {
-          callback({
-            quote: response.tick.quote,
-            lastDigit: this.extractLastDigit(response.tick.quote),
-            epoch: response.tick.epoch,
-            symbol: symbol,
-            id: subscriptionId
-          })
+        const response = await this.sendAndWait({
+          ticks: symbol,
+          subscribe: 1,
+          req_id: requestId,
+        }, 15000) // Lower internal timeout for retries
+
+        if (response.subscription?.id) {
+          const subscriptionId = response.subscription.id
+          this.subscriptions.set(subscriptionId, symbol)
+          this.symbolToSubscriptionMap.set(symbol, subscriptionId)
+          this.subscriptionRefCount.set(subscriptionId, 1)
+          this.activeSubscriptions.delete(symbol)
+
+          console.log(`[v0] Successfully subscribed to ${symbol}: ${subscriptionId}`)
+
+          // Push initial tick if available
+          if (response.tick) {
+            callback({
+              quote: response.tick.quote,
+              lastDigit: this.extractLastDigit(response.tick.quote),
+              epoch: response.tick.epoch,
+              symbol: symbol,
+              id: subscriptionId
+            })
+          }
+
+          return subscriptionId
+        } else {
+          throw new Error(response.error?.message || "Invalid subscription response")
         }
-
-        return subscriptionId
+      } catch (error) {
+        lastError = error
+        console.warn(`[v0] Subscription attempt ${attempt}/${maxRetries} failed for ${symbol}:`, error)
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 1000 * attempt)) // Exponential backoff
+        }
       }
-    } catch (error) {
-      console.error(`[v0] Failed to subscribe to ${symbol}:`, error)
-      this.activeSubscriptions.delete(symbol)
     }
 
+    this.activeSubscriptions.delete(symbol)
+    console.error(`[v0] Failed to subscribe to ${symbol} after ${maxRetries} attempts:`, lastError)
     return ""
+  }
+
+  private rejectAllPendingRequests(error: Error) {
+    console.log(`[v0] Rejecting ${this.pendingRequests.size} pending requests due to connection loss`)
+    this.pendingRequests.forEach((callback, req_id) => {
+      callback({ error: { message: error.message, code: "ConnectionLoss" }, req_id })
+    })
+    this.pendingRequests.clear()
   }
 
   public extractLastDigit(quote: number): number {
