@@ -8,7 +8,6 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Activity, Zap, X, Eye, Power } from 'lucide-react'
 import { derivWebSocket } from "@/lib/deriv-websocket-manager"
-import { useDerivAPI } from "@/lib/deriv-api-context"
 
 interface MarketData {
   symbol: string
@@ -61,13 +60,12 @@ export function SuperSignalsTab({ theme = "dark" }: SuperSignalsTabProps) {
   const [showSignalPopup, setShowSignalPopup] = useState(false)
   const [autoShowSignals, setAutoShowSignals] = useState(true)
   const [signalsDeactivated, setSignalsDeactivated] = useState(false)
-  const { isConnected, isAuthorized } = useDerivAPI()
   const subscriptionIdsRef = useRef<Map<string, string>>(new Map())
   const callbacksRef = useRef<Map<string, (tick: any) => void>>(new Map())
   const isInitializedRef = useRef(false)
 
   useEffect(() => {
-    if (isInitializedRef.current && isConnected && isAuthorized) return
+    if (isInitializedRef.current) return
     isInitializedRef.current = true
 
     const initMarkets = async () => {
@@ -91,11 +89,6 @@ export function SuperSignalsTab({ theme = "dark" }: SuperSignalsTabProps) {
       })
 
       setMarketsData(initialData)
-
-      if (!isConnected || !isAuthorized) {
-        console.log("[v0] Waiting for connection and authorization...")
-        return
-      }
 
       try {
         console.log("[v0] Initializing subscriptions for SuperSignalsTab...")
@@ -172,7 +165,7 @@ export function SuperSignalsTab({ theme = "dark" }: SuperSignalsTabProps) {
           subscriptionIdsRef.current.set(market.symbol, subscriptionId)
         }
       } catch (error) {
-        console.error("[v0] Failed to connect to WebSocket:", error)
+        console.error("[v0] Failed to subscribe to ticks:", error)
       }
     }
 
@@ -190,7 +183,7 @@ export function SuperSignalsTab({ theme = "dark" }: SuperSignalsTabProps) {
       subscriptionIdsRef.current.clear()
       callbacksRef.current.clear()
     }
-  }, [isConnected, isAuthorized])
+  }, [])
 
   const checkForTradeSignal = (
     symbol: string,
