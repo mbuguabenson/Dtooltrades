@@ -1,4 +1,5 @@
 import type { DerivAPIClient } from "./deriv-api"
+import { AnalysisEngine, type Signal } from "./analysis-engine"
 
 export interface AutoBotConfig {
   symbol: string
@@ -67,14 +68,10 @@ export class AutoBot {
   private state: AutoBotState
   private strategy: BotStrategy
   private tickHistory: number[] = []
+  private analysisEngine: AnalysisEngine
   private onStateUpdate: ((state: AutoBotState) => void) | null = null
   private tradesThisMinute = 0
   private minuteResetTimer: NodeJS.Timeout | null = null
-  private currentSignal: { status: "WAIT" | "TRADE_NOW" | "NEUTRAL"; level: number } = { status: "NEUTRAL", level: 0 }
-  private waitTickCount = 0
-  private differsPreviousDigitPercent = 0
-  private differsSelectedDigit: number | null = null
-  private differsWaitCycle = 0
   private activeProposals: Map<string, { proposalData: any; timestamp: number }> = new Map()
   private activeContracts: Map<number, { contractData: any; entryTime: number }> = new Map()
   private currentAnalysis: any = null
@@ -88,6 +85,7 @@ export class AutoBot {
     this.api = api
     this.strategy = strategy
     this.config = config
+    this.analysisEngine = new AnalysisEngine(config.historyCount)
     this.state = {
       isRunning: false,
       totalRuns: 0,
@@ -226,283 +224,98 @@ export class AutoBot {
   private async analyzeAndGetSignal(): Promise<{ contractType: string; prediction?: string } | null> {
     try {
       const response = await this.api.getTickHistory(this.config.symbol, 50)
-      const latestDigits = response.prices.map((price: number) => {
-        const priceStr = price.toFixed(5)
-        return Number.parseInt(priceStr[priceStr.length - 1])
-      })
 
-      // Update our tick history with latest data
-      this.tickHistory = [...this.tickHistory, ...latestDigits].slice(-this.config.historyCount)
+      // Clear existing analysis digits and push new ones (though addTick is preferred for streaming)
+      // For the loop, we'll keep the engine updated
+      response.prices.forEach((price: number) => {
+        this.analysisEngine.addTick({
+          epoch: Date.now() / 1000,
+          quote: price,
+          symbol: this.config.symbol
+        })
+      })
     } catch (error: any) {
       console.error(`[v0] Failed to refresh tick history:`, error)
-      // Continue with existing history if update fails
     }
 
-    const last25 = this.tickHistory.slice(-25)
-    const last50 = this.tickHistory.slice(-50)
-    const last10 = this.tickHistory.slice(-10)
+    const signals = this.analysisEngine.generateSignals()
+    const proSignals = this.analysisEngine.generateProSignals()
+    const allSignals = [...signals, ...proSignals]
 
-    if (last25.length < 25) return null
-
+    // Map BotStrategy to AnalysisEngine signals
     switch (this.strategy) {
-      case "EVEN_ODD":
-        return this.analyzeEvenOdd(last10, last50)
-      case "EVEN_ODD_ADVANCED":
-        return this.analyzeEvenOddAdvanced(last10, last50)
-      case "OVER1_UNDER8":
-        return this.analyzeOver1Under8(last25)
-      case "OVER2_UNDER7":
-        return this.analyzeOver2Under7(last25)
-      case "OVER3_UNDER6":
-        return this.analyzeOver3Under6(last25)
-      case "UNDER6":
-        return this.analyzeUnder6(last25)
+      case "EVEN_ODD": {
+        const signal = signals.find(s => s.type === "even_odd")
+        if (signal?.status === "TRADE NOW") {
+          return { contractType: signal.recommendation.toLowerCase().includes("even") ? "DIGITEVEN" : "DIGITODD" }
+        }
+        break
+      }
+      case "EVEN_ODD_ADVANCED": {
+        const signal = proSignals.find(s => s.type === "pro_even_odd") || signals.find(s => s.type === "even_odd")
+        if (signal?.status === "TRADE NOW") {
+          return { contractType: signal.recommendation.toLowerCase().includes("even") ? "DIGITEVEN" : "DIGITODD" }
+        }
+        break
+      }
+      case "OVER1_UNDER8": {
+        const signal = proSignals.find(s => s.type === "pro_over_under" && (s.recommendation.includes("OVER 1") || s.recommendation.includes("UNDER 8")))
+        if (signal?.status === "TRADE NOW") {
+          const isOver = signal.recommendation.includes("OVER 1")
+          return { contractType: isOver ? "DIGITOVER" : "DIGITUNDER", prediction: isOver ? "1" : "8" }
+        }
+        // Fallback to standard
+        const std = signals.find(s => s.type === "over_under")
+        if (std?.status === "TRADE NOW") {
+          const isOver = std.recommendation.toLowerCase().includes("over")
+          return { contractType: isOver ? "DIGITOVER" : "DIGITUNDER", prediction: isOver ? "1" : "8" }
+        }
+        break
+      }
+      case "OVER2_UNDER7": {
+        const std = signals.find(s => s.type === "over_under")
+        if (std?.status === "TRADE NOW") {
+          const isOver = std.recommendation.toLowerCase().includes("over")
+          return { contractType: isOver ? "DIGITOVER" : "DIGITUNDER", prediction: isOver ? "2" : "7" }
+        }
+        break
+      }
+      case "OVER3_UNDER6": {
+        const std = signals.find(s => s.type === "over_under")
+        if (std?.status === "TRADE NOW") {
+          const isOver = std.recommendation.toLowerCase().includes("over")
+          return { contractType: isOver ? "DIGITOVER" : "DIGITUNDER", prediction: isOver ? "3" : "6" }
+        }
+        break
+      }
+      case "UNDER6": {
+        const std = signals.find(s => s.type === "over_under")
+        if (std?.status === "TRADE NOW" && std.recommendation.toLowerCase().includes("under")) {
+          return { contractType: "DIGITUNDER", prediction: "6" }
+        }
+        break
+      }
       case "DIFFERS":
-        return this.analyzeDiffers(last25)
-      case "SUPER_DIFFERS":
-        return this.analyzeSuperDiffers(last25)
-      case "OVER_UNDER_ADVANCED":
-        return this.analyzeOverUnderAdvanced(last25)
-      default:
-        return null
-    }
-  }
-
-  // Strategy 1: EVEN/ODD Bot
-  private analyzeEvenOdd(last10: number[], last50: number[]): { contractType: string } | null {
-    if (last10.length < 10 || last50.length < 50) return null
-
-    const evenLast10 = last10.filter((d) => d % 2 === 0).length
-    const evenLast50 = last50.filter((d) => d % 2 === 0).length
-
-    const evenPercentLast10 = (evenLast10 / 10) * 100
-    const evenPercentLast50 = (evenLast50 / 50) * 100
-
-    const evenIncreasing = evenPercentLast10 > evenPercentLast50
-    const maxPercent = Math.max(evenPercentLast10, 100 - evenPercentLast10)
-
-    if (maxPercent >= 56 && evenIncreasing) {
-      return { contractType: evenPercentLast10 > 50 ? "DIGITEVEN" : "DIGITODD" }
-    }
-
-    return null
-  }
-
-  // Strategy 2: EVEN/ODD Advanced Bot
-  private analyzeEvenOddAdvanced(last10: number[], last50: number[]): { contractType: string } | null {
-    if (last10.length < 10 || last50.length < 50) return null
-
-    const evenLast10 = last10.filter((d) => d % 2 === 0).length
-    const evenLast50 = last50.filter((d) => d % 2 === 0).length
-
-    const evenPercentLast10 = (evenLast10 / 10) * 100
-    const evenPercentLast50 = (evenLast50 / 50) * 100
-
-    const evenIncreasing = evenPercentLast10 > evenPercentLast50
-    const maxPercent = Math.max(evenPercentLast10, 100 - evenPercentLast10)
-
-    if (maxPercent >= 60 && evenIncreasing) {
-      return { contractType: evenPercentLast10 > 50 ? "DIGITEVEN" : "DIGITODD" }
-    } else if (maxPercent >= 56 && evenIncreasing) {
-      return { contractType: evenPercentLast10 > 50 ? "DIGITEVEN" : "DIGITODD" }
-    }
-
-    return null
-  }
-
-  // Strategy 3: OVER1/UNDER8 Bot
-  private analyzeOver1Under8(digits: number[]): { contractType: string; prediction?: string } | null {
-    return this.analyzeOverUnderRange(digits, 2, 7)
-  }
-
-  // Strategy 4: OVER2/UNDER7 Bot
-  private analyzeOver2Under7(digits: number[]): { contractType: string; prediction?: string } | null {
-    return this.analyzeOverUnderRange(digits, 3, 6)
-  }
-
-  // Strategy 5: OVER3/UNDER6 Bot
-  private analyzeOver3Under6(digits: number[]): { contractType: string; prediction?: string } | null {
-    return this.analyzeOverUnderRange(digits, 4, 5)
-  }
-
-  // Helper function for Over/Under Bots
-  private analyzeOverUnderRange(
-    digits: number[],
-    overThreshold: number,
-    underThreshold: number,
-  ): { contractType: string; prediction?: string } | null {
-    if (digits.length < 25) return null
-
-    const overCount = digits.filter((d) => d >= overThreshold).length
-    const underCount = digits.filter((d) => d <= underThreshold).length
-
-    const overPercent = (overCount / digits.length) * 100
-    const underPercent = (underCount / digits.length) * 100
-    const maxPercent = Math.max(overPercent, underPercent)
-
-    // 53% increasing = WAIT, 56% = WAIT, 60% = TRADE NOW with Strong Signal
-    if (maxPercent >= 60) {
-      if (overPercent > underPercent) {
-        return { contractType: "DIGITOVER", prediction: (overThreshold - 1).toString() }
-      } else {
-        return { contractType: "DIGITUNDER", prediction: (underThreshold + 1).toString() }
+      case "SUPER_DIFFERS": {
+        const signal = proSignals.find(s => s.type === "pro_differs") || signals.find(s => s.type === "differs")
+        if (signal?.status === "TRADE NOW" && signal.targetDigit !== undefined) {
+          return { contractType: "DIGITDIFF", prediction: signal.targetDigit.toString() }
+        }
+        break
       }
-    } else if (maxPercent >= 56) {
-      if (overPercent > underPercent) {
-        return { contractType: "DIGITOVER", prediction: (overThreshold - 1).toString() }
-      } else {
-        return { contractType: "DIGITUNDER", prediction: (underThreshold + 1).toString() }
+      case "OVER_UNDER_ADVANCED": {
+        const signal = proSignals.find(s => s.type === "pro_over_under") || signals.find(s => s.type === "over_under")
+        if (signal?.status === "TRADE NOW") {
+          const isOver = signal.recommendation.toLowerCase().includes("over")
+          return { contractType: isOver ? "DIGITOVER" : "DIGITUNDER", prediction: isOver ? "1" : "8" }
+        }
+        break
       }
     }
 
     return null
   }
 
-  // Strategy 6: UNDER6 Bot
-  private analyzeUnder6(digits: number[]): { contractType: string; prediction?: string } | null {
-    if (digits.length < 25) return null
-
-    const under4Count = digits.filter((d) => d <= 5).length
-    const under4Percent = (under4Count / digits.length) * 100
-
-    if (under4Percent >= 50) {
-      return { contractType: "DIGITUNDER", prediction: "6" }
-    }
-
-    return null
-  }
-
-  // Strategy 7: DIFFERS Bot
-  private analyzeDiffers(digits: number[]): { contractType: string; prediction: string } | null {
-    if (digits.length < 25) return null
-
-    const frequency: Record<number, number> = {}
-    for (let i = 2; i <= 7; i++) {
-      frequency[i] = 0
-    }
-
-    // Only count digits 2-7
-    digits.forEach((d) => {
-      if (d >= 2 && d <= 7) {
-        frequency[d]++
-      }
-    })
-
-    // Find digit with lowest frequency (most appearing digit for reference)
-    let selectedDigit = this.differsSelectedDigit || 2
-    let minCount = digits.length
-    let maxCount = 0
-    let mostAppearingDigit = 2
-
-    for (let i = 2; i <= 7; i++) {
-      if (frequency[i] < minCount) {
-        minCount = frequency[i]
-        selectedDigit = i
-      }
-      if (frequency[i] > maxCount) {
-        maxCount = frequency[i]
-        mostAppearingDigit = i
-      }
-    }
-
-    const selectedPercent = (frequency[selectedDigit] / digits.length) * 100
-    const mostAppearingPercent = (frequency[mostAppearingDigit] / digits.length) * 100
-
-    // Store selected digit if it's the first time or we reset
-    if (!this.differsSelectedDigit || this.differsSelectedDigit !== selectedDigit) {
-      this.differsSelectedDigit = selectedDigit
-      this.differsPreviousDigitPercent = selectedPercent
-      this.differsWaitCycle = 0
-    }
-
-    // Check if chosen digit is decreasing and most appearing is increasing
-    const chosenDigitDecreasing = selectedPercent < this.differsPreviousDigitPercent
-    const mostAppearingIncreasing = mostAppearingPercent > 15 // Threshold for "increasing power"
-
-    // Check if chosen digit is increasing (stop trading)
-    const chosenDigitIncreasing = selectedPercent > this.differsPreviousDigitPercent
-
-    console.log(
-      `[v0] DIFFERS Analysis: Selected=${selectedDigit} (${selectedPercent.toFixed(1)}%), MostAppearing=${mostAppearingDigit} (${mostAppearingPercent.toFixed(1)}%), Decreasing=${chosenDigitDecreasing}, Increasing=${chosenDigitIncreasing}`,
-    )
-
-    // If chosen digit appears in last 3 ticks, restart cycle
-    const last3 = digits.slice(-3)
-    const digitAppearedInLast3 = last3.includes(selectedDigit)
-
-    if (digitAppearedInLast3) {
-      console.log(`[v0] DIFFERS: Digit ${selectedDigit} appeared in last 3 ticks, restarting cycle`)
-      this.differsWaitCycle = 0
-      this.differsSelectedDigit = null // Reset to find new digit
-      return null
-    }
-
-    // If chosen digit is increasing in power, stop/wait
-    if (chosenDigitIncreasing) {
-      console.log(`[v0] DIFFERS: Digit ${selectedDigit} increasing in power, waiting...`)
-      return null
-    }
-
-    // Core entry logic: digit <10% occurrence
-    if (selectedPercent < 10) {
-      // If chosen digit is decreasing AND most appearing is increasing, trade immediately
-      if (chosenDigitDecreasing && mostAppearingIncreasing) {
-        console.log(`[v0] DIFFERS: Immediate entry - chosen digit decreasing, most appearing increasing`)
-        this.differsPreviousDigitPercent = selectedPercent
-        return { contractType: "DIGITDIFF", prediction: selectedDigit.toString() }
-      }
-
-      // Otherwise, wait for 3 ticks without the digit
-      this.differsWaitCycle++
-      console.log(`[v0] DIFFERS: Wait cycle ${this.differsWaitCycle}/3 for digit ${selectedDigit}`)
-
-      if (this.differsWaitCycle >= 3) {
-        console.log(`[v0] DIFFERS: Entry after 3-tick wait for digit ${selectedDigit}`)
-        this.differsWaitCycle = 0
-        this.differsPreviousDigitPercent = selectedPercent
-        return { contractType: "DIGITDIFF", prediction: selectedDigit.toString() }
-      }
-    } else {
-      // Reset if digit is no longer <10%
-      this.differsWaitCycle = 0
-      this.differsSelectedDigit = null
-    }
-
-    this.differsPreviousDigitPercent = selectedPercent
-    return null
-  }
-
-  // Strategy 8: OVER/UNDER Advanced Bot
-  private analyzeOverUnderAdvanced(digits: number[]): { contractType: string; prediction?: string } | null {
-    if (digits.length < 25) return null
-
-    const over5Count = digits.filter((d) => d >= 5).length
-    const under4Count = digits.filter((d) => d <= 4).length
-
-    const over5Percent = (over5Count / digits.length) * 100
-    const under4Percent = (under4Count / digits.length) * 100
-    const maxPercent = Math.max(over5Percent, under4Percent)
-
-    // Multi-level: 53%=WAIT, 56%+=WAIT, 60%+=STRONG signal with TRADE NOW
-    if (maxPercent >= 60) {
-      if (over5Percent > under4Percent) {
-        return { contractType: "DIGITOVER", prediction: "1" }
-      } else {
-        return { contractType: "DIGITUNDER", prediction: "8" }
-      }
-    } else if (maxPercent >= 56) {
-      if (over5Percent > under4Percent) {
-        return { contractType: "DIGITOVER", prediction: "1" }
-      } else {
-        return { contractType: "DIGITUNDER", prediction: "8" }
-      }
-    } else if (maxPercent >= 53) {
-      // WAIT signal at 53% - don't trade yet
-      return null
-    }
-
-    return null
-  }
 
   // Execute trade
   private async executeTrade(
@@ -707,18 +520,30 @@ export class AutoBot {
     try {
       console.log(`[v0] Fetching proposal for ${contractType}...`, tradeParams)
       const proposal = await this.api.getProposal(tradeParams)
+      const engineAnalysis = this.analysisEngine.getAnalysis()
+      const lastDigit = this.analysisEngine.getCurrentDigit() || 0
 
-      const lastDigit = this.tickHistory[this.tickHistory.length - 1]
-      const recentTicks = this.tickHistory.slice(-10)
-      const avgPrice = recentTicks.reduce((sum, d) => sum + d, 0) / recentTicks.length
+      // Calculate signals to get probability
+      const signals = this.analysisEngine.generateSignals()
+      const proSignals = this.analysisEngine.generateProSignals()
+      const allSignals = [...signals, ...proSignals]
 
-      // Calculate analysis metrics
+      const relevantSignal = allSignals.find(s =>
+        (s.type.includes("over_under") && contractType.includes("OVER")) ||
+        (s.type.includes("even_odd") && contractType.includes("EVEN")) ||
+        (s.type.includes("differs") && contractType.includes("DIFF"))
+      )
+
+      const probability = relevantSignal?.probability || 55
+
+      // Calculate analysis metrics for UI
       const analysis = {
-        currentPrice: avgPrice,
+        currentPrice: this.analysisEngine.getTicks().slice(-1)[0]?.quote || 0,
         lastDigit,
         contractType,
         prediction,
         market: this.config.symbol,
+        engineAnalysis,
         proposal: {
           id: proposal.id,
           askPrice: proposal.ask_price,
@@ -728,9 +553,6 @@ export class AutoBot {
           longcode: proposal.longcode,
         },
       }
-
-      // Calculate probability based on analysis
-      const probability = this.calculateProbability(contractType, lastDigit)
 
       // Track proposal metrics
       this.proposalMetrics.probabilities.push(probability)
@@ -751,55 +573,10 @@ export class AutoBot {
     }
   }
 
-  private calculateProbability(contractType: string, lastDigit: number): number {
-    const recent10 = this.tickHistory.slice(-10)
-    const recent50 = this.tickHistory.slice(-50)
-
-    if (recent10.length < 10) return 50
-
-    switch (this.strategy) {
-      case "EVEN_ODD":
-      case "EVEN_ODD_ADVANCED": {
-        const evenCount = recent10.filter((d) => d % 2 === 0).length
-        const evenPercent = (evenCount / 10) * 100
-        return Math.max(50, Math.min(85, 50 + (evenPercent - 50)))
-      }
-
-      case "OVER3_UNDER6":
-      case "OVER2_UNDER7":
-      case "OVER1_UNDER8": {
-        const threshold = contractType === "DIGITOVER" ? 5 : 4
-        const overCount = recent10.filter((d) => d >= threshold).length
-        const overPercent = (overCount / 10) * 100
-        return Math.max(50, Math.min(85, 50 + (overPercent - 50)))
-      }
-
-      case "UNDER6": {
-        const underCount = recent10.filter((d) => d <= 5).length
-        const underPercent = (underCount / 10) * 100
-        return Math.max(50, Math.min(85, 50 + (underPercent - 50)))
-      }
-
-      case "DIFFERS": {
-        const lastDigitCount = recent50.filter((d) => d === lastDigit).length
-        const lastDigitPercent = (lastDigitCount / recent50.length) * 100
-        return Math.max(55, Math.min(90, 100 - lastDigitPercent))
-      }
-
-      case "OVER_UNDER_ADVANCED": {
-        const over5Count = recent10.filter((d) => d >= 5).length
-        const over5Percent = (over5Count / 10) * 100
-        return Math.max(50, Math.min(90, 50 + Math.abs(over5Percent - 50)))
-      }
-
-      default:
-        return 55
-    }
-  }
-
   getCurrentAnalysis(): any {
     return {
       analysis: this.currentAnalysis,
+      engineAnalysis: this.analysisEngine.getAnalysis(),
       proposalMetrics: {
         avgProbability: this.proposalMetrics.probabilities.length
           ? this.proposalMetrics.probabilities.reduce((a, b) => a + b, 0) / this.proposalMetrics.probabilities.length
@@ -813,71 +590,4 @@ export class AutoBot {
     }
   }
 
-  // Strategy 9: SUPER DIFFERS Bot - Simple 3-tick wait logic
-  private analyzeSuperDiffers(digits: number[]): { contractType: string; prediction: string } | null {
-    if (digits.length < 25) return null
-
-    const frequency: Record<number, number> = {}
-    for (let i = 2; i <= 7; i++) {
-      frequency[i] = 0
-    }
-
-    // Only count digits 2-7
-    digits.forEach((d) => {
-      if (d >= 2 && d <= 7) {
-        frequency[d]++
-      }
-    })
-
-    // Find digit with lowest frequency
-    let selectedDigit = this.differsSelectedDigit || 2
-    let minCount = digits.length
-
-    for (let i = 2; i <= 7; i++) {
-      if (frequency[i] < minCount) {
-        minCount = frequency[i]
-        selectedDigit = i
-      }
-    }
-
-    const selectedPercent = (frequency[selectedDigit] / digits.length) * 100
-
-    // Store selected digit if it's the first time
-    if (!this.differsSelectedDigit || this.differsSelectedDigit !== selectedDigit) {
-      this.differsSelectedDigit = selectedDigit
-      this.differsWaitCycle = 0
-    }
-
-    console.log(`[v0] SUPER DIFFERS: Selected digit=${selectedDigit} (${selectedPercent.toFixed(1)}%)`)
-
-    // Core entry logic: digit <10% occurrence
-    if (selectedPercent < 10) {
-      // Check if chosen digit appears in last 3 ticks
-      const last3 = digits.slice(-3)
-      const digitAppearedInLast3 = last3.includes(selectedDigit)
-
-      if (digitAppearedInLast3) {
-        console.log(`[v0] SUPER DIFFERS: Digit ${selectedDigit} appeared in last 3 ticks, restarting cycle`)
-        this.differsWaitCycle = 0
-        this.differsSelectedDigit = null // Reset to find new digit
-        return null
-      }
-
-      // Wait for 3 ticks without the digit
-      this.differsWaitCycle++
-      console.log(`[v0] SUPER DIFFERS: Wait cycle ${this.differsWaitCycle}/3 for digit ${selectedDigit}`)
-
-      if (this.differsWaitCycle >= 3) {
-        console.log(`[v0] SUPER DIFFERS: Entry after 3-tick wait for digit ${selectedDigit}`)
-        this.differsWaitCycle = 0
-        return { contractType: "DIGITDIFF", prediction: selectedDigit.toString() }
-      }
-    } else {
-      // Reset if digit is no longer <10%
-      this.differsWaitCycle = 0
-      this.differsSelectedDigit = null
-    }
-
-    return null
-  }
 }

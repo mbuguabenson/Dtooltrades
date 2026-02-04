@@ -23,49 +23,49 @@ const BOT_STRATEGIES: { id: BotStrategy; name: string; description: string }[] =
     id: "EVEN_ODD",
     name: "EVEN/ODD Bot",
     description:
-      "Analyzes Even/Odd digit bias. Shows WAIT at 50%+ increasing, TRADE NOW at 56%+. Uses last 1 hour data to detect market direction (55%+ and increasing)",
+      "Analyzes Even/Odd digit bias. Shows WAIT at 55%+, TRADE NOW at 60%+. Requires increasing power trend.",
   },
   {
     id: "OVER3_UNDER6",
     name: "OVER3/UNDER6 Bot",
     description:
-      "Analyzes Over 3 (digits 4-9) and Under 6 (digits 0-5). WAIT at 53%+, TRADE NOW at 56%+, STRONG at 60%. Entry when 55%+ and increasing",
+      "Analyzes Over 3 (digits 4-9) and Under 6 (digits 0-5). WAIT at 55%+, TRADE NOW at 60%+. Cross-verifies power distribution.",
   },
   {
     id: "OVER2_UNDER7",
-    name: "OVER2/UNDER7 Bot",
+    name: "OVER2_UNDER7 Bot",
     description:
-      "Analyzes Over 2 (digits 3-9) and Under 7 (digits 0-6). Predicts next 10-20 ticks. When 0-6 most: Under 7-8, when 0-5: Under 7, when 0-4: Under 6",
+      "Analyzes Over 2 (digits 3-9) and Under 7 (digits 0-6). Entry when range bias reaches 60%+. Mean-reversion pattern detection.",
   },
   {
     id: "OVER1_UNDER8",
     name: "OVER1/UNDER8 Bot",
     description:
-      "Advanced bot for Over 1 (digits 2-9) and Under 8 (digits 0-7). When 0-6: Over 1+2, when 4-9: Over 2, when 5-9: Over 3. Analyzes power dynamics",
+      "Advanced bot for Over 1 (digits 2-9) and Under 8 (digits 0-7). Uses neural power dynamics. 60%+ threshold.",
   },
   {
     id: "UNDER6",
     name: "UNDER6 Bot",
     description:
-      "Specialized for digits 0-6. When 0-4 appears most (50%+), gives Under 6 signal. Requires predictable patterns",
+      "Specialized for digits 0-6. When 0-4 appears most (60%+), gives Under 6 signal. Requires predictable resonance.",
   },
   {
     id: "DIFFERS",
     name: "DIFFERS Bot",
     description:
-      "Selects digits 2-7 with <10% power (not most/least appearing). Waits 3 ticks without digit appearance, then trades. High precision strategy",
+      "Selects digits 2-7 with <10% power. Waits 3 ticks without digit appearance. High-precision DIFFERS execution.",
   },
   {
     id: "EVEN_ODD_ADVANCED",
     name: "EVEN/ODD Advanced",
     description:
-      "Advanced volatility detection. WAIT (blue) at 50%+ increasing, TRADE NOW (green) at 56%+ until market changes. Multi-level signal analysis",
+      "Pro volatility detection. 55%+=WAIT (Blue), 60%+=TRADE NOW (Green). Multi-level signal analysis with Pro Neural logic.",
   },
   {
     id: "OVER_UNDER_ADVANCED",
     name: "OVER/UNDER Advanced",
     description:
-      "Multi-level: 53%=WAIT (blue), 56%+=TRADE NOW (green), 60%+=STRONG signal. Uses last 10-20 ticks for predictability",
+      "Pro Neural: 55%=WAIT, 60%+=TRADE NOW. Uses last 50 ticks for deep predictability analysis.",
   },
 ]
 
@@ -325,15 +325,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
               <div
                 key={strategy.id}
                 onClick={() => !isRunning && setSelectedStrategy(strategy.id)}
-                className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                  selectedStrategy === strategy.id
-                    ? theme === "dark"
-                      ? "bg-blue-500/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                      : "bg-blue-100 border-blue-500"
-                    : theme === "dark"
-                      ? "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
-                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                } ${isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedStrategy === strategy.id
+                  ? theme === "dark"
+                    ? "bg-blue-500/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                    : "bg-blue-100 border-blue-500"
+                  : theme === "dark"
+                    ? "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
+                    : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                  } ${isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <h3 className={`font-bold mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                   {strategy.name}
@@ -605,15 +604,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-3xl font-bold flex items-center gap-2 ${
-                    botState.profitLoss >= 0
-                      ? theme === "dark"
-                        ? "text-green-400"
-                        : "text-green-600"
-                      : theme === "dark"
-                        ? "text-red-400"
-                        : "text-red-600"
-                  }`}
+                  className={`text-3xl font-bold flex items-center gap-2 ${botState.profitLoss >= 0
+                    ? theme === "dark"
+                      ? "text-green-400"
+                      : "text-green-600"
+                    : theme === "dark"
+                      ? "text-red-400"
+                      : "text-red-600"
+                    }`}
                 >
                   {botState.profitLoss >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                   ${Math.abs(botState.profitLoss).toFixed(2)}
@@ -753,7 +751,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                           {new Date(trade.timestamp).toLocaleTimeString()}
                         </td>
                         <td className={`p-2 text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                          {trade.contract}
+                          {trade.contractType}
                         </td>
                         <td className="p-2">
                           <Badge
@@ -771,15 +769,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                           ${trade.stake.toFixed(2)}
                         </td>
                         <td
-                          className={`p-2 text-sm text-right font-bold ${
-                            trade.profitLoss >= 0
-                              ? theme === "dark"
-                                ? "text-green-400"
-                                : "text-green-600"
-                              : theme === "dark"
-                                ? "text-red-400"
-                                : "text-red-600"
-                          }`}
+                          className={`p-2 text-sm text-right font-bold ${trade.profitLoss >= 0
+                            ? theme === "dark"
+                              ? "text-green-400"
+                              : "text-green-600"
+                            : theme === "dark"
+                              ? "text-red-400"
+                              : "text-red-600"
+                            }`}
                         >
                           {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
                         </td>

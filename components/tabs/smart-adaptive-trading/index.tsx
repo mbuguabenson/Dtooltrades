@@ -25,9 +25,11 @@ import {
     Search,
     Cpu,
     Radio,
-    Terminal
+    Terminal,
+    Globe
 } from 'lucide-react'
 import { useSmartAdaptiveTrading } from "@/hooks/use-smart-adaptive-trading"
+import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -44,7 +46,13 @@ const itemVariants = {
     visible: { y: 0, opacity: 1 }
 }
 
-export default function SmartAdaptiveTradingTab() {
+export default function SmartAdaptiveTradingTab({
+    signals: engineSignals = [],
+    analysis: engineAnalysis
+}: {
+    signals?: Signal[],
+    analysis?: AnalysisResult
+}) {
     const {
         marketScores,
         selectedMarket,
@@ -311,6 +319,34 @@ export default function SmartAdaptiveTradingTab() {
                                 </motion.div>
                                 <p className="text-slate-600 font-black italic tracking-widest uppercase text-sm">Targeting structural resonance...</p>
                             </div>
+                        )}
+                    </div>
+                </Card>
+
+                {/* NEURAL PROTOCOL (AnalysisEngine) */}
+                <Card className="bg-slate-900/40 border-slate-800/50 p-8 rounded-[3rem] backdrop-blur-xl shadow-2xl mt-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-sky-400 mb-8 flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-sky-500" /> Global Neural Protocol
+                    </h3>
+                    <div className="flex flex-col gap-3">
+                        {engineSignals.filter(s => s.status !== "NEUTRAL").length > 0 ? (
+                            engineSignals.filter(s => s.status !== "NEUTRAL").map((s, idx) => (
+                                <div key={idx} className={`p-4 rounded-2xl border ${s.status === 'TRADE NOW' ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-slate-950/50 border-slate-800'} flex items-center justify-between`}>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Badge className={`text-[8px] font-black ${s.status === 'TRADE NOW' ? 'bg-emerald-500' : 'bg-blue-500'}`}>{s.status}</Badge>
+                                            <span className="text-[10px] font-bold text-white uppercase">{s.type.replace('_', ' ')}</span>
+                                        </div>
+                                        <div className="text-xs text-slate-300 font-medium">{s.recommendation}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-mono font-black text-white">{s.probability.toFixed(1)}%</div>
+                                        <div className="text-[8px] text-slate-500 uppercase font-black">Accuracy</div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="py-8 text-center text-slate-700 italic font-black uppercase tracking-widest text-xs">Awaiting neural sync...</div>
                         )}
                     </div>
                 </Card>

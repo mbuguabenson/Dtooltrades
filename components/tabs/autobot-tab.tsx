@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress"
 import { Play, Square, AlertCircle, AlertTriangle, Activity, DollarSign } from 'lucide-react'
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { AutoBot, type BotStrategy, type AutoBotState, type AutoBotConfig } from "@/lib/autobots"
+import { AnalysisEngine, type Signal } from "@/lib/analysis-engine"
 import { TickHistoryManager } from "@/lib/tick-history-manager"
 import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 
@@ -50,44 +51,44 @@ const BOT_STRATEGIES: {
     {
       id: "EVEN_ODD",
       name: "EVEN/ODD Bot",
-      description: "Analyzes Even/Odd digit bias over last 50 ticks",
-      condition: "Entry: When even/odd reaches 56%+ and increasing. Wait at 50-56%. Exit after 1 tick.",
+      description: "Analyzes Even/Odd digit bias over last 100 ticks",
+      condition: "Entry: When even/odd reaches 60%+ and increasing. Wait at 55-59%. Exit after 1 tick.",
     },
     {
       id: "OVER3_UNDER6",
       name: "OVER3/UNDER6 Bot",
       description: "Trades Over 3 (4-9) vs Under 6 (0-5)",
-      condition: "Entry: 60%+ = STRONG signal. 56-60% = TRADE NOW. 53-56% = WAIT. Exit after 1 tick.",
+      condition: "Entry: 60%+ = TRADE NOW. 55-59% = WAIT. Analyzes market power distribution.",
     },
     {
       id: "OVER2_UNDER7",
-      name: "OVER2/UNDER7 Bot",
+      name: "OVER2_UNDER7 Bot",
       description: "Trades Over 2 (3-9) vs Under 7 (0-6)",
-      condition: "Entry: When 0-6 dominates 60%+, trade Under 7. When 3-9 dominates, trade Over 2.",
+      condition: "Entry: When 0-6 dominates 60%+, trade Under 7. Match-reversion logic.",
     },
     {
       id: "OVER1_UNDER8",
       name: "OVER1/UNDER8 Bot",
       description: "Advanced Over 1 (2-9) vs Under 8 (0-7)",
-      condition: "Entry: Analyzes last 25 ticks. 60%+ threshold. Exit after 1 tick.",
+      condition: "Entry: Analyzes last 50 ticks. 60%+ threshold with power trend confirmation.",
     },
     {
       id: "UNDER6",
       name: "UNDER6 Bot",
       description: "Specialized for digits 0-6",
-      condition: "Entry: When 0-4 appears 50%+, trade Under 6. Wait for predictable patterns.",
+      condition: "Entry: When 0-4 appears 50%+, trade Under 6. Requires increasing power.",
     },
     {
       id: "DIFFERS",
       name: "DIFFERS Bot",
       description: "Selects digits 2-7 with <10% frequency",
-      condition: "Entry: Decreasing power + increasing most appearing digit = trade. 3-tick wait if stable.",
+      condition: "Entry: Decreasing power + no appearance in 3 ticks. High precision DIFFERS.",
     },
     {
       id: "SUPER_DIFFERS",
       name: "SUPER DIFFERS Bot",
-      description: "High-precision entry using least frequent digit (2-7)",
-      condition: "Entry: <10% digit, wait 3 ticks without appearance. If appears, restart cycle. Exit after 1 tick.",
+      description: "High-precision entry using Pro neural logic (digits 2-7)",
+      condition: "Entry: <10% digit, wait 3 ticks without appearance. Uses advanced probability.",
     },
   ]
 
@@ -151,6 +152,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
 
   const tickManagerRef = useRef<TickHistoryManager | null>(null)
   const tickSubscriptionRef = useRef<string | null>(null)
+  const analysisEngineRef = useRef<AnalysisEngine>(new AnalysisEngine(100))
 
   useEffect(() => {
     const defaultConfig: BotConfig = {
@@ -181,6 +183,13 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
           // Update market price and last digit from WebSocket
           setCurrentMarketPrice(tickData.quote)
           setCurrentLastDigit(tickData.lastDigit)
+
+          // Update analysis engine
+          analysisEngineRef.current.addTick({
+            epoch: Date.now() / 1000,
+            quote: tickData.quote,
+            symbol: symbol
+          })
         })
 
         tickSubscriptionRef.current = subscriptionId
@@ -218,13 +227,20 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
         try {
           setBotTickData((prev) => new Map(prev).set(strategy.id, latestDigits))
 
-          const analysis = analyzeStrategyWithEntry(strategy.id, latestDigits)
+          const signals = analysisEngineRef.current.generateSignals()
+          const proSignals = analysisEngineRef.current.generateProSignals()
+          const allSignals = [...signals, ...proSignals]
+          const engineAnalysis = analysisEngineRef.current.getAnalysis()
+
+          // Map engine signals to UI analysis format
+          const analysis = mapEngineToUI(strategy.id, allSignals, engineAnalysis)
           setBotAnalysis((prev) => new Map(prev).set(strategy.id, analysis))
 
-          const isReady = analysis.marketPower >= 56 && analysis.trend === "increasing"
+          const isReady = analysis.signal === "TRADE NOW"
           setBotReadyStatus((prev) => new Map(prev).set(strategy.id, isReady))
 
-          checkEntryPoint(strategy.id, latestDigits, analysis)
+          // Entry points are now handled within AnalysisEngine's status
+          setEntryPointMet((prev) => new Map(prev).set(strategy.id, isReady))
         } catch (error) {
           console.error(`[v0] Analysis error for ${strategy.id}:`, error)
         }
@@ -242,276 +258,42 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
     }
   }, [apiClient, isConnected, symbol])
 
-  const checkEntryPoint = (strategy: BotStrategy, digits: number[], analysis: any) => {
-    const last10 = digits.slice(-10)
+  const mapEngineToUI = (strategy: BotStrategy, signals: Signal[], analysis: any) => {
+    let relevant: Signal | undefined
 
     switch (strategy) {
-      case "EVEN_ODD": {
-        const targetIsEven = analysis.entryPoint === "EVEN"
-
-        if (targetIsEven && analysis.marketPower >= 55) {
-          let consecutiveOdds = 0
-          for (let i = last10.length - 2; i >= 0; i--) {
-            if (last10[i] % 2 === 1) consecutiveOdds++
-            else break
-          }
-
-          const lastIsEven = last10[last10.length - 1] % 2 === 0
-          if (consecutiveOdds >= 2 && lastIsEven) {
-            setEntryPointMet((prev) => new Map(prev).set(strategy, true))
-          }
-        } else if (!targetIsEven && analysis.marketPower >= 55) {
-          let consecutiveEvens = 0
-          for (let i = last10.length - 2; i >= 0; i--) {
-            if (last10[i] % 2 === 0) consecutiveEvens++
-            else break
-          }
-
-          const lastIsOdd = last10[last10.length - 1] % 2 === 1
-          if (consecutiveEvens >= 2 && lastIsOdd) {
-            setEntryPointMet((prev) => new Map(prev).set(strategy, true))
-          }
-        }
+      case "EVEN_ODD":
+        relevant = signals.find(s => s.type === "even_odd")
         break
-      }
-
-      case "OVER3_UNDER6":
+      case "EVEN_ODD_ADVANCED":
+        relevant = signals.find(s => s.type === "pro_even_odd") || signals.find(s => s.type === "even_odd")
+        break
+      case "OVER1_UNDER8":
+        relevant = signals.find(s => s.type === "pro_over_under" && (s.recommendation.includes("OVER 1") || s.recommendation.includes("UNDER 8")))
+        break
       case "OVER2_UNDER7":
-      case "OVER1_UNDER8": {
-        setEntryPointMet((prev) => new Map(prev).set(strategy, true))
+      case "OVER3_UNDER6":
+      case "OVER_UNDER_ADVANCED":
+      case "UNDER6":
+        relevant = signals.find(s => s.type === "over_under")
         break
-      }
-
-      case "DIFFERS": {
-        const targetDigit = analysis.distribution?.lowestDigit
-        if (targetDigit !== undefined) {
-          const last3 = last10.slice(-3)
-          const digitAppeared = last3.includes(targetDigit)
-
-          if (!digitAppeared && last3.length === 3) {
-            setEntryPointMet((prev) => new Map(prev).set(strategy, true))
-          } else if (digitAppeared) {
-            setEntryPointMet((prev) => new Map(prev).set(strategy, false))
-          }
-        }
+      case "DIFFERS":
+      case "SUPER_DIFFERS":
+        relevant = signals.find(s => s.type === "pro_differs") || signals.find(s => s.type === "differs")
         break
-      }
-
-      case "SUPER_DIFFERS": {
-        const targetDigit = analysis.distribution?.lowestDigit
-        if (targetDigit !== undefined) {
-          const last3 = last10.slice(-3)
-          const digitAppeared = last3.includes(targetDigit)
-
-          if (!digitAppeared && last3.length === 3) {
-            setEntryPointMet((prev) => new Map(prev).set(strategy, true))
-          } else if (digitAppeared) {
-            setEntryPointMet((prev) => new Map(prev).set(strategy, false))
-          }
-        }
-        break
-      }
-
-      default:
-        setEntryPointMet((prev) => new Map(prev).set(strategy, true))
-    }
-  }
-
-  const analyzeStrategyWithEntry = (strategy: BotStrategy, digits: number[]) => {
-    return analyzeStrategy(strategy, digits)
-  }
-
-  const analyzeStrategy = (strategy: BotStrategy, digits: number[]) => {
-    if (digits.length < 25) {
-      return {
-        marketPower: 0,
-        trend: "neutral",
-        signal: "WAIT",
-        entryPoint: null,
-        exitPoint: null,
-        distribution: {},
-        powerDistribution: {},
-      }
     }
 
-    const last10 = digits.slice(-10)
-    const last50 = digits
-
-    const digitFrequency: Record<number, number> = {}
-    for (let i = 0; i <= 9; i++) {
-      digitFrequency[i] = last50.filter((d) => d === i).length
-    }
-
-    switch (strategy) {
-      case "EVEN_ODD": {
-        const evenCount = last50.filter((d) => d % 2 === 0).length
-        const evenPercent = (evenCount / last50.length) * 100
-        const oddPercent = 100 - evenPercent
-        const maxPercent = Math.max(evenPercent, oddPercent)
-
-        const evenLast10 = last10.filter((d) => d % 2 === 0).length
-        const evenPercentLast10 = (evenLast10 / 10) * 100
-        const trend = evenPercentLast10 > evenPercent ? "increasing" : "decreasing"
-
-        return {
-          marketPower: maxPercent,
-          trend,
-          signal: maxPercent >= 60 && trend === "increasing" ? "TRADE NOW" : maxPercent >= 56 ? "WAIT" : "NEUTRAL",
-          entryPoint: evenPercent > oddPercent ? "EVEN" : "ODD",
-          exitPoint: "After 1 tick",
-          distribution: { even: evenPercent.toFixed(1), odd: oddPercent.toFixed(1) },
-          powerDistribution: digitFrequency,
-        }
-      }
-
-      case "OVER3_UNDER6": {
-        const overCount = last50.filter((d) => d >= 4).length
-        const underCount = last50.filter((d) => d <= 5).length
-        const overPercent = (overCount / last50.length) * 100
-        const underPercent = (underCount / last50.length) * 100
-        const maxPercent = Math.max(overPercent, underPercent)
-
-        return {
-          marketPower: maxPercent,
-          trend: maxPercent >= 60 ? "strong" : maxPercent >= 56 ? "increasing" : "neutral",
-          signal: maxPercent >= 60 ? "STRONG" : maxPercent >= 56 ? "TRADE NOW" : maxPercent >= 53 ? "WAIT" : "NEUTRAL",
-          entryPoint: overPercent > underPercent ? "OVER 3" : "UNDER 6",
-          exitPoint: "After 1 tick",
-          distribution: { over: overPercent.toFixed(1), under: underPercent.toFixed(1) },
-          powerDistribution: digitFrequency,
-        }
-      }
-
-      case "OVER2_UNDER7": {
-        const overCount = last50.filter((d) => d >= 3).length
-        const underCount = last50.filter((d) => d <= 6).length
-        const overPercent = (overCount / last50.length) * 100
-        const underPercent = (underCount / last50.length) * 100
-        const maxPercent = Math.max(overPercent, underPercent)
-
-        return {
-          marketPower: maxPercent,
-          trend: maxPercent >= 60 ? "strong" : "neutral",
-          signal: maxPercent >= 60 ? "TRADE NOW" : "NEUTRAL",
-          entryPoint: overPercent > underPercent ? "OVER 2" : "UNDER 7",
-          exitPoint: "After 1 tick",
-          distribution: { over: overPercent.toFixed(1), under: underPercent.toFixed(1) },
-          powerDistribution: digitFrequency,
-        }
-      }
-
-      case "OVER1_UNDER8": {
-        const overCount = last50.filter((d) => d >= 2).length
-        const underCount = last50.filter((d) => d <= 7).length
-        const overPercent = (overCount / last50.length) * 100
-        const underPercent = (underCount / last50.length) * 100
-        const maxPercent = Math.max(overPercent, underPercent)
-
-        return {
-          marketPower: maxPercent,
-          trend: maxPercent >= 60 ? "strong" : "neutral",
-          signal: maxPercent >= 60 ? "TRADE NOW" : "NEUTRAL",
-          entryPoint: overPercent > underPercent ? "OVER 1" : "UNDER 8",
-          exitPoint: "After 1 tick",
-          distribution: { over: overPercent.toFixed(1), under: underPercent.toFixed(1) },
-          powerDistribution: digitFrequency,
-        }
-      }
-
-      case "UNDER6": {
-        const under4Count = last50.filter((d) => d <= 4).length
-        const under4Percent = (under4Count / last50.length) * 100
-
-        return {
-          marketPower: under4Percent,
-          trend: under4Percent >= 50 ? "strong" : "neutral",
-          signal: under4Percent >= 50 ? "TRADE NOW" : "WAIT",
-          entryPoint: "UNDER 6",
-          exitPoint: "After 1 tick",
-          distribution: { under4: under4Percent.toFixed(1) },
-          powerDistribution: digitFrequency,
-        }
-      }
-
-      case "DIFFERS": {
-        const frequency: Record<number, number> = {}
-        for (let i = 2; i <= 7; i++) {
-          frequency[i] = last50.filter((d) => d === i).length
-        }
-
-        let lowestDigit = 2
-        let lowestCount = last50.length
-        let highestCount = 0
-        let highestDigit = 2
-
-        for (let i = 2; i <= 7; i++) {
-          if (frequency[i] < lowestCount) {
-            lowestCount = frequency[i]
-            lowestDigit = i
-          }
-          if (frequency[i] > highestCount) {
-            highestCount = frequency[i]
-            highestDigit = i
-          }
-        }
-
-        const lowestPercent = (lowestCount / last50.length) * 100
-        const highestPercent = (highestCount / last50.length) * 100
-
-        const last10Count = last10.filter((d) => d === lowestDigit).length
-        const last10Percent = (last10Count / 10) * 100
-        const isDecreasing = last10Percent < lowestPercent
-
-        return {
-          marketPower: 100 - lowestPercent,
-          trend: isDecreasing ? "decreasing" : "increasing",
-          signal: lowestPercent < 10 && isDecreasing ? "TRADE NOW" : "WAIT",
-          entryPoint: `DIFFERS ${lowestDigit}`,
-          exitPoint: "After 1 tick",
-          distribution: { lowestDigit, frequency: lowestPercent.toFixed(1), highest: highestPercent.toFixed(1) },
-          powerDistribution: digitFrequency,
-        }
-      }
-
-      case "SUPER_DIFFERS": {
-        const frequency: Record<number, number> = {}
-        for (let i = 2; i <= 7; i++) {
-          frequency[i] = last50.filter((d) => d === i).length
-        }
-
-        let lowestDigit = 2
-        let lowestCount = last50.length
-
-        for (let i = 2; i <= 7; i++) {
-          if (frequency[i] < lowestCount) {
-            lowestCount = frequency[i]
-            lowestDigit = i
-          }
-        }
-
-        const lowestPercent = (lowestCount / last50.length) * 100
-
-        return {
-          marketPower: 100 - lowestPercent,
-          trend: lowestPercent < 10 ? "strong" : "neutral",
-          signal: lowestPercent < 10 ? "TRADE NOW" : "WAIT",
-          entryPoint: `DIFFERS ${lowestDigit}`,
-          exitPoint: "After 1 tick",
-          distribution: { lowestDigit, frequency: lowestPercent.toFixed(1) },
-          powerDistribution: digitFrequency,
-        }
-      }
-
-      default:
-        return {
-          marketPower: 0,
-          trend: "neutral",
-          signal: "WAIT",
-          entryPoint: null,
-          exitPoint: null,
-          distribution: {},
-          powerDistribution: digitFrequency,
-        }
+    return {
+      marketPower: relevant?.probability || 50,
+      trend: relevant?.status === "TRADE NOW" ? "increasing" : "neutral",
+      signal: relevant?.status || "NEUTRAL",
+      entryPoint: relevant?.recommendation || "Waiting for signal...",
+      exitPoint: "5 Ticks",
+      distribution: analysis.digitFrequencies || [],
+      powerDistribution: (analysis.digitFrequencies || []).reduce((acc: any, curr: any) => {
+        acc[curr.digit] = curr.count
+        return acc
+      }, {}),
     }
   }
 
@@ -900,8 +682,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                         Signal:{" "}
                         <span
                           className={`
-                          ${analysis.signal === "STRONG" ? "text-green-400" : ""}
-                          ${analysis.signal === "TRADE NOW" ? "text-yellow-400" : ""}
+                          ${analysis.signal === "TRADE NOW" ? "text-green-400" : ""}
                           ${analysis.signal === "WAIT" ? "text-blue-400" : ""}
                           ${analysis.signal === "NEUTRAL" ? "text-gray-400" : ""}
                         `}

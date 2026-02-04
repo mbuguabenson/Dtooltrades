@@ -92,8 +92,7 @@ export class UnifiedTradingEngine {
       }
 
       // 4. Check risk and execute trades if conditions met
-      this.riskMetrics = this.tradeExecution.getRiskMetrics()
-      this.state.riskMetrics = this.riskMetrics
+      this.state.riskMetrics = this.tradeExecution.getRiskMetrics()
 
       // 5. Emit events
       this.emit('tick', { price, digit, analysis })
