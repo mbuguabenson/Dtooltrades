@@ -72,6 +72,7 @@ export class AutoBot {
   private onStateUpdate: ((state: AutoBotState) => void) | null = null
   private tradesThisMinute = 0
   private minuteResetTimer: NodeJS.Timeout | null = null
+  private subscriptionId: string | null = null
   private activeProposals: Map<string, { proposalData: any; timestamp: number }> = new Map()
   private activeContracts: Map<number, { contractData: any; entryTime: number }> = new Map()
   private currentAnalysis: any = null
@@ -120,8 +121,17 @@ export class AutoBot {
     }, 60000)
 
     try {
-      // Fetch initial tick history
+      // Fetch initial tick history to warm up the engine
       await this.fetchTickHistory()
+
+      // Subscribe to live ticks
+      this.subscriptionId = await this.api.subscribeTicks(this.config.symbol, (tick) => {
+        this.analysisEngine.addTick({
+          epoch: tick.epoch,
+          quote: tick.quote,
+          symbol: this.config.symbol
+        })
+      })
 
       // Start continuous trading loop
       this.runTradingLoop()
@@ -143,6 +153,12 @@ export class AutoBot {
       clearInterval(this.minuteResetTimer)
       this.minuteResetTimer = null
     }
+
+    if (this.subscriptionId) {
+      this.api.forget(this.subscriptionId).catch(console.error)
+      this.subscriptionId = null
+    }
+
     console.log(`[v0] ⏹️ ${this.strategy} bot stopped`)
     this.updateUI()
   }
@@ -209,12 +225,22 @@ export class AutoBot {
   private async fetchTickHistory() {
     try {
       const response = await this.api.getTickHistory(this.config.symbol, this.config.historyCount)
+
+      // Feed initial history to engine
+      response.prices.forEach((price: number, index: number) => {
+        this.analysisEngine.addTick({
+          epoch: response.times[index] || (Date.now() / 1000),
+          quote: price,
+          symbol: this.config.symbol
+        })
+      })
+
       this.tickHistory = response.prices.map((price: number) => {
         const priceStr = price.toFixed(5)
         const lastDigit = Number.parseInt(priceStr[priceStr.length - 1])
         return lastDigit
       })
-      console.log(`[v0] 📈 Fetched ${this.tickHistory.length} ticks for ${this.strategy}`)
+      console.log(`[v0] 📈 Engine warmed up with ${response.prices.length} ticks for ${this.strategy}`)
     } catch (error: any) {
       console.error(`[v0] ❌ Failed to fetch tick history:`, error)
     }
@@ -222,21 +248,7 @@ export class AutoBot {
 
   // Analyze market and get trade signal
   private async analyzeAndGetSignal(): Promise<{ contractType: string; prediction?: string } | null> {
-    try {
-      const response = await this.api.getTickHistory(this.config.symbol, 50)
-
-      // Clear existing analysis digits and push new ones (though addTick is preferred for streaming)
-      // For the loop, we'll keep the engine updated
-      response.prices.forEach((price: number) => {
-        this.analysisEngine.addTick({
-          epoch: Date.now() / 1000,
-          quote: price,
-          symbol: this.config.symbol
-        })
-      })
-    } catch (error: any) {
-      console.error(`[v0] Failed to refresh tick history:`, error)
-    }
+    // We no longer poll getTickHistory here as the engine is updated via subscription
 
     const signals = this.analysisEngine.generateSignals()
     const proSignals = this.analysisEngine.generateProSignals()
