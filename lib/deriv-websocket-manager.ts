@@ -520,15 +520,29 @@ export class DerivWebSocketManager {
             const recoveredId = this.symbolToSubscriptionMap.get(symbol);
             if (recoveredId) {
               console.log(`[v0] Successfully recovered ID for ${symbol}: ${recoveredId}`);
+              const currentRef = this.subscriptionRefCount.get(recoveredId) || 0;
+              this.subscriptionRefCount.set(recoveredId, currentRef + 1);
               this.activeSubscriptions.delete(symbol);
               return recoveredId;
             }
           }
 
-          // If we still don't have it, we might have been disconnected and reconnected
-          // or have a ghost subscription we can't identify. Try to forget_all as last resort.
-          console.warn(`[v0] Could not recover ID for ${symbol} after AlreadySubscribed. Clearing state to retry.`);
-          this.symbolToSubscriptionMap.delete(symbol);
+          // If we still don't have it, clear server-side subscriptions before retry
+          console.warn(`[v0] Could not recover ID for ${symbol} after AlreadySubscribed. Clearing all subscriptions.`);
+          try {
+            await this.sendAndWait({ forget_all: ["ticks"], req_id: this.getNextReqId() }, 5000);
+            console.log(`[v0] Successfully sent forget_all for ${symbol}`);
+            // Clear all local state
+            this.subscriptions.clear();
+            this.subscriptionRefCount.clear();
+            this.symbolToSubscriptionMap.clear();
+          } catch (forgetError) {
+            console.error(`[v0] forget_all failed:`, forgetError);
+          }
+          // Don't retry immediately, let the next attempt start fresh
+          if (attempt >= maxRetries) {
+            break;
+          }
         }
 
         console.warn(`[v0] Subscription attempt ${attempt}/${maxRetries} failed for ${symbol}:`, error)

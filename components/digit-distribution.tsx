@@ -11,17 +11,36 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
   const row1Digits = [0, 1, 2, 3, 4]
   const row2Digits = [5, 6, 7, 8, 9]
 
+  // Calculate frequency rankings for color coding
+  const sortedByFrequency = Object.entries(frequencies)
+    .map(([digit, data]) => ({ digit: Number(digit), ...data }))
+    .sort((a, b) => b.percentage - a.percentage)
+
+  const getFrequencyColor = (digit: number) => {
+    const rank = sortedByFrequency.findIndex(item => item.digit === digit)
+    if (rank === 0) return "#22c55e" // Green - most appearing
+    if (rank === 1) return "#eab308" // Yellow - 2nd most
+    if (rank === sortedByFrequency.length - 1) return "#ef4444" // Red - least appearing
+    return "#3b82f6" // Blue - others
+  }
+
   const renderDigitCircle = (digit: number) => {
     const freq = frequencies[digit] || { count: 0, percentage: 0 }
     const isCurrentDigit = currentDigit === digit
 
     // SVG Parameters for the circular progress
     const size = 64
-    const strokeWidth = 6
+    const strokeWidth = 5 // Increased stroke width
     const center = size / 2
     const radius = (size - strokeWidth) / 2
     const circumference = 2 * Math.PI * radius
-    const offset = circumference - (freq.percentage / 100) * circumference
+
+    // Calculate arc length for bottom-centered display (180 degrees max)
+    const maxArcLength = circumference / 2 // Half circle
+    const arcLength = (freq.percentage / 100) * maxArcLength
+    const arcOffset = circumference - arcLength
+
+    const ringColor = getFrequencyColor(digit)
 
     return (
       <div key={digit} className="relative flex flex-col items-center gap-2 group">
@@ -30,8 +49,8 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
             }`}
         >
           {/* Circular Progress Ring */}
-          <svg width={size} height={size} className="transform -rotate-90">
-            {/* Background Track */}
+          <svg width={size} height={size} className="transform rotate-0">
+            {/* Background Track - Full Circle */}
             <circle
               cx={center}
               cy={center}
@@ -40,16 +59,16 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
               stroke={theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}
               strokeWidth={strokeWidth}
             />
-            {/* Progress Stroke */}
+            {/* Progress Stroke - Bottom Arc Only */}
             <circle
               cx={center}
               cy={center}
               r={radius}
               fill="none"
-              stroke={isCurrentDigit ? "#f97316" : "#3b82f6"}
+              stroke={isCurrentDigit ? "#f97316" : ringColor}
               strokeWidth={strokeWidth}
-              strokeDasharray={circumference}
-              strokeDashoffset={offset}
+              strokeDasharray={`${arcLength} ${circumference}`}
+              strokeDashoffset={-circumference * 0.25}
               strokeLinecap="round"
               className="transition-all duration-1000 ease-out"
               style={{
@@ -58,19 +77,31 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
             />
           </svg>
 
-          {/* Centered Digit */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          {/* Centered Content - Digit and Percentage */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
             <span
-              className={`text-xl font-black transition-all duration-300 ${isCurrentDigit
-                  ? theme === "dark"
-                    ? "text-orange-400 scale-110"
-                    : "text-orange-600 scale-110"
-                  : theme === "dark"
-                    ? "text-slate-300"
-                    : "text-slate-700"
+              className={`text-xl font-black transition-all duration-300 leading-none ${isCurrentDigit
+                ? theme === "dark"
+                  ? "text-orange-400 scale-110"
+                  : "text-orange-600 scale-110"
+                : theme === "dark"
+                  ? "text-slate-300"
+                  : "text-slate-700"
                 }`}
             >
               {digit}
+            </span>
+            <span
+              className={`text-[10px] font-bold transition-all duration-300 ${isCurrentDigit
+                ? theme === "dark"
+                  ? "text-orange-400"
+                  : "text-orange-600"
+                : theme === "dark"
+                  ? "text-slate-400"
+                  : "text-slate-500"
+                }`}
+            >
+              {freq.percentage.toFixed(1)}%
             </span>
           </div>
 
@@ -80,20 +111,8 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
           )}
         </div>
 
-        {/* Probability Labels */}
+        {/* Count Label Below */}
         <div className="text-center">
-          <div
-            className={`text-[10px] font-bold tracking-tight transition-colors ${isCurrentDigit
-                ? theme === "dark"
-                  ? "text-orange-400"
-                  : "text-orange-600"
-                : theme === "dark"
-                  ? "text-slate-400"
-                  : "text-slate-500"
-              }`}
-          >
-            {freq.percentage.toFixed(1)}%
-          </div>
           <div
             className={`text-[8px] font-mono opacity-40 ${isCurrentDigit ? "text-orange-400" : theme === "dark" ? "text-slate-500" : "text-slate-400"
               }`}

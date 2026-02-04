@@ -365,11 +365,45 @@ export default function DerivAnalysisApp() {
                   <div
                     className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-8 border glow-card-active ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                   >
-                    <h3
-                      className={`text-base sm:text-lg md:text-2xl font-bold mb-3 sm:mb-4 md:mb-6 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}
-                    >
-                      Digits Distribution
-                    </h3>
+                    <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-3">
+                      <h3
+                        className={`text-base sm:text-lg md:text-2xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                      >
+                        Digits Distribution
+                      </h3>
+
+                      {/* Tick Selector */}
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <label className={`text-xs sm:text-sm font-medium ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                          Analysis Depth:
+                        </label>
+                        <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
+                          <SelectTrigger
+                            className={`w-[100px] sm:w-[120px] h-8 sm:h-9 text-xs sm:text-sm ${theme === "dark"
+                                ? "bg-blue-500/10 border-blue-500/30 text-white hover:bg-blue-500/20"
+                                : "bg-blue-50 border-blue-200 text-gray-900"
+                              }`}
+                          >
+                            <SelectValue placeholder="Select ticks" />
+                          </SelectTrigger>
+                          <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-blue-500/30" : "bg-white"}>
+                            {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tickValue) => (
+                              <SelectItem
+                                key={tickValue}
+                                value={tickValue.toString()}
+                                className={`text-xs sm:text-sm ${theme === "dark"
+                                    ? "text-white hover:bg-blue-500/20"
+                                    : "text-gray-900"
+                                  }`}
+                              >
+                                {tickValue} Ticks
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
                     <DigitDistribution
                       frequencies={analysis.digitFrequencies}
                       currentDigit={currentDigit}
