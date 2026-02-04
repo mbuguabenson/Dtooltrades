@@ -60,9 +60,9 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
     if (token && isLoggedIn && token.length > 10) {
       if (!globalAPIClient || globalAPIClient.token !== token) {
         console.log("[v0] Initializing/Updating DerivAPIClient with token")
-        
+
         if (globalAPIClient) {
-            globalAPIClient.disconnect()
+          globalAPIClient.disconnect()
         }
 
         globalAPIClient = new DerivAPIClient({ appId: DERIV_APP_ID.toString(), token })
@@ -113,12 +113,20 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
         setIsConnected(connected)
         setIsAuthorized(authorized)
 
+        // Auto-reauthorize if connected but lost authorization
+        if (connected && !authorized && token && isLoggedIn) {
+          console.log("[v0] Auto-reauthorizing due to connection recovery...")
+          clientRef.current.authorize(token).catch(err => {
+            console.error("[v0] Auto-reauth failed:", err)
+          })
+        }
+
         if (connected && authorized && error) {
           setError(null)
           setConnectionStatus("connected")
         }
       }
-    }, 500)
+    }, 2000)
 
     return () => {
       clearInterval(interval)
@@ -159,11 +167,11 @@ export function useDerivAPI() {
       accountCode: "",
       accounts: [],
       activeLoginId: null,
-      logout: () => {},
-      requestLogin: () => {},
-      switchAccount: () => {},
-      submitApiToken: () => {},
-      openTokenSettings: () => {},
+      logout: () => { },
+      requestLogin: () => { },
+      switchAccount: () => { },
+      submitApiToken: () => { },
+      openTokenSettings: () => { },
     } as DerivAPIContextType
   }
   return context

@@ -65,6 +65,10 @@ export function useSmartAdaptiveTrading() {
     useEffect(() => {
         if (!apiClient || !isConnected || !isAuthorized || !selectedMarket) return
 
+        if (intelligenceRef.current) {
+            intelligenceRef.current.setFocusMarket(selectedMarket)
+        }
+
         let currentSubId: string | null = null
         let isCancelled = false
         const digits: number[] = []

@@ -607,7 +607,7 @@ export default function DerivAnalysisApp() {
 
 
               <TabsContent value="smart-adaptive" className="mt-0">
-                {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} />}
+                {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} symbol={symbol} />}
               </TabsContent>
 
               <TabsContent value="tools-info" className="mt-0">

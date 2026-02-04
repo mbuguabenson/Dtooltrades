@@ -48,10 +48,12 @@ const itemVariants = {
 
 export default function SmartAdaptiveTradingTab({
     signals: engineSignals = [],
-    analysis: engineAnalysis
+    analysis: engineAnalysis,
+    symbol = "R_100"
 }: {
     signals?: Signal[],
-    analysis?: AnalysisResult
+    analysis?: AnalysisResult,
+    symbol?: string
 }) {
     const {
         marketScores,
@@ -69,11 +71,19 @@ export default function SmartAdaptiveTradingTab({
         startAutoTrade,
         stopAutoTrade,
         setConfig,
+        resetSession,
         isConnected,
         isAuthorized,
         balance,
         logs
     } = useSmartAdaptiveTrading()
+
+    // Sync with global symbol selection
+    useEffect(() => {
+        if (symbol && symbol !== selectedMarket) {
+            setSelectedMarket(symbol)
+        }
+    }, [symbol, setSelectedMarket])
 
     const [stake, setStake] = useState(0.35)
     const [tp, setTp] = useState(5)

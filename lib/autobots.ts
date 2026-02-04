@@ -110,7 +110,7 @@ export class AutoBot {
 
     this.onStateUpdate = onStateUpdate
     this.state.isRunning = true
-    this.state.currentStake = this.config.initialStake
+    this.state.currentStake = Math.round(this.config.initialStake * 100) / 100
 
     console.log(`[v0] 🤖 Starting ${this.strategy} bot`)
 
@@ -437,7 +437,7 @@ export class AutoBot {
     if (result.isWin) {
       this.state.wins++
       this.state.profitLoss += result.profit
-      this.state.currentStake = this.config.initialStake
+      this.state.currentStake = Math.round(this.config.initialStake * 100) / 100
       this.state.consecutiveLosses = 0
       console.log(
         `[v0] ✅ ${this.strategy} WIN! Profit: $${result.profit.toFixed(2)} (Payout: $${result.payout.toFixed(2)})`,
@@ -448,11 +448,11 @@ export class AutoBot {
       this.state.consecutiveLosses++
 
       if (this.config.useMartingale && this.config.martingaleMultiplier > 1) {
-        const newStake = this.state.currentStake * this.config.martingaleMultiplier
+        const newStake = Math.round(this.state.currentStake * this.config.martingaleMultiplier * 100) / 100
         // Cap stake to not exceed 50% of balance for safety
-        this.state.currentStake = Math.min(newStake, this.config.balance * 0.5)
+        this.state.currentStake = Math.min(newStake, Math.round(this.config.balance * 0.5 * 100) / 100)
         console.log(
-          `[v0] 📈 Martingale applied: Stake increased from $${(newStake / this.config.martingaleMultiplier).toFixed(2)} to $${this.state.currentStake.toFixed(2)} (Multiplier: ${this.config.martingaleMultiplier}x)`,
+          `[v0] 📈 Martingale applied: Stake increased to $${this.state.currentStake.toFixed(2)} (Multiplier: ${this.config.martingaleMultiplier}x)`,
         )
       }
 

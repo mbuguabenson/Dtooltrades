@@ -19,6 +19,7 @@ export class SmartIntelligenceEngine {
     private isScanning: boolean = false
     private subscriptionIds: Map<string, string> = new Map()
     private markets: string[] = ["R_10", "R_25", "R_50", "R_75", "R_100"]
+    private focusMarket: string | null = null
     private scanResults: Map<string, MarketScore> = new Map()
     private tickWindows: Map<string, number[]> = new Map()
     private readonly WINDOW_SIZE = 100
@@ -64,6 +65,37 @@ export class SmartIntelligenceEngine {
         }
         this.subscriptionIds.clear()
         this.isScanning = false
+    }
+
+    public async setFocusMarket(symbol: string) {
+        if (this.focusMarket === symbol) return
+
+        // Unsubscribe old focus if not in fixed list
+        if (this.focusMarket && !this.markets.includes(this.focusMarket)) {
+            const oldSubId = this.subscriptionIds.get(this.focusMarket)
+            if (oldSubId) {
+                await this.wsManager.unsubscribe(oldSubId)
+                this.subscriptionIds.delete(this.focusMarket)
+                this.scanResults.delete(this.focusMarket)
+            }
+        }
+
+        this.focusMarket = symbol
+
+        // If not already in list and scanning, start subscription
+        if (!this.markets.includes(symbol) && this.isScanning) {
+            console.log(`[v0] Adding custom focus market to Intelligence scan: ${symbol}`)
+            if (!this.tickWindows.has(symbol)) {
+                this.tickWindows.set(symbol, [])
+            }
+            const subId = await this.wsManager.subscribeTicks(symbol, (tick) => {
+                this.processTick(symbol, tick.quote)
+            })
+            if (subId) {
+                this.subscriptionIds.set(symbol, subId)
+            }
+        }
+        this.notifyListeners()
     }
 
     public getIsScanning() {

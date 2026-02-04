@@ -178,6 +178,10 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
           await derivWebSocket.connect()
         }
 
+        if (!tickManagerRef.current) {
+          tickManagerRef.current = new TickHistoryManager(apiClient)
+        }
+
         // Subscribe to ticks for the selected symbol
         const subscriptionId = await derivWebSocket.subscribeTicks(symbol, (tickData) => {
           // Update market price and last digit from WebSocket
@@ -201,16 +205,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
     initializeWebSocket()
 
     const analyzeInterval = setInterval(async () => {
-      if (!tickManagerRef.current) return
-
-      const latestDigits = tickManagerRef.current.getTickBuffer(symbol)
+      const latestDigits = analysisEngineRef.current.getRecentDigits(100)
 
       if (latestDigits.length > 0) {
         const lastDigit = latestDigits[latestDigits.length - 1]
         // Ensure we explicitly handle 0 as a valid digit
         setCurrentLastDigit(typeof lastDigit === "number" ? lastDigit : 0)
 
-        const marketPrice = tickManagerRef.current.getLatestPrice(symbol)
+        const marketPrice = analysisEngineRef.current.getLatestPrice()
         if (marketPrice !== null) {
           setCurrentMarketPrice(marketPrice)
         }
@@ -710,9 +712,20 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                         <Input
                           type="number"
                           value={botConfig.initialStake}
-                          onChange={(e) =>
-                            updateBotConfig(strategy.id, { initialStake: Number.parseFloat(e.target.value) })
-                          }
+                          onChange={(e) => {
+                            const val = Number.parseFloat(e.target.value)
+                            if (!isNaN(val)) {
+                              // Force 2 decimal places maximum
+                              const rounded = Math.round(val * 100) / 100
+                              updateBotConfig(strategy.id, { initialStake: rounded })
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const val = Number.parseFloat(e.target.value)
+                            if (!isNaN(val)) {
+                              updateBotConfig(strategy.id, { initialStake: Math.round(val * 100) / 100 })
+                            }
+                          }}
                           className={`h-8 text-xs ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
                           step="0.01"
                           min="0.01"

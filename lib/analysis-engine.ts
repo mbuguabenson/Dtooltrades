@@ -574,6 +574,10 @@ export class AnalysisEngine {
     }
   }
 
+  getLatestPrice(): number | null {
+    return this.ticks.length > 0 ? this.ticks[this.ticks.length - 1].quote : null
+  }
+
   getRecentDigits(count = 20): number[] {
     return this.lastDigits.slice(-count)
   }
