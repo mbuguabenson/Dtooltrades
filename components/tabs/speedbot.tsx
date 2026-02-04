@@ -12,6 +12,7 @@ import { TradingJournalPanel } from "@/components/trading-journal-panel"
 import { TPSLModal } from "@/components/tp-sl-modal"
 import type { TradingJournal } from "@/lib/trading-journal"
 import { Square, Zap } from "lucide-react"
+import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 
 interface SpeedBotProps {
   apiClient: any
@@ -71,6 +72,7 @@ export function SpeedBot({
   const [tradeType, setTradeType] = useState("digits")
   const [contractType, setContractType] = useState("DIGITEVEN")
   const [stake, setStake] = useState(0.35)
+  const [prediction, setPrediction] = useState(5)
   const [martingale, setMartingale] = useState(2.1)
   const [sl, setSL] = useState(50)
   const [tp, setTP] = useState(100)
@@ -180,6 +182,7 @@ export function SpeedBot({
         duration: 1,
         durationUnit: "t",
         currency,
+        prediction: shouldShowPrediction ? prediction.toString() : undefined,
       }
 
       const result = await tradeExecutor.executeTrade(tradeConfig)
@@ -342,7 +345,7 @@ export function SpeedBot({
       return
     }
 
-    const lastDigit = Number(tradeData.price.toString().slice(-1))
+    const lastDigit = derivWebSocket.extractLastDigit(tradeData.price)
     if (isNaN(lastDigit) || lastDigit < 0 || lastDigit > 9) {
       logJournal(`Tick ${tradeData.tickId}: Invalid digit ${lastDigit} - skipping`, "warn")
       processingRef.current = false
@@ -363,6 +366,7 @@ export function SpeedBot({
         duration: 1,
         durationUnit: "t",
         currency,
+        prediction: shouldShowPrediction ? prediction.toString() : undefined,
       }
 
       const result = await tradeExecutor.executeTrade(tradeConfig)
@@ -474,7 +478,7 @@ export function SpeedBot({
 
     const subscribeToTicks = async () => {
       try {
-        tickSubscriptionRef.current = await apiClient.subscribeTicks(market, async (tick: any) => {
+        const callback = async (tick: any) => {
           if (!isRunningRef.current) return
 
           tickCountRef.current++
@@ -484,11 +488,7 @@ export function SpeedBot({
             return
           }
 
-          const lastDigit = Math.floor((tick.quote * 100) % 10)
-          if (lastDigit === null || lastDigit === undefined || lastDigit < 0 || lastDigit > 9) {
-            logJournal(`Tick ${tickCountRef.current}: Invalid digit ${lastDigit} - skipping`, "warn")
-            return
-          }
+          const lastDigit = derivWebSocket.extractLastDigit(tick.quote)
 
           tradeQueueRef.current.push({
             tickId: tickCountRef.current,
@@ -503,7 +503,9 @@ export function SpeedBot({
           if (!processingRef.current) {
             processTradeQueue()
           }
-        })
+        }
+
+        tickSubscriptionRef.current = await apiClient.subscribeTicks(market, callback)
       } catch (error: any) {
         if (error.message?.includes("already subscribed")) {
           logJournal(`Already subscribed to ${market} - reusing existing subscription`, "warn")
@@ -527,7 +529,7 @@ export function SpeedBot({
       }
       tradeQueueRef.current = []
     }
-  }, [isRunning, apiClient, market, logJournal, processTradeQueue])
+  }, [isRunning, apiClient, market, logJournal, processTradeQueue, prediction, shouldShowPrediction])
 
   const tradeTypes = getAvailableTradeTypes(market)
   const contractTypes = getAvailableContractTypes(market, tradeType)
@@ -619,10 +621,33 @@ export function SpeedBot({
                   setStake(val)
                   currentStakeRef.current = val
                 }}
+                onBlur={(e) => {
+                  const val = Number.parseFloat(e.target.value)
+                  const rounded = Number(val.toFixed(2))
+                  setStake(rounded)
+                  currentStakeRef.current = rounded
+                }}
                 disabled={isRunning}
                 className={`text-xs h-9 ${theme === "dark" ? "bg-[#0f1629] border-purple-500/30 text-white" : "bg-white border-purple-300 text-gray-900"}`}
               />
             </div>
+
+            {shouldShowPrediction && (
+              <div>
+                <Label className={`text-xs mb-1.5 block ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                  Prediction
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="9"
+                  value={prediction}
+                  onChange={(e) => setPrediction(Number.parseInt(e.target.value))}
+                  disabled={isRunning}
+                  className={`text-xs h-9 ${theme === "dark" ? "bg-[#0f1629] border-purple-500/30 text-white" : "bg-white border-purple-300 text-gray-900"}`}
+                />
+              </div>
+            )}
 
             <div>
               <Label className={`text-xs mb-1.5 block ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
