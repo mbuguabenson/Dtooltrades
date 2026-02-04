@@ -33,6 +33,8 @@ export interface IndicatorData {
     name: string
     color: string
     values: (number | null)[]
+    position?: "overlay" | "bottom"
+    drawType?: "line" | "histogram"
 }
 
 interface PatternChartProps {
@@ -78,7 +80,15 @@ export function PatternChart({
 
         const width = rect.width
         const height = rect.height
+
+        // Define areas
+        const bottomIndicators = indicators.filter(ind => ind.position === "bottom")
+        const hasBottomPane = bottomIndicators.length > 0
+        const bottomPaneHeight = hasBottomPane ? 100 : 0
+        const mainHeight = height - bottomPaneHeight
+
         const padding = { top: 30, right: 70, bottom: 40, left: 70 }
+        const mainContentHeight = mainHeight - padding.top - padding.bottom
 
         // Clear canvas
         ctx.fillStyle = theme === "dark" ? "#0a0e27" : "#ffffff"
@@ -87,7 +97,7 @@ export function PatternChart({
         const historyLength = chartType === "candle" ? candleHistory.length : priceHistory.length
         if (historyLength < 2) return
 
-        // Calculate price range
+        // --- MAIN CHART SCALE ---
         let minPrice: number, maxPrice: number
         if (chartType === "candle") {
             minPrice = Math.min(...candleHistory.map(c => c.low))
@@ -97,8 +107,8 @@ export function PatternChart({
             maxPrice = Math.max(...priceHistory.map(p => p.price))
         }
 
-        // Include indicators in range calculation
-        indicators.forEach(ind => {
+        // Include overlay indicators in range calculation
+        indicators.filter(i => i.position !== "bottom").forEach(ind => {
             ind.values.forEach(v => {
                 if (v !== null) {
                     minPrice = Math.min(minPrice, v)
@@ -113,24 +123,20 @@ export function PatternChart({
             maxPrice = Math.max(maxPrice, sr.level)
         })
 
-        const priceRange = (maxPrice - minPrice) * 1.1 || 0.00001
-        const margin = (maxPrice - minPrice) * 0.1
+        const margin = (maxPrice - minPrice) * 0.1 || 0.0001
         minPrice -= margin
         maxPrice += margin
 
-        // Helper functions
+        // Scaling Helpers
         const xScale = (index: number) => padding.left + (index / (historyLength - 1)) * (width - padding.left - padding.right)
-        const yScale = (price: number) => height - padding.bottom - ((price - minPrice) / (maxPrice - minPrice)) * (height - padding.top - padding.bottom)
+        const yScale = (price: number) => mainHeight - padding.bottom - ((price - minPrice) / (maxPrice - minPrice)) * mainContentHeight
 
-        // Draw grid
+        // Draw grid for main chart
         ctx.strokeStyle = theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"
         ctx.lineWidth = 1
         for (let i = 0; i <= 5; i++) {
-            const y = padding.top + (i / 5) * (height - padding.top - padding.bottom)
-            ctx.beginPath()
-            ctx.moveTo(padding.left, y)
-            ctx.lineTo(width - padding.right, y)
-            ctx.stroke()
+            const y = padding.top + (i / 5) * mainContentHeight
+            ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(width - padding.right, y); ctx.stroke()
         }
 
         // Draw support and resistance zones
@@ -140,158 +146,144 @@ export function PatternChart({
             ctx.fillStyle = sr.type === "support" ? `rgba(34, 197, 94, ${alpha * 0.1})` : `rgba(239, 68, 68, ${alpha * 0.1})`
             ctx.fillRect(padding.left, y - 4, width - padding.left - padding.right, 8)
             ctx.strokeStyle = sr.type === "support" ? `rgba(34, 197, 94, ${alpha * 0.8})` : `rgba(239, 68, 68, ${alpha * 0.8})`
-            ctx.lineWidth = 1
-            ctx.setLineDash([5, 5])
-            ctx.beginPath()
-            ctx.moveTo(padding.left, y)
-            ctx.lineTo(width - padding.right, y)
-            ctx.stroke()
-            ctx.setLineDash([])
+            ctx.lineWidth = 1; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(width - padding.right, y); ctx.stroke(); ctx.setLineDash([])
 
-            // Label
             ctx.fillStyle = sr.type === "support" ? "#22c55e" : "#ef4444"
-            ctx.font = "bold 10px sans-serif"
-            ctx.textAlign = "left"
+            ctx.font = "bold 10px sans-serif"; ctx.textAlign = "left"
             ctx.fillText(`${sr.type === "support" ? "SUP" : "RES"} ${sr.level.toFixed(5)}`, width - padding.right + 5, y + 3)
         })
 
         if (chartType === "candle") {
-            // Draw candles
             const candleWidth = Math.max(2, (width - padding.left - padding.right) / historyLength * 0.7)
             candleHistory.forEach((candle, i) => {
-                const x = xScale(i)
-                const yOpen = yScale(candle.open)
-                const yClose = yScale(candle.close)
-                const yHigh = yScale(candle.high)
-                const yLow = yScale(candle.low)
+                const x = xScale(i); const yOpen = yScale(candle.open); const yClose = yScale(candle.close)
+                const yHigh = yScale(candle.high); const yLow = yScale(candle.low)
                 const isBullish = candle.close >= candle.open
-
                 ctx.strokeStyle = isBullish ? "#22c55e" : "#ef4444"
                 ctx.fillStyle = isBullish ? "#22c55e" : "#ef4444"
                 ctx.lineWidth = 1
-
-                // Wick
-                ctx.beginPath()
-                ctx.moveTo(x, yHigh)
-                ctx.lineTo(x, yLow)
-                ctx.stroke()
-
-                // Body
-                const bodyY = Math.min(yOpen, yClose)
-                const bodyHeight = Math.abs(yOpen - yClose) || 1
+                ctx.beginPath(); ctx.moveTo(x, yHigh); ctx.lineTo(x, yLow); ctx.stroke()
+                const bodyY = Math.min(yOpen, yClose); const bodyHeight = Math.abs(yOpen - yClose) || 1
                 ctx.fillRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight)
             })
         } else {
-            // Draw price line
-            ctx.strokeStyle = theme === "dark" ? "#60a5fa" : "#3b82f6"
-            ctx.lineWidth = 2
-            ctx.beginPath()
-            priceHistory.forEach((point, i) => {
-                const x = xScale(i); const y = yScale(point.price)
-                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-            })
+            ctx.strokeStyle = theme === "dark" ? "#60a5fa" : "#3b82f6"; ctx.lineWidth = 2; ctx.beginPath()
+            priceHistory.forEach((p, i) => { i === 0 ? ctx.moveTo(xScale(i), yScale(p.price)) : ctx.lineTo(xScale(i), yScale(p.price)) })
             ctx.stroke()
-
-            // Area gradient
-            const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom)
-            gradient.addColorStop(0, theme === "dark" ? "rgba(96, 165, 250, 0.15)" : "rgba(59, 130, 246, 0.15)")
-            gradient.addColorStop(1, "transparent")
-            ctx.lineTo(xScale(priceHistory.length - 1), height - padding.bottom)
-            ctx.lineTo(xScale(0), height - padding.bottom)
-            ctx.fillStyle = gradient
-            ctx.fill()
+            const grad = ctx.createLinearGradient(0, padding.top, 0, mainHeight - padding.bottom)
+            grad.addColorStop(0, theme === "dark" ? "rgba(96, 165, 250, 0.15)" : "rgba(59, 130, 246, 0.15)"); grad.addColorStop(1, "transparent")
+            ctx.lineTo(xScale(priceHistory.length - 1), mainHeight - padding.bottom); ctx.lineTo(xScale(0), mainHeight - padding.bottom); ctx.fillStyle = grad; ctx.fill()
         }
 
-        // Draw Indicators
-        indicators.forEach(ind => {
-            ctx.strokeStyle = ind.color
-            ctx.lineWidth = 1.5
-            ctx.beginPath()
-            let started = false
-            ind.values.forEach((v, i) => {
-                if (v !== null) {
-                    const x = xScale(i); const y = yScale(v)
-                    if (!started) {
-                        ctx.moveTo(x, y)
-                        started = true
-                    } else {
-                        ctx.lineTo(x, y)
-                    }
-                }
+        // Overlay Indicators
+        indicators.filter(i => i.position !== "bottom").forEach(ind => {
+            ctx.strokeStyle = ind.color; ctx.lineWidth = 1.5; ctx.beginPath()
+            let s = false; ind.values.forEach((v, i) => {
+                if (v !== null) { const x = xScale(i); const y = yScale(v); if (!s) { ctx.moveTo(x, y); s = true } else ctx.lineTo(x, y) }
             })
             ctx.stroke()
         })
 
-        // Draw detected patterns
-        patterns.forEach((pattern) => {
-            ctx.strokeStyle = pattern.direction === "Bullish" ? "#22c55e" : "#ef4444"
-            ctx.lineWidth = 2.5
-            ctx.beginPath()
-            pattern.indices.forEach((idx, i) => {
+        // --- BOTTOM OSCILLATOR PANE ---
+        if (hasBottomPane) {
+            const paneY = mainHeight
+            const paneContentHeight = bottomPaneHeight - 20
+
+            // Pane Background & Grid
+            ctx.fillStyle = theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)"
+            ctx.fillRect(padding.left, paneY, width - padding.left - padding.right, bottomPaneHeight)
+            ctx.strokeStyle = theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+            ctx.strokeRect(padding.left, paneY, width - padding.left - padding.right, bottomPaneHeight)
+
+            // Scale for bottom indicators
+            const allVals = bottomIndicators.flatMap(i => i.values).filter(v => v !== null) as number[]
+            let minOsc = Math.min(...allVals), maxOsc = Math.max(...allVals)
+            if (minOsc === maxOsc) { minOsc -= 1; maxOsc += 1 }
+            const oscRange = maxOsc - minOsc
+
+            const yOsc = (val: number) => paneY + paneContentHeight - ((val - minOsc) / oscRange) * (paneContentHeight - 10)
+            const yZero = yOsc(0)
+
+            // Draw Zero Line
+            ctx.setLineDash([2, 4]); ctx.strokeStyle = "rgba(156, 163, 175, 0.5)"
+            ctx.beginPath(); ctx.moveTo(padding.left, yZero); ctx.lineTo(width - padding.right, yZero); ctx.stroke(); ctx.setLineDash([])
+
+            bottomIndicators.forEach(ind => {
+                if (ind.drawType === "histogram") {
+                    const barWidth = Math.max(1, (width - padding.left - padding.right) / historyLength * 0.6)
+                    ind.values.forEach((v, i) => {
+                        if (v !== null) {
+                            const x = xScale(i); const y = yOsc(v)
+                            ctx.fillStyle = v >= 0 ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)"
+                            ctx.fillRect(x - barWidth / 2, Math.min(y, yZero), barWidth, Math.abs(y - yZero))
+                        }
+                    })
+                } else {
+                    ctx.strokeStyle = ind.color; ctx.lineWidth = 1.2; ctx.beginPath()
+                    let s = false; ind.values.forEach((v, i) => {
+                        if (v !== null) { const x = xScale(i); const y = yOsc(v); if (!s) { ctx.moveTo(x, y); s = true } else ctx.lineTo(x, y) }
+                    })
+                    ctx.stroke()
+                }
+            })
+
+            // Oscillator Labels
+            ctx.fillStyle = "#9ca3af"; ctx.font = "9px monospace"; ctx.textAlign = "right"
+            ctx.fillText(maxOsc.toFixed(2), padding.left - 8, paneY + 10)
+            ctx.fillText(minOsc.toFixed(2), padding.left - 8, paneY + paneContentHeight)
+        }
+
+        // Patterns & Entries (re-use main chart helpers)
+        patterns.forEach(p => {
+            ctx.strokeStyle = p.direction === "Bullish" ? "#22c55e" : "#ef4444"; ctx.lineWidth = 2.5; ctx.beginPath()
+            p.indices.forEach((idx, i) => {
                 if (idx >= historyLength) return
                 const val = chartType === "candle" ? candleHistory[idx].close : priceHistory[idx].price
-                const x = xScale(idx); const y = yScale(val)
-                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+                i === 0 ? ctx.moveTo(xScale(idx), yScale(val)) : ctx.lineTo(xScale(idx), yScale(val))
             })
             ctx.stroke()
-
-            // Label the pattern
-            const lastIdx = pattern.indices[pattern.indices.length - 1]
+            const lastIdx = p.indices[p.indices.length - 1]
             if (lastIdx < historyLength) {
                 const val = chartType === "candle" ? candleHistory[lastIdx].close : priceHistory[lastIdx].price
-                ctx.fillStyle = pattern.direction === "Bullish" ? "#22c55e" : "#ef4444"
-                ctx.font = "bold 10px sans-serif"
-                ctx.textAlign = "center"
-                ctx.fillText(pattern.type, xScale(lastIdx), yScale(val) - 15)
+                ctx.fillStyle = p.direction === "Bullish" ? "#22c55e" : "#ef4444"; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center"
+                ctx.fillText(p.type, xScale(lastIdx), yScale(val) - 15)
             }
         })
 
-        // Entry/Exit points
-        entryExitPoints.forEach((point) => {
-            const history = chartType === "candle" ? candleHistory : priceHistory
-            const idx = history.findIndex((h) => h.timestamp >= point.timestamp)
+        entryExitPoints.forEach(pt => {
+            const h = chartType === "candle" ? candleHistory : priceHistory
+            const idx = h.findIndex(pt2 => pt2.timestamp >= pt.timestamp)
             if (idx === -1) return
-            const x = xScale(idx); const y = yScale(point.price)
-
-            if (point.type === "entry") {
-                ctx.fillStyle = point.direction === "buy" ? "#22c55e" : point.direction === "sell" ? "#ef4444" : "#9ca3af"
+            const x = xScale(idx); const y = yScale(pt.price)
+            if (pt.type === "entry") {
+                ctx.fillStyle = pt.direction === "buy" ? "#22c55e" : pt.direction === "sell" ? "#ef4444" : "#9ca3af"
                 ctx.beginPath()
-                if (point.direction === "buy") {
-                    ctx.moveTo(x, y + 12); ctx.lineTo(x - 6, y + 2); ctx.lineTo(x + 6, y + 2)
-                } else {
-                    ctx.moveTo(x, y - 12); ctx.lineTo(x - 6, y - 2); ctx.lineTo(x + 6, y - 2)
-                }
+                pt.direction === "buy" ? (ctx.moveTo(x, y + 12), ctx.lineTo(x - 6, y + 2), ctx.lineTo(x + 6, y + 2)) : (ctx.moveTo(x, y - 12), ctx.lineTo(x - 6, y - 2), ctx.lineTo(x + 6, y - 2))
                 ctx.fill()
             } else {
-                ctx.strokeStyle = "#ffffff"
-                ctx.lineWidth = 2
-                ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.stroke()
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.stroke()
             }
         })
 
-        // Labels and axes
-        ctx.fillStyle = theme === "dark" ? "#9ca3af" : "#6b7280"
-        ctx.font = "10px monospace"
-        ctx.textAlign = "right"
+        // Labels and axes logic (price)
+        ctx.fillStyle = theme === "dark" ? "#9ca3af" : "#6b7280"; ctx.font = "10px monospace"; ctx.textAlign = "right"
         for (let i = 0; i <= 8; i++) {
-            const p = minPrice + (maxPrice - minPrice) * (i / 8)
-            ctx.fillText(p.toFixed(5), padding.left - 8, yScale(p) + 4)
+            const p = minPrice + (maxPrice - minPrice) * (i / 8); ctx.fillText(p.toFixed(5), padding.left - 8, yScale(p) + 4)
         }
 
-        // X axis time labels
+        // X axis (Time)
         ctx.textAlign = "center"
-        const timeStep = Math.floor(historyLength / 4)
-        for (let i = 0; i < historyLength; i += timeStep) {
+        const tStep = Math.floor(historyLength / 4)
+        for (let i = 0; i < historyLength; i += tStep) {
             if (i >= historyLength) break
-            const x = xScale(i)
             const date = new Date((chartType === "candle" ? candleHistory[i].timestamp : priceHistory[i].timestamp) * 1000)
-            ctx.fillText(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }), x, height - padding.bottom + 15)
+            ctx.fillText(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }), xScale(i), height - 10)
         }
 
     }, [priceHistory, candleHistory, supportResistance, entryExitPoints, indicators, patterns, theme, chartType])
 
     return (
-        <div className="relative w-full h-full min-h-[400px]">
+        <div className="relative w-full h-full min-h-[500px]">
             <canvas ref={canvasRef} className="w-full h-full rounded-lg" />
         </div>
     )

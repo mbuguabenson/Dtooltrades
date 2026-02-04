@@ -40,6 +40,8 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
   const [isMonitoring, setIsMonitoring] = useState(true)
   const [showSMA, setShowSMA] = useState(true)
   const [showBB, setShowBB] = useState(true)
+  const [showMACD, setShowMACD] = useState(false)
+  const [showDonchian, setShowDonchian] = useState(false)
   const subscriptionRef = useRef<string | null>(null)
 
   // Fetch History / Subscribe
@@ -76,7 +78,6 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
           adjust_start_time: 1,
           count: 100,
           end: "latest",
-          start: 1,
           style: "candles",
           granularity,
         })
@@ -95,20 +96,14 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
 
         // Real-time updates for candles
         const callback = (tick: any) => {
-          // In candle mode, we still get ticks to update the last candle or check for new one
           setCandleHistory(prev => {
             const last = prev[prev.length - 1]
             if (!last) return prev
-
             const now = tick.epoch
             const isNewCandle = Math.floor(now / granularity) > Math.floor(last.timestamp / granularity)
-
             if (isNewCandle) {
               const newCandle: CandleData = {
-                open: tick.quote,
-                high: tick.quote,
-                low: tick.quote,
-                close: tick.quote,
+                open: tick.quote, high: tick.quote, low: tick.quote, close: tick.quote,
                 timestamp: Math.floor(now / granularity) * granularity
               }
               const updated = [...prev, newCandle].slice(-100)
@@ -134,24 +129,22 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
     }
 
     const cleanup = fetchData()
-    return () => {
-      cleanup.then(fn => fn && fn())
-    }
+    return () => { cleanup.then(fn => fn && fn()) }
   }, [symbol, timeframe, isMonitoring])
 
   const analyzeData = (ticks: PricePoint[], candles: CandleData[]) => {
     const data = timeframe === "1t" ? ticks.map(t => t.price) : candles.map(c => c.close)
+    const highs = timeframe === "1t" ? ticks.map(t => t.price) : candles.map(c => c.high)
+    const lows = timeframe === "1t" ? ticks.map(t => t.price) : candles.map(c => c.low)
     const timestamps = timeframe === "1t" ? ticks.map(t => t.timestamp) : candles.map(c => c.timestamp)
 
     if (data.length < 20) return
 
-    // Calculate Indicators
     const newIndicators: IndicatorData[] = []
 
-    // SMA 20
-    const sma20 = calculateSMA(data, 20)
+    // SMA
     if (showSMA) {
-      newIndicators.push({ name: "SMA 20", color: "#60a5fa", values: sma20 })
+      newIndicators.push({ name: "SMA 20", color: "#60a5fa", values: calculateSMA(data, 20) })
     }
 
     // Bollinger Bands
@@ -161,97 +154,110 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
       newIndicators.push({ name: "BB Lower", color: "rgba(139, 92, 246, 0.4)", values: lower })
     }
 
+    // Donchian Channels
+    if (showDonchian) {
+      const { upper, lower } = calculateDonchian(highs, lows, 20)
+      newIndicators.push({ name: "DC Upper", color: "rgba(234, 179, 8, 0.4)", values: upper })
+      newIndicators.push({ name: "DC Lower", color: "rgba(234, 179, 8, 0.4)", values: lower })
+    }
+
+    // MACD
+    if (showMACD) {
+      const { macd, signal, histogram } = calculateMACD(data)
+      newIndicators.push({ name: "MACD", color: "#60a5fa", values: macd, position: "bottom" })
+      newIndicators.push({ name: "Signal", color: "#f87171", values: signal, position: "bottom" })
+      newIndicators.push({ name: "Histogram", color: "#34d399", values: histogram, position: "bottom", drawType: "histogram" })
+    }
+
     setIndicators(newIndicators)
 
-    // Detect S/R
-    const sr = detectSR(data)
-    setSupportResistance(sr)
+    // Detect S/R & Patterns
+    setSupportResistance(detectSR(data))
+    setDetectedPatterns(detectPatterns(data, timeframe))
 
-    // Detect Reversals
-    const patterns = detectPatterns(data, timeframe)
-    setDetectedPatterns(patterns)
-
-    // Logic for Entry Signals (Simplified SMA Crossover)
+    // Signals
+    const sma20 = calculateSMA(data, 20)
     const signals: EntryExit[] = []
     if (sma20.length >= 2) {
-      const lastPrice = data[data.length - 1]
-      const lastSma = sma20[sma20.length - 1]
-      const prevPrice = data[data.length - 2]
-      const prevSma = sma20[sma20.length - 2]
-
+      const lastPrice = data[data.length - 1], lastSma = sma20[sma20.length - 1]
+      const prevPrice = data[data.length - 2], prevSma = sma20[sma20.length - 2]
       if (lastSma && prevSma) {
-        if (prevPrice <= prevSma && lastPrice > lastSma) {
-          signals.push({ price: lastPrice, type: "entry", direction: "buy", timestamp: timestamps[timestamps.length - 1] })
-        } else if (prevPrice >= prevSma && lastPrice < lastSma) {
-          signals.push({ price: lastPrice, type: "entry", direction: "sell", timestamp: timestamps[timestamps.length - 1] })
-        }
+        if (prevPrice <= prevSma && lastPrice > lastSma) signals.push({ price: lastPrice, type: "entry", direction: "buy", timestamp: timestamps[timestamps.length - 1] })
+        else if (prevPrice >= prevSma && lastPrice < lastSma) signals.push({ price: lastPrice, type: "entry", direction: "sell", timestamp: timestamps[timestamps.length - 1] })
       }
     }
     setEntryExitPoints(signals)
   }
 
-  // Helper calculation functions
-  const calculateSMA = (data: number[], period: number) => {
-    const sma: (number | null)[] = []
-    for (let i = 0; i < data.length; i++) {
-      if (i < period - 1) {
-        sma.push(null)
-      } else {
-        const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0)
-        sma.push(sum / period)
-      }
-    }
-    return sma
+  // Calculation helpers
+  const calculateSMA = (d: number[], p: number) => d.map((_, i) => i < p - 1 ? null : d.slice(i - p + 1, i + 1).reduce((a, b) => a + b, 0) / p)
+
+  const calculateEMA = (d: number[], p: number) => {
+    const ema: (number | null)[] = []
+    const k = 2 / (p + 1)
+    let prevEma: number | null = null
+    d.forEach((v, i) => {
+      if (i < p - 1) ema.push(null)
+      else if (i === p - 1) { prevEma = d.slice(0, p).reduce((a, b) => a + b, 0) / p; ema.push(prevEma) }
+      else { prevEma = v * k + (prevEma!) * (1 - k); ema.push(prevEma) }
+    })
+    return ema
   }
 
-  const calculateBollingerBands = (data: number[], period: number, stdDev: number) => {
-    const upper: (number | null)[] = []
-    const lower: (number | null)[] = []
-    for (let i = 0; i < data.length; i++) {
-      if (i < period - 1) {
-        upper.push(null); lower.push(null)
-      } else {
-        const slice = data.slice(i - period + 1, i + 1)
-        const mean = slice.reduce((a, b) => a + b, 0) / period
-        const variance = slice.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / period
-        const sd = Math.sqrt(variance)
-        upper.push(mean + sd * stdDev)
-        lower.push(mean - sd * stdDev)
+  const calculateBollingerBands = (d: number[], p: number, s: number) => {
+    const upper: (number | null)[] = [], lower: (number | null)[] = []
+    d.forEach((_, i) => {
+      if (i < p - 1) { upper.push(null); lower.push(null) }
+      else {
+        const slice = d.slice(i - p + 1, i + 1)
+        const m = slice.reduce((a, b) => a + b, 0) / p
+        const v = Math.sqrt(slice.reduce((a, b) => a + Math.pow(b - m, 2), 0) / p)
+        upper.push(m + v * s); lower.push(m - v * s)
       }
-    }
+    })
     return { upper, lower }
   }
 
+  const calculateDonchian = (h: number[], l: number[], p: number) => {
+    const upper = h.map((_, i) => i < p - 1 ? null : Math.max(...h.slice(i - p + 1, i + 1)))
+    const lower = l.map((_, i) => i < p - 1 ? null : Math.min(...l.slice(i - p + 1, i + 1)))
+    return { upper, lower }
+  }
+
+  const calculateMACD = (d: number[]) => {
+    const ema12 = calculateEMA(d, 12), ema26 = calculateEMA(d, 26)
+    const macd = d.map((_, i) => (ema12[i] !== null && ema26[i] !== null) ? ema12[i]! - ema26[i]! : null)
+    const validMacd = macd.filter(v => v !== null) as number[]
+    const signalValid = calculateEMA(validMacd, 9)
+    const signal = macd.map((v, i) => {
+      if (v === null) return null
+      const idx = macd.slice(0, i + 1).filter(x => x !== null).length - 1
+      return signalValid[idx] ?? null
+    })
+    const histogram = macd.map((v, i) => (v !== null && signal[i] !== null) ? v - signal[i]! : null)
+    return { macd, signal, histogram }
+  }
+
   const detectSR = (data: number[]) => {
-    const levels: SupportResistance[] = []
-    // High level logic: find local extrema and group them
-    const points: number[] = []
+    const levels: SupportResistance[] = [], points: number[] = []
     for (let i = 2; i < data.length - 2; i++) {
       if (data[i] > data[i - 1] && data[i] > data[i - 2] && data[i] > data[i + 1] && data[i] > data[i + 2]) points.push(data[i])
       if (data[i] < data[i - 1] && data[i] < data[i - 2] && data[i] < data[i + 1] && data[i] < data[i + 2]) points.push(data[i])
     }
-    // Simple grouping (naive)
     points.forEach(p => {
-      const exists = levels.find(l => Math.abs(l.level - p) / p < 0.0005)
-      if (!exists) {
-        const type = p > data[data.length - 1] ? "resistance" : "support"
-        levels.push({ level: p, type, strength: 50 })
-      }
+      if (!levels.find(l => Math.abs(l.level - p) / p < 0.0005)) levels.push({ level: p, type: p > data[data.length - 1] ? "resistance" : "support", strength: 50 })
     })
     return levels.slice(0, 5)
   }
 
   const detectPatterns = (data: number[], tf: string): ReversalPattern[] => {
     const found: ReversalPattern[] = []
-    // Double Top logic
     if (data.length > 30) {
-      const peaks = []
-      for (let i = 2; i < data.length - 2; i++) if (data[i] > data[i - 1] && data[i] > data[i + 1] && data[i] > data[i - 2] && data[i] > data[i + 2]) peaks.push(i)
-      if (peaks.length >= 2) {
-        const p1 = peaks[peaks.length - 2], p2 = peaks[peaks.length - 1]
-        if (Math.abs(data[p1] - data[p2]) / data[p1] < 0.001) {
-          found.push({ type: "Double Top", direction: "Bearish", confidence: 80, priceLevel: data[p2], timestamp: Date.now(), description: "Double Top Reversal", indices: [p1, p2] })
-        }
+      const pks = []
+      for (let i = 2; i < data.length - 2; i++) if (data[i] > data[i - 1] && data[i] > data[i + 1] && data[i] > data[i - 2] && data[i] > data[i + 2]) pks.push(i)
+      if (pks.length >= 2) {
+        const p1 = pks[pks.length - 2], p2 = pks[pks.length - 1]
+        if (Math.abs(data[p1] - data[p2]) / data[p1] < 0.001) found.push({ type: "Double Top", direction: "Bearish", confidence: 80, priceLevel: data[p2], timestamp: Date.now(), description: "Double Top Reversal", indices: [p1, p2] })
       }
     }
     return found
@@ -260,26 +266,21 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
   const trendHistory = timeframe === "1t" ? priceHistory : candleHistory.map(c => ({ price: c.close, timestamp: c.timestamp }))
   const calculateTrend = () => {
     if (trendHistory.length < 10) return "Neutral"
-    const last = trendHistory[trendHistory.length - 1].price
-    const first = trendHistory[trendHistory.length - 10].price
+    const last = trendHistory[trendHistory.length - 1].price, first = trendHistory[trendHistory.length - 10].price
     return last > first ? "Bullish" : last < first ? "Bearish" : "Neutral"
   }
 
-  const trend = calculateTrend()
-  const trendColor = trend === "Bullish" ? "text-green-400" : trend === "Bearish" ? "text-red-400" : "text-gray-400"
+  const trend = calculateTrend(), trendColor = trend === "Bullish" ? "text-green-400" : trend === "Bearish" ? "text-red-400" : "text-gray-400"
   const trendBg = trend === "Bullish" ? "bg-green-500/10" : trend === "Bearish" ? "bg-red-500/10" : "bg-gray-500/10"
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Settings & Timeframe Menu */}
       <div className={`rounded-xl p-3 border flex flex-wrap items-center justify-between gap-4 ${theme === "dark" ? "bg-[#0f1629]/90 border-blue-500/30" : "bg-white border-gray-200 shadow-sm"}`}>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-gray-400" />
             <Select value={timeframe} onValueChange={(v: any) => setTimeframe(v)}>
-              <SelectTrigger className="w-[100px] h-9">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[100px] h-9"><SelectValue placeholder="Timeframe" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="1t">1 Tick</SelectItem>
                 <SelectItem value="1m">1 Min</SelectItem>
@@ -292,9 +293,7 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-gray-400" />
             <Select value={chartType} onValueChange={(v: any) => setChartType(v)}>
-              <SelectTrigger className="w-[100px] h-9">
-                <SelectValue placeholder="Chart Type" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[100px] h-9"><SelectValue placeholder="Chart Type" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="line">Line</SelectItem>
                 <SelectItem value="candle">Candles</SelectItem>
@@ -302,34 +301,23 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
             </Select>
           </div>
 
-          <div className="flex items-center border rounded-md p-0.5 bg-black/10">
-            <Button
-              variant={showSMA ? "default" : "ghost"}
-              size="sm" className="h-7 px-2 text-[10px]"
-              onClick={() => setShowSMA(!showSMA)}
-            >SMA</Button>
-            <Button
-              variant={showBB ? "default" : "ghost"}
-              size="sm" className="h-7 px-2 text-[10px]"
-              onClick={() => setShowBB(!showBB)}
-            >BB</Button>
+          <div className="flex items-center border rounded-md p-0.5 bg-black/10 gap-1">
+            <Button variant={showSMA ? "default" : "ghost"} size="sm" className="h-7 px-2 text-[10px]" onClick={() => setShowSMA(!showSMA)}>SMA</Button>
+            <Button variant={showBB ? "default" : "ghost"} size="sm" className="h-7 px-2 text-[10px]" onClick={() => setShowBB(!showBB)}>BB</Button>
+            <Button variant={showDonchian ? "default" : "ghost"} size="sm" className="h-7 px-2 text-[10px]" onClick={() => setShowDonchian(!showDonchian)}>DC</Button>
+            <Button variant={showMACD ? "default" : "ghost"} size="sm" className="h-7 px-2 text-[10px]" onClick={() => setShowMACD(!showMACD)}>MACD</Button>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <Badge className={`${trendBg} ${trendColor} border-0 flex items-center gap-2 px-3 py-1`}>
-            <Activity className="h-3 w-3" />
-            {trend}
-          </Badge>
+          <Badge className={`${trendBg} ${trendColor} border-0 flex items-center gap-2 px-3 py-1`}><Activity className="h-3 w-3" />{trend}</Badge>
           <Button size="sm" variant="outline" className="h-9 gap-2" onClick={() => setIsMonitoring(!isMonitoring)}>
-            <Settings className={`h-4 w-4 ${isMonitoring ? "animate-spin-slow" : ""}`} />
-            {isMonitoring ? "Monitoring" : "Paused"}
+            <Settings className={`h-4 w-4 ${isMonitoring ? "animate-spin-slow" : ""}`} />{isMonitoring ? "Monitoring" : "Paused"}
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Chart View */}
         <div className="lg:col-span-2 space-y-4">
           <div className={`rounded-xl p-4 sm:p-6 border ${theme === "dark" ? "bg-[#0a0e27]/80 border-blue-500/20" : "bg-white border-gray-200"}`}>
             <div className="min-h-[500px]">
@@ -340,24 +328,16 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
                 indicators={indicators}
                 supportResistance={supportResistance}
                 entryExitPoints={entryExitPoints}
-                patterns={detectedPatterns.map(p => ({
-                  type: p.type,
-                  indices: p.indices,
-                  direction: p.direction
-                }))}
+                patterns={detectedPatterns.map(p => ({ type: p.type, indices: p.indices, direction: p.direction }))}
                 theme={theme}
               />
             </div>
           </div>
 
-          {/* Pattern Intelligence Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {detectedPatterns.map((p, i) => (
               <Card key={i} className={`p-4 border-l-4 ${p.direction === "Bullish" ? "border-l-green-500" : "border-l-red-500"} ${theme === "dark" ? "bg-[#1a2235] border-white/5" : "bg-gray-50"}`}>
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-bold text-sm">{p.type}</h4>
-                  <Badge variant="outline" className="text-[10px]">{p.confidence}% Conf</Badge>
-                </div>
+                <div className="flex justify-between items-start mb-2"><h4 className="font-bold text-sm">{p.type}</h4><Badge variant="outline" className="text-[10px]">{p.confidence}% Conf</Badge></div>
                 <p className="text-[11px] opacity-60 mb-2">{p.description}</p>
                 <div className="text-[10px] font-mono text-cyan-500">Target Level: {p.priceLevel.toFixed(5)}</div>
               </Card>
@@ -365,37 +345,18 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
           </div>
         </div>
 
-        {/* Digit & Market Stats Sidebar */}
         <div className="space-y-4">
           <div className={`rounded-xl p-4 border ${theme === "dark" ? "bg-[#111827] border-white/5" : "bg-white border-gray-200"}`}>
-            <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-              <Target className="h-4 w-4 text-orange-500" />
-              Market Pulse
-            </h3>
+            <h3 className="text-sm font-bold mb-4 flex items-center gap-2"><Target className="h-4 w-4 text-orange-500" />Market Pulse</h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-center px-3 py-2 rounded bg-black/20">
-                <span className="text-xs opacity-60">Price</span>
-                <span className="font-mono font-bold text-lg">{currentPrice?.toFixed(5) || "---"}</span>
-              </div>
-              <div className="flex justify-between items-center px-3 py-2 rounded bg-black/20">
-                <span className="text-xs opacity-60">Market</span>
-                <span className="font-bold">{symbol.replace("_", " ")}</span>
-              </div>
+              <div className="flex justify-between items-center px-3 py-2 rounded bg-black/20"><span className="text-xs opacity-60">Price</span><span className="font-mono font-bold text-lg">{currentPrice?.toFixed(5) || "---"}</span></div>
+              <div className="flex justify-between items-center px-3 py-2 rounded bg-black/20"><span className="text-xs opacity-60">Market</span><span className="font-bold">{symbol.replace("_", " ")}</span></div>
             </div>
           </div>
 
           <div className={`rounded-xl p-4 border ${theme === "dark" ? "bg-[#111827] border-white/5" : "bg-white border-gray-200"}`}>
-            <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-blue-500" />
-              Digit Volatility
-            </h3>
-            {analysis?.digitFrequencies && (
-              <DigitDistribution
-                frequencies={analysis.digitFrequencies}
-                currentDigit={currentDigit}
-                theme={theme}
-              />
-            )}
+            <h3 className="text-sm font-bold mb-4 flex items-center gap-2"><Layers className="h-4 w-4 text-blue-500" />Digit Volatility</h3>
+            {analysis?.digitFrequencies && <DigitDistribution frequencies={analysis.digitFrequencies} currentDigit={currentDigit} theme={theme} />}
           </div>
         </div>
       </div>
