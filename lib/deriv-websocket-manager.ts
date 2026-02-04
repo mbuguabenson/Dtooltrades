@@ -243,6 +243,11 @@ export class DerivWebSocketManager {
     try {
       this.lastMessageTime = Date.now()
 
+      // Skip noise for pings
+      if (message.msg_type === "ping" || message.echo_req?.ping) {
+        return
+      }
+
       // 1. Resolve pending request-response patterns first
       if (message.req_id) {
         const req_id = Number(message.req_id);
@@ -275,7 +280,14 @@ export class DerivWebSocketManager {
           this.pendingRequests.delete(req_id);
           callback(message);
         } else {
-          console.warn(`[v0] Received response for unknown/timed-out req_id ${req_id}`);
+          // Check if this was a subscription success that arrived late
+          if (message.subscription && !message.error) {
+            console.log(`[v0] Recovered delayed subscription for req_id ${req_id}`);
+          } else if (message.error?.code === 'AlreadySubscribed') {
+            console.log(`[v0] Confirmed AlreadySubscribed via late response for req_id ${req_id}`);
+          } else {
+            console.warn(`[v0] Received response for unknown/timed-out req_id ${req_id}`);
+          }
         }
       } else if (message.subscription) {
         // Log stream messages for debugging (optional, keep it quiet)
@@ -287,6 +299,26 @@ export class DerivWebSocketManager {
       // 2. Special handling for ticks (New robust way)
       if (message.tick) {
         const symbol = message.tick.symbol
+
+        // Recover subscription ID from tick if missing or mismatched
+        if (message.subscription?.id) {
+          const subId = message.subscription.id;
+          const existingId = this.symbolToSubscriptionMap.get(symbol);
+
+          if (!existingId) {
+            console.log(`[v0] Recovered subscription ID from tick for ${symbol}: ${subId}`);
+            this.subscriptions.set(subId, symbol);
+            this.symbolToSubscriptionMap.set(symbol, subId);
+            if (!this.subscriptionRefCount.has(subId)) {
+              this.subscriptionRefCount.set(subId, 1);
+            }
+          } else if (existingId !== subId) {
+            // This is a "ghost" stream from an old request. Kill it to save bandwidth.
+            console.log(`[v0] Detected abandoned ghost stream ${subId} for ${symbol}. Sending forget.`);
+            this.send({ forget: subId, req_id: this.getNextReqId() });
+          }
+        }
+
         const callbacks = this.tickCallbacks.get(symbol)
         if (callbacks) {
           const tickData: TickData = {
@@ -435,7 +467,7 @@ export class DerivWebSocketManager {
           ticks: symbol,
           subscribe: 1,
           req_id: requestId,
-        }, 15000) // Lower internal timeout for retries
+        }, 30000) // 30s timeout is more realistic for slow networks
 
         if (response.subscription?.id) {
           const subscriptionId = response.subscription.id
@@ -476,8 +508,29 @@ export class DerivWebSocketManager {
         } else {
           throw new Error(response.error?.message || "Invalid subscription response")
         }
-      } catch (error) {
+      } catch (error: any) {
         lastError = error
+
+        // Handle AlreadySubscribed - this means another request succeeded
+        if (error.code === 'AlreadySubscribed') {
+          console.log(`[v0] Handling AlreadySubscribed for ${symbol}. Waiting for ID recovery...`);
+          // Wait briefly for ID to be salvaged from a late response or incoming tick
+          for (let i = 0; i < 5; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            const recoveredId = this.symbolToSubscriptionMap.get(symbol);
+            if (recoveredId) {
+              console.log(`[v0] Successfully recovered ID for ${symbol}: ${recoveredId}`);
+              this.activeSubscriptions.delete(symbol);
+              return recoveredId;
+            }
+          }
+
+          // If we still don't have it, we might have been disconnected and reconnected
+          // or have a ghost subscription we can't identify. Try to forget_all as last resort.
+          console.warn(`[v0] Could not recover ID for ${symbol} after AlreadySubscribed. Clearing state to retry.`);
+          this.symbolToSubscriptionMap.delete(symbol);
+        }
+
         console.warn(`[v0] Subscription attempt ${attempt}/${maxRetries} failed for ${symbol}:`, error)
         if (attempt < maxRetries) {
           await new Promise(r => setTimeout(r, 1000 * attempt)) // Exponential backoff
