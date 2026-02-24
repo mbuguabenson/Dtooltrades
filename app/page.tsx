@@ -248,9 +248,6 @@ export default function DerivAnalysisApp() {
               "differs",
               "rise-fall",
               "ai-analysis",
-              "autobot",
-              "automated",
-              "automated-trades",
               "smartauto24",
               "tools-info",
             ].map((tab) => (
@@ -259,13 +256,11 @@ export default function DerivAnalysisApp() {
                 value={tab}
                 className={`shrink-0 rounded-none border-b-2 border-transparent text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-2 sm:py-3 whitespace-nowrap transition-all capitalize font-medium ${tab === "smartauto24"
                   ? "data-[state=active]:border-yellow-500 data-[state=active]:text-yellow-500 data-[state=active]:shadow-[0_2px_10px_rgba(234,179,8,0.3)]"
-                  : tab === "autobot" || tab === "automated" || tab === "automated-trades"
-                    ? "data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
-                    : tab === "tools-info"
-                      ? "data-[state=active]:border-purple-500 data-[state=active]:text-purple-500 data-[state=active]:shadow-[0_2px_10px_rgba(168,85,247,0.3)]"
-                      : tab === "trade-now"
-                        ? "data-[state=active]:border-green-500 data-[state=active]:text-green-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,197,94,0.3)]"
-                        : "data-[state=active]:border-green-400 data-[state=active]:text-green-400 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
+                  : tab === "tools-info"
+                    ? "data-[state=active]:border-purple-500 data-[state=active]:text-purple-500 data-[state=active]:shadow-[0_2px_10px_rgba(168,85,247,0.3)]"
+                    : tab === "trade-now"
+                      ? "data-[state=active]:border-green-500 data-[state=active]:text-green-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,197,94,0.3)]"
+                      : "data-[state=active]:border-green-400 data-[state=active]:text-green-400 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
                   } data-[state=active]:bg-transparent ${theme === "dark" ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
               >
                 {tab === "smart-adaptive"
@@ -292,21 +287,11 @@ export default function DerivAnalysisApp() {
                                       ? "Rise/Fall 📈"
                                       : tab === "ai-analysis"
                                         ? "AI Analysis 🤖"
-                                        : tab === "autobot"
-                                          ? "AutoBot 🤖"
-                                          : tab === "automated"
-                                            ? "Automated 🚀"
-                                            : tab === "automated-trades"
-                                              ? "Auto Trades 💎"
-                                              : tab === "trading-view"
-                                                ? "Trading View 📈"
-                                                : tab === "trade-now"
-                                                  ? "Trade Now 🚀"
-                                                  : tab === "smartauto24"
-                                                    ? "SmartAuto24 ⭐"
-                                                    : tab === "tools-info"
-                                                      ? "Tools & Info 🛠️"
-                                                      : tab.replace(/-/g, " ")}
+                                        : tab === "smartauto24"
+                                          ? "SmartAuto24 ⭐"
+                                          : tab === "tools-info"
+                                            ? "Tools & Info 🛠️"
+                                            : tab.replace(/-/g, " ")}
               </TabsTrigger>
             ))}
           </ResponsiveTabs>
@@ -335,20 +320,37 @@ export default function DerivAnalysisApp() {
             <>
               <TabsContent value="smart-analysis" className="mt-0 space-y-3 sm:space-y-4 md:space-y-6">
                 <div
-                  className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border text-center glow-card-active ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                  className={`rounded-lg sm:rounded-xl p-3 sm:p-4 border glow-card-active flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                 >
-                  <div className={`text-xs sm:text-sm mb-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                    Current Digit:
+                  <div className="flex items-center gap-6">
+                    <div className="flex flex-col items-start">
+                      <div className={`text-[10px] uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                        Current Digit
+                      </div>
+                      <div
+                        className={`text-3xl md:text-4xl font-black animate-pulse ${theme === "dark" ? "bg-linear-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent" : "text-orange-600"}`}
+                      >
+                        {currentDigit !== null ? currentDigit : "0"}
+                      </div>
+                    </div>
+
+                    <div className="h-10 w-px bg-white/10 hidden sm:block" />
+
+                    <div className="flex flex-col items-start">
+                      <div className={`text-[10px] uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                        Market Price
+                      </div>
+                      <div
+                        className={`text-lg md:text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                      >
+                        {currentPrice?.toFixed(5) || "---"}
+                      </div>
+                    </div>
                   </div>
-                  <div
-                    className={`text-3xl sm:text-4xl md:text-6xl font-bold animate-pulse ${theme === "dark" ? "bg-linear-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent" : "text-orange-600"}`}
-                  >
-                    {currentDigit !== null ? currentDigit : "0"}
-                  </div>
-                  <div
-                    className={`text-sm sm:text-base md:text-xl mt-2 sm:mt-3 md:mt-4 font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
-                  >
-                    Price: {currentPrice?.toFixed(5) || "---"}
+
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse`} />
+                    <span className={`text-[10px] font-bold uppercase ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>Live</span>
                   </div>
                 </div>
 
@@ -606,17 +608,6 @@ export default function DerivAnalysisApp() {
                 )}
               </TabsContent>
 
-              <TabsContent value="autobot" className="mt-0">
-                <AutoBotTab theme={theme} symbol={symbol} />
-              </TabsContent>
-
-              <TabsContent value="automated" className="mt-0">
-                <AutomatedTab theme={theme} symbol={symbol} />
-              </TabsContent>
-
-              <TabsContent value="automated-trades" className="mt-0">
-                <AutomatedTab theme={theme} symbol={symbol} />
-              </TabsContent>
 
               <TabsContent value="smartauto24" className="mt-0">
                 <SmartAuto24Tab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />

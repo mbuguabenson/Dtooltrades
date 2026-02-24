@@ -95,6 +95,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
   const [ticksCollected, setTicksCollected] = useState(0)
   const [analysisData, setAnalysisData] = useState<any>(null)
   const [showAnalysisResults, setShowAnalysisResults] = useState(false)
+  const [recentDigits, setRecentDigits] = useState<number[]>([])
 
   const [differsWaitTicks, setDiffersWaitTicks] = useState(0)
   const [differsSelectedDigit, setDiffersSelectedDigit] = useState<number | null>(null)
@@ -250,6 +251,12 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
         const newFreq = [...prev]
         newFreq[lastDigitValue]++
         return newFreq
+      })
+
+      // Update recent digits history
+      setRecentDigits((prev) => {
+        const updated = [...prev, lastDigitValue]
+        return updated.slice(-15)
       })
 
       // Update over/under
@@ -673,64 +680,39 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
                 Analysis Results - {analysisData.strategy}
               </h3>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div
-                  className={`p-4 rounded-lg ${theme === "dark" ? "bg-blue-500/10 border border-blue-500/30" : "bg-blue-50 border border-blue-200"
-                    }`}
-                >
-                  <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Power</div>
-                  <div className={`text-2xl font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
-                    {analysisData.power.toFixed(1)}%
-                  </div>
-                </div>
-
-                <div
-                  className={`p-4 rounded-lg ${theme === "dark"
-                    ? "bg-green-500/10 border border-green-500/30"
-                    : "bg-green-50 border border-green-200"
-                    }`}
-                >
-                  <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Signal</div>
-                  <div
-                    className={`text-2xl font-bold ${analysisData.status === "WAIT"
-                      ? (theme === "dark" ? "text-yellow-400" : "text-yellow-600")
-                      : (theme === "dark" ? "text-green-400" : "text-green-600")
-                      }`}
-                  >
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                <div className={`p-2 rounded-lg border ${theme === "dark" ? "bg-blue-500/5 border-blue-500/20" : "bg-blue-50 border-blue-100"}`}>
+                  <div className="text-[8px] uppercase text-gray-400 font-bold">Signal</div>
+                  <div className={`text-base font-black ${analysisData.status === "WAIT" ? "text-yellow-500" : "text-green-500"}`}>
                     {analysisData.status === "WAIT" ? "WAIT" : analysisData.signal}
                   </div>
                 </div>
 
-                <div
-                  className={`p-4 rounded-lg ${theme === "dark"
-                    ? "bg-yellow-500/10 border border-yellow-500/30"
-                    : "bg-yellow-50 border border-yellow-200"
-                    }`}
-                >
-                  <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Confidence</div>
-                  <div className={`text-2xl font-bold ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}>
-                    {analysisData.confidence.toFixed(1)}%
+                <div className={`p-2 rounded-lg border ${theme === "dark" ? "bg-purple-500/5 border-purple-500/20" : "bg-purple-50 border-purple-100"}`}>
+                  <div className="text-[8px] uppercase text-gray-400 font-bold">Power</div>
+                  <div className={`text-base font-black ${theme === "dark" ? "text-purple-400" : "text-purple-600"}`}>
+                    {analysisData.power.toFixed(0)}%
                   </div>
                 </div>
 
-                <div
-                  className={`p-4 rounded-lg ${theme === "dark"
-                    ? "bg-purple-500/10 border border-purple-500/30"
-                    : "bg-purple-50 border border-purple-200"
-                    }`}
-                >
-                  <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Ticks</div>
-                  <div className={`text-2xl font-bold ${theme === "dark" ? "text-purple-400" : "text-purple-600"}`}>
+                <div className={`p-2 rounded-lg border ${theme === "dark" ? "bg-amber-500/5 border-amber-500/20" : "bg-amber-50 border-amber-100"}`}>
+                  <div className="text-[8px] uppercase text-gray-400 font-bold">Conf.</div>
+                  <div className={`text-base font-black ${theme === "dark" ? "text-amber-400" : "text-amber-600"}`}>
+                    {analysisData.confidence.toFixed(0)}%
+                  </div>
+                </div>
+
+                <div className={`p-2 rounded-lg border ${theme === "dark" ? "bg-cyan-500/5 border-cyan-500/20" : "bg-cyan-50 border-cyan-100"}`}>
+                  <div className="text-[8px] uppercase text-gray-400 font-bold">Ticks</div>
+                  <div className={`text-base font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
                     {analysisData.ticksCollected}
                   </div>
                 </div>
               </div>
 
-              <div
-                className={`p-4 rounded-lg ${theme === "dark" ? "bg-gray-900/50 border border-gray-700" : "bg-gray-100 border border-gray-300"
-                  }`}
-              >
-                <p className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+              <div className={`p-3 rounded-lg ${theme === "dark" ? "bg-black/40 border border-white/5" : "bg-gray-50 border border-gray-200"}`}>
+                <p className={`text-[11px] leading-relaxed italic ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                  <span className="font-bold text-yellow-500 mr-1">Recommendation:</span>
                   {analysisData.description}
                 </p>
               </div>
@@ -744,9 +726,36 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
               : "bg-white border-gray-200"
               }`}
           >
-            <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-              Configuration
-            </h3>
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
+              <h3 className={`text-lg font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                Configuration
+              </h3>
+
+              {/* Live Data Bar */}
+              <div className={`flex items-center gap-3 p-2 rounded-lg border ${theme === "dark" ? "bg-black/40 border-yellow-500/20" : "bg-gray-50 border-gray-200"}`}>
+                <div className="flex flex-col items-start px-2 border-r border-gray-500/20">
+                  <span className="text-[8px] uppercase tracking-tighter text-gray-500 font-black">Market Price</span>
+                  <span className={`text-xs font-mono font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    {marketPrice?.toFixed(5) || "-----.--"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 px-1">
+                  {recentDigits.slice(-15).map((d, i) => (
+                    <div
+                      key={i}
+                      className={`text-[9px] w-4 h-4 flex items-center justify-center rounded-sm font-bold shadow-sm transition-all duration-300 ${d % 2 === 0
+                        ? "bg-blue-600/30 text-blue-400 border border-blue-500/20"
+                        : "bg-orange-600/30 text-orange-400 border border-orange-500/20"
+                        } ${i === recentDigits.length - 1 ? "ring-1 ring-white/30 scale-110" : ""}`}
+                    >
+                      {d}
+                    </div>
+                  ))}
+                  {recentDigits.length === 0 && <span className="text-[9px] text-gray-500 italic px-2">Waiting for ticks...</span>}
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
