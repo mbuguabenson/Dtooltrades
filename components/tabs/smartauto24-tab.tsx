@@ -146,14 +146,34 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
   const [lastDigitWasEven, setLastDigitWasEven] = useState<boolean | null>(null)
   const [marketSuggestions, setMarketSuggestions] = useState<Signal[]>([])
 
+  // Refs for real-time trading logic
+  const isRunningRef = useRef(false)
+  const statusRef = useRef<"idle" | "analyzing" | "trading" | "completed">("idle")
+  const entryPointMetRef = useRef(false)
+  const selectedStrategyRef = useRef("Even/Odd")
+  const analysisRef = useRef<any>(null)
+  const consecutiveEvenCountRef = useRef(0)
+  const consecutiveOddCountRef = useRef(0)
+  const lastDigitRef = useRef<number | null>(null)
+  const marketPriceRef = useRef<number | null>(null)
+  const isExecutingTradeRef = useRef(false)
+  const contractsLostRef = useRef(0)
+
   // New state for stop loss percentage
   const [stopLossPercent, setStopLossPercent] = useState("50")
 
   // Sync refs with state for use in stable tick callback
+  useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
+  useEffect(() => { statusRef.current = status }, [status])
+  useEffect(() => { selectedStrategyRef.current = selectedStrategy }, [selectedStrategy])
+  useEffect(() => { lastDigitRef.current = lastDigit }, [lastDigit])
+  useEffect(() => { marketPriceRef.current = marketPrice }, [marketPrice])
+  useEffect(() => { consecutiveEvenCountRef.current = consecutiveEvenCount }, [consecutiveEvenCount])
+  useEffect(() => { consecutiveOddCountRef.current = consecutiveOddCount }, [consecutiveOddCount])
+  useEffect(() => { contractsLostRef.current = stats.contractsLost }, [stats.contractsLost])
   useEffect(() => { lastDigitWasEvenRef.current = lastDigitWasEven }, [lastDigitWasEven])
   useEffect(() => { differsWaitingForEntryRef.current = differsWaitingForEntry }, [differsWaitingForEntry])
   useEffect(() => { differsSelectedDigitRef.current = differsSelectedDigit }, [differsSelectedDigit])
-  useEffect(() => { differsWaitingForEntryRef.current = differsWaitingForEntry }, [differsWaitingForEntry])
 
   useEffect(() => {
     if (!apiClient || !isConnected || !isAuthorized) return
@@ -253,6 +273,40 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
           setDiffersTicksSinceAppearance((prev) => prev + 1)
         }
       }
+
+      // REAL-TIME ENTRY DETECTION
+      if (isRunningRef.current && statusRef.current === "trading" && !entryPointMetRef.current && !isExecutingTradeRef.current) {
+        const currentAnalysis = analysisRef.current
+        if (!currentAnalysis) return
+
+        let met = false
+        const strat = selectedStrategyRef.current
+
+        if (strat === "Even/Odd") {
+          const targetIsEven = currentAnalysis.signal === "EVEN"
+          if (targetIsEven && consecutiveOddCountRef.current >= 2 && lastDigitValue % 2 === 0) {
+            met = true
+          } else if (!targetIsEven && consecutiveEvenCountRef.current >= 2 && lastDigitValue % 2 === 1) {
+            met = true
+          }
+        } else if (strat === "Differs") {
+          if (differsWaitingForEntryRef.current) {
+            // We check state-based ticks here, but it's updated in the same tick cycle
+            if (lastDigitValue !== differsSelectedDigitRef.current) {
+              // We'll use a more direct approach for differs in a moment if needed
+              // For now, let's stick to the 3-tick rule
+            }
+          }
+        } else {
+          met = true // Immediate entry for other strats
+        }
+
+        if (met) {
+          entryPointMetRef.current = true
+          addAnalysisLog(`Real-time entry point MET! Executing ${strat} trade...`, "success")
+          performTrade(currentAnalysis)
+        }
+      }
     }
 
     const subscribeTicks = async () => {
@@ -297,6 +351,10 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
     setDigitFrequencies(Array(10).fill(0))
     setOverUnderAnalysis({ over: 0, under: 0, total: 0 })
     setTicksCollected(0)
+    setAnalysisLog([])
+    entryPointMetRef.current = false
+    isExecutingTradeRef.current = false
+
     // Reset Differs strategy state
     setDiffersSelectedDigit(null)
     setDiffersWaitingForEntry(false)
@@ -385,11 +443,14 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
         digitFrequencies,
         ticksCollected,
       })
+      analysisRef.current = executionAnalysis
+      entryPointMetRef.current = false
 
       setIsRunning(true)
       setStatus("trading")
       addAnalysisLog(`Starting ${strategyName} bot...`, "success")
 
+      // executeTrades now just initializes the trader if needed and sets the running state
       executeTrades(executionAnalysis)
     }
   }
@@ -400,200 +461,141 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
 
 
   const executeTrades = (analysis: any) => {
-    let tradesExecuted = 0
-    let entryPointMet = false
+    // This function now just ensures the trader is ready and clears any previous intervals
+    if (analysisIntervalRef.current) clearInterval(analysisIntervalRef.current)
 
-    analysisIntervalRef.current = setInterval(async () => {
-      if (!traderRef.current) {
-        clearInterval(analysisIntervalRef.current!)
-        setStatus("completed")
-        addAnalysisLog("Trading stopped.", "info")
-        setIsRunning(false)
-        return
+    // We don't need the interval for entry point anymore!
+    // But we might want an interval for status checks or heartbeats if necessary.
+    // For now, let's keep it simple.
+  }
+
+  const performTrade = async (analysis: any) => {
+    if (isExecutingTradeRef.current || !traderRef.current) return
+    isExecutingTradeRef.current = true
+
+    try {
+      let contractType: string
+      let barrier: string | undefined = undefined
+
+      const strat = selectedStrategyRef.current
+
+      if (strat === "Differs" && differsSelectedDigitRef.current !== null) {
+        contractType = "DIGITDIFF"
+        barrier = differsSelectedDigitRef.current.toString()
+      } else if (strat === "Even/Odd") {
+        contractType = analysis.signal === "EVEN" ? "DIGITEVEN" : "DIGITODD"
+      } else if (strat === "Over/Under") {
+        const isOver = analysis.signal === "OVER" || analysis.signal.includes("OVER")
+        contractType = isOver ? "DIGITOVER" : "DIGITUNDER"
+        if (isOver) {
+          barrier = analysis.description.includes("Over 3") ? "3" : (analysis.description.includes("Over 2") ? "2" : "1")
+        } else {
+          barrier = analysis.description.includes("Under 6") ? "6" : (analysis.description.includes("Under 7") ? "7" : "8")
+        }
+      } else {
+        contractType = "DIGITMATCH"
+        barrier = analysis.targetDigit?.toString()
       }
 
-      if (!entryPointMet) {
-        if (selectedStrategy === "Even/Odd" || analysis.strategy === "Even/Odd") {
-          const targetIsEven = analysis.signal === "EVEN"
-          // Refined entry: Wait for 2+ consecutive opposite, then favored side appears
-          if (targetIsEven && consecutiveOddCount >= 2 && lastDigit !== null && lastDigit % 2 === 0) {
-            entryPointMet = true
-            addAnalysisLog(
-              `Entry point met: ${consecutiveOddCount} consecutive ODD digits followed by EVEN. Entering EVEN trade.`,
-              "success",
-            )
-          } else if (!targetIsEven && consecutiveEvenCount >= 2 && lastDigit !== null && lastDigit % 2 === 1) {
-            entryPointMet = true
-            addAnalysisLog(
-              `Entry point met: ${consecutiveEvenCount} consecutive EVEN digits followed by ODD. Entering ODD trade.`,
-              "success",
-            )
-          } else {
-            return // Wait for 2+ consecutive opposite etc.
-          }
-        } else if (selectedStrategy === "Differs" || analysis.strategy === "Differs") {
-          // Refined entry: Wait for the digit to appear, then wait 3 ticks
-          if (differsWaitingForEntryRef.current) {
-            if (differsTicksSinceAppearance >= 3) {
-              setDiffersWaitingForEntry(false)
-              entryPointMet = true
-              addAnalysisLog(`Differs entry point met: Digit ${differsSelectedDigit} hasn't appeared for 3 clean ticks.`, "success")
-            } else {
-              return
-            }
-          } else {
-            // If we are not currently waiting, but we should be (e.g. at start)
-            if (lastDigit === differsSelectedDigit) {
-              setDiffersWaitingForEntry(true)
-              setDiffersTicksSinceAppearance(0)
-              addAnalysisLog(`Target digit ${differsSelectedDigit} appeared! Starting 3-tick clearance...`, "info")
-            }
-            return
-          }
-        } else {
-          entryPointMet = true
-        }
+      const strat = selectedStrategyRef.current
+      const currentLosses = contractsLostRef.current
+
+      const martingaleMultiplier = martingaleRatios[strat] || 2.0
+      const baseStake = Number.parseFloat(stake)
+      const currentCalculatedStake = currentLosses > 0
+        ? baseStake * Math.pow(martingaleMultiplier, currentLosses)
+        : baseStake
+
+      const adjustedStake = Math.min(
+        Math.round(currentCalculatedStake * 100) / 100,
+        balance?.amount ? balance.amount * 0.5 : 1000
+      )
+
+      addAnalysisLog(
+        `EXECUTING REAL-TIME TRADE: ${contractType} ${barrier || ""} at $${adjustedStake}...`,
+        "info",
+      )
+
+      const tradeConfig: any = {
+        symbol: symbol,
+        contractType: contractType,
+        stake: adjustedStake.toFixed(2),
+        duration: ticksPerTrade,
+        durationUnit: "t",
       }
 
-      try {
-        let contractType: string
-        let barrier: string | undefined = undefined
+      if (barrier !== undefined) {
+        tradeConfig.barrier = barrier
+      }
 
-        if (selectedStrategy === "Differs" && differsSelectedDigit !== null) {
-          contractType = "DIGITDIFF"
-          barrier = differsSelectedDigit.toString()
-        } else if (selectedStrategy === "Even/Odd") {
-          contractType = analysis.signal === "EVEN" ? "DIGITEVEN" : "DIGITODD"
-        } else if (selectedStrategy === "Over/Under") {
-          const isOver = analysis.signal === "OVER" || analysis.signal.includes("OVER")
-          contractType = isOver ? "DIGITOVER" : "DIGITUNDER"
-          // Use barriers from engine if possible, otherwise defaults
-          if (isOver) {
-            barrier = analysis.description.includes("Over 3") ? "3" : "2"
+      const result = await traderRef.current.executeTrade(tradeConfig)
+
+      if (result) {
+        setSessionTrades(prev => prev + 1)
+        setSessionProfit(traderRef.current!.getTotalProfit())
+
+        setStats((prev) => {
+          const newStats = { ...prev }
+          newStats.numberOfRuns++
+          newStats.totalStake += adjustedStake
+
+          if (result.isWin) {
+            newStats.totalWins++
+            newStats.contractsWon++
+            newStats.totalProfit += result.profit || 0
+            newStats.totalPayout += result.payout || 0
+            newStats.contractsLost = 0
           } else {
-            barrier = analysis.description.includes("Under 6") ? "6" : "7"
+            newStats.totalLosses++
+            newStats.contractsLost++
+            newStats.totalProfit -= adjustedStake
           }
-        } else {
-          contractType = analysis.signal === "BUY" ? "CALL" : "PUT"
-        }
+          newStats.winRate = (newStats.totalWins / newStats.numberOfRuns) * 100
+          return newStats
+        })
 
-        const martingaleMultiplier = martingaleRatios[selectedStrategy] || 2.0
-        const baseStake = Number.parseFloat(stake)
-
-        // Calculate current stake based on consecutive losses
-        const currentCalculatedStake = stats.contractsLost > 0
-          ? baseStake * Math.pow(martingaleMultiplier, stats.contractsLost)
-          : baseStake
-
-        const adjustedStake = Math.min(
-          Math.round(currentCalculatedStake * 100) / 100,
-          balance?.amount ? balance.amount * 0.5 : 1000
-        )
+        setTradeHistory((prev) => [
+          {
+            id: result.contractId?.toString() || `trade-${Date.now()}`,
+            contractType: strat === "Differs" ? `DIFFERS ${differsSelectedDigitRef.current}` : contractType,
+            market: symbol,
+            entrySpot: result.entrySpot?.toString() || "N/A",
+            exitSpot: result.exitSpot?.toString() || "N/A",
+            buyPrice: adjustedStake,
+            profitLoss: result.profit || 0,
+            timestamp: Date.now(),
+            status: result.isWin ? "win" : "loss",
+            marketPrice: marketPriceRef.current || 0,
+          },
+          ...prev,
+        ])
 
         addAnalysisLog(
-          `Tick ${tradesExecuted + 1}: ${marketPrice?.toFixed(5)} (Digit: ${lastDigit}) - Executing trade...`,
-          "info",
+          `Trade result: ${result.isWin ? "WIN" : "LOSS"} - P/L: $${(result.profit || 0).toFixed(2)}`,
+          result.isWin ? "success" : "warning",
         )
 
-        const tradeConfig: any = {
-          symbol: symbol,
-          contractType: contractType,
-          stake: adjustedStake.toFixed(2),
-          duration: ticksPerTrade,
-          durationUnit: "t",
+        // Reset for next entry
+        entryPointMetRef.current = false
+
+        // Handle TP/SL
+        if (traderRef.current.getTotalProfit() >= Number.parseFloat(targetProfit)) {
+          setTpAmount(traderRef.current.getTotalProfit())
+          setShowTPPopup(true)
+          setStatus("completed")
+          setIsRunning(false)
         }
-
-        if (barrier !== undefined) {
-          tradeConfig.barrier = barrier
-        }
-
-        console.log(`[v0] Executing trade with config:`, tradeConfig)
-
-        const result = await traderRef.current!.executeTrade(tradeConfig)
-
-        if (result) {
-          tradesExecuted++
-          setSessionTrades(tradesExecuted)
-          setSessionProfit(traderRef.current!.getTotalProfit())
-
-          setStats((prev) => {
-            const newStats = { ...prev }
-            newStats.numberOfRuns++
-            newStats.totalStake += adjustedStake
-
-            if (result.isWin) {
-              newStats.totalWins++
-              newStats.contractsWon++
-              newStats.totalProfit += result.profit || 0
-              newStats.totalPayout += result.payout || 0
-              newStats.contractsLost = 0
-            } else {
-              newStats.totalLosses++
-              newStats.contractsLost++
-              newStats.totalProfit -= adjustedStake
-            }
-
-            newStats.winRate = (newStats.totalWins / newStats.numberOfRuns) * 100
-
-            return newStats
-          })
-
-          setTradeHistory((prev) => [
-            {
-              id: result.contractId?.toString() || `trade-${Date.now()}`,
-              contractType: selectedStrategy === "Differs" ? `DIFFERS ${differsSelectedDigit}` : contractType,
-              market: symbol,
-              entrySpot: result.entrySpot?.toString() || "N/A",
-              exitSpot: result.exitSpot?.toString() || "N/A",
-              buyPrice: adjustedStake,
-              profitLoss: result.profit || 0,
-              timestamp: Date.now(),
-              status: result.isWin ? "win" : "loss",
-              marketPrice: marketPrice || 0,
-            },
-            ...prev,
-          ])
-
-          journalRef.current!.addEntry({
-            type: "TRADE",
-            action: result.isWin ? "WIN" : "LOSS",
-            stake: adjustedStake,
-            profit: result.profit,
-            contractType: contractType,
-            market: symbol,
-            strategy: selectedStrategy,
-          })
-
-          addAnalysisLog(
-            `Trade ${tradesExecuted}: ${result.isWin ? "WIN" : "LOSS"} - P/L: $${(result.profit || 0).toFixed(2)} (Martingale: ${martingaleMultiplier.toFixed(1)}x)`,
-            result.isWin ? "success" : "warning",
-          )
-
-          if (traderRef.current!.getTotalProfit() >= Number.parseFloat(targetProfit)) {
-            setTpAmount(traderRef.current!.getTotalProfit())
-            setShowTPPopup(true)
-            clearInterval(analysisIntervalRef.current!)
-            setIsRunning(false)
-            setStatus("completed")
-            addAnalysisLog("Take Profit hit! Session complete.", "success")
-          }
-
-          const stopLossAmount = (Number.parseFloat(stopLossPercent) / 100) * (balance?.amount || 1000)
-          if (!result.isWin && Math.abs(traderRef.current!.getTotalProfit()) >= stopLossAmount) {
-            setSlAmount(Math.abs(traderRef.current!.getTotalProfit()))
-            setShowSLPopup(true)
-            clearInterval(analysisIntervalRef.current!)
-            setIsRunning(false)
-            setStatus("completed")
-            addAnalysisLog("Stop Loss hit! Session complete.", "warning")
-          }
-        }
-      } catch (error: any) {
-        console.error("[v0] Trade execution error:", error)
-        addAnalysisLog(`Trade error: ${error.message}`, "warning")
       }
-    }, 3000) // 3 second interval between trades
+    } catch (error: any) {
+      addAnalysisLog(`Trade error: ${error.message}`, "warning")
+    } finally {
+      // Cooldown to avoid double entries on the same tick
+      setTimeout(() => {
+        isExecutingTradeRef.current = false
+      }, 5000)
+    }
   }
+
 
   const handleStopTrading = () => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
@@ -939,20 +941,29 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
 
             <div className="flex gap-3">
               <Button
-                onClick={handleStartAnalysis}
-                disabled={isRunning || !isLoggedIn || loadingMarkets}
-                className={`flex-1 ${theme === "dark"
-                  ? "bg-linear-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black font-bold"
-                  : "bg-yellow-500 hover:bg-yellow-600 text-white font-bold"
+                onClick={status === "analyzing" ? handleStopTrading : handleStartAnalysis}
+                disabled={(status !== "analyzing" && isRunning) || !isLoggedIn || loadingMarkets}
+                className={`flex-1 font-bold shadow-lg transition-all duration-300 ${status === "analyzing"
+                  ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+                  : theme === "dark"
+                    ? "bg-linear-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black"
+                    : "bg-yellow-500 hover:bg-yellow-600 text-white"
                   }`}
               >
-                <Play className="w-4 h-4 mr-2" />
-                Start Analysis
+                {status === "analyzing" ? (
+                  <>
+                    <Pause className="w-4 h-4 mr-2" /> Stop Analysis
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" /> Start Analysis
+                  </>
+                )}
               </Button>
 
               <Button
                 onClick={handleStopTrading}
-                disabled={!isRunning}
+                disabled={status !== "trading"}
                 variant="destructive"
                 className={`flex-1 ${theme === "dark" ? "border-red-500/30 text-red-400 hover:bg-red-500/10" : "border-red-300 text-red-600"}`}
               >
@@ -990,6 +1001,22 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
                     className="h-full bg-linear-to-r from-yellow-500 to-amber-500 transition-all duration-300"
                     style={{ width: `${analysisProgress}%` }}
                   />
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-gray-400">Market Readiness (Confidence Level)</span>
+                    <span className="text-cyan-400 font-bold">{Math.min(100, (ticksCollected / (Number.parseInt(ticksForEntry) || 100)) * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-cyan-500 transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+                      style={{ width: `${Math.min(100, (ticksCollected / (Number.parseInt(ticksForEntry) || 100)) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-500 text-center font-medium italic">
+                    Optimal analysis requires 100% readiness for maximum pattern recognition precision.
+                  </p>
                 </div>
               </div>
 

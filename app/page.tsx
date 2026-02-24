@@ -172,14 +172,14 @@ export default function DerivAnalysisApp() {
               <div className="relative group cursor-pointer">
                 <div className="absolute -inset-2 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-linear-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <span className="text-white font-bold text-lg">P</span>
+                  <div className="h-6 w-6 rounded-lg bg-linear-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <span className="text-white font-bold text-sm">P</span>
                   </div>
                   <div className="flex flex-col">
-                    <h1 className={`text-xl font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                    <h1 className={`text-lg font-bold tracking-tight leading-none ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
                       PROFIT<span className="text-blue-500">HUB</span>
                     </h1>
-                    <span className="text-[9px] uppercase tracking-[0.3em] text-gray-500 font-medium">
+                    <span className="text-[7px] uppercase tracking-[0.2em] text-gray-500 font-medium leading-tight">
                       Quantum Terminal
                     </span>
                   </div>
