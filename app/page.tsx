@@ -243,76 +243,50 @@ export default function DerivAnalysisApp() {
               </div>
             </div>
           </div>
+
+          {/* Navigation Row within Header */}
+          <div className={`mt-2 border-t px-4 pb-2 pt-2 ${theme === "dark" ? "border-white/5" : "border-gray-100"}`}>
+            <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
+              {[
+                "smart-adaptive",
+                "smart-analysis",
+                "smartauto24",
+                "autobot",
+                "automated",
+                "signals",
+                "pro-signals",
+                "super-signals",
+                "even-odd",
+                "over-under",
+                "advanced-over-under",
+                "matches",
+                "differs",
+                "rise-fall",
+                "ai-analysis",
+                "tools-info",
+              ].map((tab) => (
+                <TabsTrigger
+                  key={tab}
+                  value={tab}
+                  className={`shrink-0 rounded-xl text-[10px] sm:text-xs px-2.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap transition-all capitalize font-bold ${activeTab === tab
+                    ? theme === "dark"
+                      ? "bg-blue-600/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] border border-blue-500/30"
+                      : "bg-blue-50 text-blue-600 border border-blue-100"
+                    : theme === "dark"
+                      ? "text-gray-400 hover:text-white hover:bg-white/5"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                >
+                  {tab === "autobot" ? "Auto Trader 🤖" : tab === "automated" ? "Autonomous 🚀" : tab.replace("-", " ")}
+                </TabsTrigger>
+              ))}
+            </ResponsiveTabs>
+          </div>
         </div>
       </header>
 
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div
-          className={`border-b ${theme === "dark" ? "border-green-500/20 bg-[#0a0e27]/60" : "border-gray-200 bg-white/60"} backdrop-blur-sm sticky top-[56px] sm:top-[64px] md:top-[72px] z-40 overflow-x-auto`}
-        >
-          <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
-            {[
-              "smart-adaptive",
-              "smart-analysis",
-              "signals",
-              "pro-signals",
-              "super-signals",
-              "even-odd",
-              "over-under",
-              "advanced-over-under",
-              "matches",
-              "differs",
-              "rise-fall",
-              "ai-analysis",
-              "smartauto24",
-              "tools-info",
-            ].map((tab) => (
-              <TabsTrigger
-                key={tab}
-                value={tab}
-                className={`shrink-0 rounded-none border-b-2 border-transparent text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-2 sm:py-3 whitespace-nowrap transition-all capitalize font-medium ${tab === "smartauto24"
-                  ? "data-[state=active]:border-yellow-500 data-[state=active]:text-yellow-500 data-[state=active]:shadow-[0_2px_10px_rgba(234,179,8,0.3)]"
-                  : tab === "tools-info"
-                    ? "data-[state=active]:border-purple-500 data-[state=active]:text-purple-500 data-[state=active]:shadow-[0_2px_10px_rgba(168,85,247,0.3)]"
-                    : tab === "trade-now"
-                      ? "data-[state=active]:border-green-500 data-[state=active]:text-green-500 data-[state=active]:shadow-[0_2px_10px_rgba(34,197,94,0.3)]"
-                      : "data-[state=active]:border-green-400 data-[state=active]:text-green-400 data-[state=active]:shadow-[0_2px_10px_rgba(34,211,238,0.3)]"
-                  } data-[state=active]:bg-transparent ${theme === "dark" ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
-              >
-                {tab === "smart-adaptive"
-                  ? "Smart Adaptive ⭐"
-                  : tab === "smart-analysis"
-                    ? "Smart Analysis 📊"
-                    : tab === "signals"
-                      ? "Signals 📈"
-                      : tab === "pro-signals"
-                        ? "Pro Signals 🎯"
-                        : tab === "super-signals"
-                          ? "Super Signals ⚡"
-                          : tab === "even-odd"
-                            ? "Even/Odd 🔀"
-                            : tab === "over-under"
-                              ? "Over/Under 📉"
-                              : tab === "advanced-over-under"
-                                ? "Advanced O/U 📊"
-                                : tab === "matches"
-                                  ? "Matches 🎲"
-                                  : tab === "differs"
-                                    ? "Differs ❌"
-                                    : tab === "rise-fall"
-                                      ? "Rise/Fall 📈"
-                                      : tab === "ai-analysis"
-                                        ? "AI Analysis 🤖"
-                                        : tab === "smartauto24"
-                                          ? "SmartAuto24 ⭐"
-                                          : tab === "tools-info"
-                                            ? "Tools & Info 🛠️"
-                                            : tab.replace(/-/g, " ")}
-              </TabsTrigger>
-            ))}
-          </ResponsiveTabs>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-36">
 
         <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6">
           {connectionStatus !== "connected" ? (
@@ -688,6 +662,6 @@ export default function DerivAnalysisApp() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   )
 }
