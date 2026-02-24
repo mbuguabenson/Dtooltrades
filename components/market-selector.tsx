@@ -80,20 +80,20 @@ export function MarketSelector({ symbols, currentSymbol, onSymbolChange, theme =
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={`w-full min-w-[140px] sm:min-w-[260px] h-10 sm:h-12 py-2 sm:py-3 px-3 sm:px-5 rounded-xl justify-between transition-all duration-300 ${theme === "dark"
+          className={`w-full min-w-[120px] sm:min-w-[260px] h-9 sm:h-12 py-1 sm:py-3 px-2 sm:px-5 rounded-lg sm:rounded-xl justify-between transition-all duration-300 ${theme === "dark"
             ? "bg-blue-500/5 border-blue-500/20 text-white hover:bg-blue-500/10 hover:border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
             : "bg-blue-50 border-blue-200 text-slate-900 hover:bg-blue-100"
             }`}
         >
           <div className="flex flex-col items-start min-w-0 flex-1">
-            <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-0.5 ${theme === "dark" ? "text-blue-400/80" : "text-blue-600"}`}>
+            <span className={`text-[7px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-0 hidden xs:block ${theme === "dark" ? "text-blue-400/80" : "text-blue-600"}`}>
               Market
             </span>
-            <span className="truncate w-full text-left font-black text-xs sm:text-base tracking-tight">
+            <span className="truncate w-full text-left font-black text-[10px] sm:text-base tracking-tight leading-tight">
               {currentSymbolData?.display_name || currentSymbol}
             </span>
           </div>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
+          <ChevronDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

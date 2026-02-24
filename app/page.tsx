@@ -165,8 +165,8 @@ export default function DerivAnalysisApp() {
           : "bg-white/90 border-gray-200 shadow-xl"
           } backdrop-blur-3xl`}
       >
-        <div className="mx-auto w-full px-4 sm:px-8">
-          <div className="flex h-20 sm:h-28 items-center justify-between gap-4">
+        <div className="mx-auto w-full px-2 sm:px-8">
+          <div className="flex h-16 sm:h-24 items-center justify-between gap-2 sm:gap-4">
             {/* Left: Premium Brand */}
             <div className="flex items-center gap-4">
               <div className="relative group cursor-pointer">
@@ -190,41 +190,39 @@ export default function DerivAnalysisApp() {
             {/* Right: Modern Controls */}
             <div className="flex items-center gap-3 sm:gap-6 flex-1 justify-end">
               {/* Main Ticker in Header */}
-              <div className="flex-1 flex items-center gap-4">
+              <div className="flex-1 flex items-center gap-2 sm:gap-4 min-w-0">
                 <LiveTicker
                   price={currentPrice ?? undefined}
                   digit={currentDigit}
                   theme={theme}
                   symbol={symbol}
                   compact={true}
-                >
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {availableSymbols.length > 0 && (
-                      <MarketSelector
-                        symbols={availableSymbols}
-                        currentSymbol={symbol}
-                        onSymbolChange={changeSymbol}
-                        theme={theme}
-                      />
-                    )}
-
-                    {/* Ticks Selection - Now in Header */}
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-500/10 bg-blue-500/5 hidden sm:flex">
-                      <span className={`text-[9px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                  depthSelector={
+                    <div className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-blue-500/10 bg-blue-500/5 group/depth">
+                      <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
                         Depth
                       </span>
                       <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
-                        <SelectTrigger className="w-[85px] h-8 text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none">
+                        <SelectTrigger className="w-[50px] sm:w-[85px] h-6 sm:h-8 text-[9px] sm:text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none p-0 sm:p-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-blue-500/30" : "bg-white"}>
                           {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tv) => (
-                            <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv} Ticks</SelectItem>
+                            <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
+                  }
+                >
+                  {availableSymbols.length > 0 && (
+                    <MarketSelector
+                      symbols={availableSymbols}
+                      currentSymbol={symbol}
+                      onSymbolChange={changeSymbol}
+                      theme={theme}
+                    />
+                  )}
                 </LiveTicker>
               </div>
 

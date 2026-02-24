@@ -8,6 +8,7 @@ interface LiveTickerProps {
   theme?: "light" | "dark"
   symbol?: string
   children?: React.ReactNode
+  depthSelector?: React.ReactNode
   compact?: boolean
 }
 
@@ -17,6 +18,7 @@ export function LiveTicker({
   theme = "dark",
   symbol = "Volatility",
   children,
+  depthSelector,
   compact = false,
 }: LiveTickerProps) {
   const [animatingPrice, setAnimatingPrice] = useState(false)
@@ -49,56 +51,68 @@ export function LiveTicker({
   if (compact) {
     return (
       <div
-        className={`relative group overflow-hidden flex items-center h-12 sm:h-20 rounded-2xl transition-all duration-500 border ${theme === "dark"
+        className={`relative group overflow-hidden flex flex-wrap items-center h-auto min-h-[56px] sm:min-h-[80px] rounded-2xl sm:rounded-[2rem] transition-all duration-500 border p-1 sm:p-2 ${theme === "dark"
           ? "glass-fintech border-cyan-500/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
           : "bg-white border-cyan-50 shadow-sm"
           } ${animatingPrice || animatingDigit ? "border-cyan-400/40" : ""}`}
       >
         {/* Market Selector area */}
-        <div className="flex items-center px-4 sm:px-6 border-r border-cyan-500/20 h-full bg-white/5 group-hover:bg-white/10 transition-colors">
-          <div className="flex-1">
+        <div className="flex items-center px-3 sm:px-6 h-10 sm:h-16 bg-white/5 rounded-xl sm:rounded-[1.5rem] transition-colors overflow-hidden flex-1 sm:flex-none">
+          <div className="w-full">
             {children}
           </div>
         </div>
 
-        {/* Price display area */}
-        <div className="flex items-center px-4 sm:px-10 h-full gap-6 sm:gap-14 flex-1">
-          <div className="flex flex-col">
-            <span className={`text-[7px] sm:text-[10px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-              Spot Stream
-            </span>
-            <div
-              className={`text-sm sm:text-2xl font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-2 sm:gap-3 ${animatingPrice
-                ? priceUp
-                  ? "text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]"
-                  : priceDown
-                    ? "text-rose-400 drop-shadow-[0_0_12px_rgba(251,113,113,0.5)]"
-                    : "text-white"
-                : theme === "dark"
-                  ? "text-white"
-                  : "text-slate-900"
-                }`}
-            >
-              {price?.toFixed(5) || "-----.--"}
-              <div className="flex flex-col text-[10px] sm:text-xs leading-none">
-                {priceUp && <span className="text-emerald-400 animate-bounce">▲</span>}
-                {priceDown && <span className="text-rose-400 animate-bounce">▼</span>}
+        {/* Data area - Wraps on mobile if needed */}
+        <div className="flex flex-1 items-center justify-between px-2 sm:px-8 h-10 sm:h-16 gap-2 sm:gap-10 min-w-0">
+
+          {/* Depth/Price Cluster */}
+          <div className="flex items-center gap-2 sm:gap-8 min-w-0">
+            {depthSelector && (
+              <div className="hidden md:block">
+                {depthSelector}
+              </div>
+            )}
+
+            <div className="flex flex-col min-w-0">
+              <span className={`text-[7px] sm:text-[9px] uppercase tracking-[0.2em] opacity-80 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                Spot Stream
+              </span>
+              <div
+                className={`text-xs sm:text-xl md:text-2xl font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-1 sm:gap-2 ${animatingPrice
+                  ? priceUp
+                    ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                    : priceDown
+                      ? "text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,113,0.5)]"
+                      : "text-white"
+                  : theme === "dark"
+                    ? "text-white"
+                    : "text-slate-900"
+                  }`}
+              >
+                <span className="truncate">{price?.toFixed(5) || "-----.--"}</span>
+                <div className="flex flex-col text-[8px] sm:text-xs leading-none shrink-0">
+                  {priceUp && <span className="text-emerald-400 animate-bounce">▲</span>}
+                  {priceDown && <span className="text-rose-400 animate-bounce">▼</span>}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="h-8 sm:h-12 w-px bg-cyan-500/10 hidden md:block" />
+          {/* Vertical Divider (Desktop) */}
+          <div className="h-6 sm:h-10 w-px bg-cyan-500/10 hidden lg:block" />
 
-          <div className="flex items-center gap-3 sm:gap-6">
-            <div className="flex flex-col text-right hidden sm:flex">
-              <span className={`text-[10px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+          {/* Digit Cluster */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <div className="flex flex-col text-right hidden lg:flex">
+              <span className={`text-[8px] sm:text-[9px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
                 Live
               </span>
-              <span className="text-[11px] text-gray-400 font-bold leading-none">Tick</span>
+              <span className="text-[10px] text-gray-400 font-bold leading-none">Tick</span>
             </div>
             <div
-              className={`text-lg sm:text-4xl font-black w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all duration-500 ${animatingDigit
-                ? "bg-orange-500/40 text-orange-400 scale-110 shadow-[0_0_20px_rgba(249,115,22,0.4)] border border-orange-500/40"
+              className={`text-sm sm:text-3xl font-black w-9 h-9 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all duration-500 ${animatingDigit
+                ? "bg-orange-500/40 text-orange-400 scale-110 shadow-[0_0_15px_rgba(249,115,22,0.4)] border border-orange-500/40"
                 : theme === "dark"
                   ? "bg-slate-900/80 text-orange-500 border border-orange-500/20"
                   : "bg-slate-50 text-orange-600 border border-orange-200"
@@ -108,6 +122,13 @@ export function LiveTicker({
             </div>
           </div>
         </div>
+
+        {/* Mobile Depth Selector (Shown below on very small screens or as needed) */}
+        {depthSelector && (
+          <div className="w-full md:hidden pt-1 pb-1 px-3 border-t border-white/5 flex justify-center">
+            {depthSelector}
+          </div>
+        )}
       </div>
     )
   }
