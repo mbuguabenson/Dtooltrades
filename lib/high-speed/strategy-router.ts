@@ -25,6 +25,8 @@ export class StrategyRouter {
     private isProcessing = false
     private consecutiveLosses = 0
     private currentStake: number
+    private consecutiveEvenCount = 0
+    private consecutiveOddCount = 0
 
     constructor(config: StrategyConfig) {
         this.config = config
@@ -88,9 +90,18 @@ export class StrategyRouter {
      * EVEN/ODD strategy:
      * 1. Power >= 55% and increasing.
      * 2. Identify dominant side.
-     * 3. Strategy waits for least-appearing digit.
+     * 3. Requirement: Wait for 2+ consecutive opposite digits, then trade.
      */
     private checkEvenOdd(snapshot: PowerSnapshot) {
+        // Update parity streaks
+        if (snapshot.lastDigit % 2 === 0) {
+            this.consecutiveEvenCount++
+            this.consecutiveOddCount = 0
+        } else {
+            this.consecutiveOddCount++
+            this.consecutiveEvenCount = 0
+        }
+
         const threshold = 55
         let dominant: "DIGITEVEN" | "DIGITODD" | null = null
 
@@ -102,11 +113,13 @@ export class StrategyRouter {
 
         if (!dominant) return null
 
-        // Special condition: dominant digit must appear within next 3 after weakest?
-        // User requested: "Wait for least-appearing digit to appear. Within next 3, dominant must appear."
-        // This requires a tiny state machine. For the stateless tick event, we check if last digit was weakest.
-        if (snapshot.lastDigit === snapshot.weakestDigit) {
-            return { contractType: dominant }
+        // Entry condition: 2+ consecutive opposite digits
+        if (dominant === "DIGITEVEN" && this.consecutiveOddCount >= 2) {
+            return { contractType: "DIGITEVEN" }
+        }
+
+        if (dominant === "DIGITODD" && this.consecutiveEvenCount >= 2) {
+            return { contractType: "DIGITODD" }
         }
 
         return null
@@ -162,12 +175,15 @@ export class StrategyRouter {
      * MATCHES strategy:
      * 1. High frequency, every tick.
      * 2. Select highest-power digit.
-     * 3. If power decreases -> stop.
+     * 3. Only trigger when power is increasing (user requested).
      */
     private checkMatches(snapshot: PowerSnapshot) {
         const target = snapshot.strongestDigit
-        // Simple heuristic: if power > 12 (above average) execute
-        if (snapshot.digitPowers[target] > 12) {
+        const power = snapshot.digitPowers[target]
+        const isIncreasing = snapshot.isStrongestDigitIncreasing
+
+        // Trigger if power is above average (10%) and strongly increasing
+        if (power >= 12 && isIncreasing) {
             return { contractType: "DIGITMATCH", prediction: target }
         }
         return null

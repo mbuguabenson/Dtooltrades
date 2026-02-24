@@ -8,9 +8,17 @@ interface LiveTickerProps {
   theme?: "light" | "dark"
   symbol?: string
   children?: React.ReactNode
+  compact?: boolean
 }
 
-export function LiveTicker({ price, digit, theme = "dark", symbol = "Volatility", children }: LiveTickerProps) {
+export function LiveTicker({
+  price,
+  digit,
+  theme = "dark",
+  symbol = "Volatility",
+  children,
+  compact = false,
+}: LiveTickerProps) {
   const [animatingPrice, setAnimatingPrice] = useState(false)
   const [animatingDigit, setAnimatingDigit] = useState(false)
   const [prevPrice, setPrevPrice] = useState(price)
@@ -37,6 +45,73 @@ export function LiveTicker({ price, digit, theme = "dark", symbol = "Volatility"
   const priceChange = price && prevPrice ? price - prevPrice : 0
   const priceUp = priceChange > 0
   const priceDown = priceChange < 0
+
+  if (compact) {
+    return (
+      <div
+        className={`relative group overflow-hidden flex items-center h-9 sm:h-12 rounded-xl transition-all duration-500 border ${theme === "dark"
+          ? "glass-fintech border-cyan-500/10 bg-[#0a1128]/30"
+          : "bg-white border-cyan-50 shadow-sm"
+          } ${animatingPrice || animatingDigit ? "border-cyan-400/30" : ""}`}
+      >
+        {/* Market Selector area */}
+        <div className="flex items-center px-2 sm:px-4 border-r border-cyan-500/10 h-full">
+          {children ? (
+            <div className="scale-[0.8] sm:scale-90 origin-left">{children}</div>
+          ) : (
+            <span className={`text-[10px] sm:text-xs font-bold whitespace-nowrap ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+              {symbol}
+            </span>
+          )}
+        </div>
+
+        {/* Price display area */}
+        <div className="flex items-center px-2 sm:px-6 h-full gap-2 sm:gap-4 flex-1">
+          <div className="flex flex-col">
+            <span className={`hidden sm:block text-[8px] uppercase tracking-tighter opacity-50 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+              Spot
+            </span>
+            <div
+              className={`text-xs sm:text-lg font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-1 ${animatingPrice
+                ? priceUp
+                  ? "text-emerald-400"
+                  : priceDown
+                    ? "text-rose-400"
+                    : "text-white"
+                : theme === "dark"
+                  ? "text-white"
+                  : "text-slate-900"
+                }`}
+            >
+              {price?.toFixed(5) || "-----.--"}
+              <span className="text-[10px] hidden sm:inline">
+                {priceUp && "▲"}
+                {priceDown && "▼"}
+              </span>
+            </div>
+          </div>
+
+          <div className="h-4 sm:h-6 w-px bg-cyan-500/10" />
+
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className={`hidden sm:block text-[8px] uppercase tracking-tighter opacity-50 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+              Tick
+            </span>
+            <div
+              className={`text-sm sm:text-xl font-black w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-all duration-300 ${animatingDigit
+                ? "bg-orange-500/30 text-orange-400 scale-110"
+                : theme === "dark"
+                  ? "bg-slate-900/50 text-orange-500"
+                  : "bg-slate-50 text-orange-600"
+                }`}
+            >
+              {digit !== null ? digit : "-"}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div

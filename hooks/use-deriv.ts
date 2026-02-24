@@ -39,6 +39,7 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
   const engineRef = useRef<AnalysisEngine | null>(null)
   const predictorRef = useRef<AIPredictor | null>(null)
   const subscriptionIdRef = useRef<string | null>(null)
+  const tickCallbackRef = useRef<((tick: any) => void) | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -97,7 +98,7 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
 
         if (subscriptionIdRef.current) {
           try {
-            await wsRef.current.unsubscribe(subscriptionIdRef.current)
+            await wsRef.current.unsubscribe(subscriptionIdRef.current, tickCallbackRef.current || undefined)
             console.log("[v0] Unsubscribed from previous symbol")
           } catch (error) {
             console.error("[v0] Failed to unsubscribe:", error)
@@ -111,7 +112,8 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
         }
 
         console.log("[v0] Subscribing to symbol:", symbol)
-        const subscriptionId = await wsRef.current.subscribeTicks(symbol, (tick) => {
+
+        const tickHandler = (tick: any) => {
           if (!tick || typeof tick.quote !== "number") {
             console.warn("[v0] Invalid tick data received")
             marketDataDebugger.log({
@@ -133,11 +135,12 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
             status: 'success'
           })
 
+          const pipSize = wsRef.current?.getPipSize(symbol) || 2
           const tickData: TickData = {
             epoch: tick.epoch,
             quote: tick.quote,
-            symbol: tick.symbol,
-            pipSize: 2,
+            symbol: tick.symbol || symbol,
+            pipSize: pipSize,
           }
 
           engineRef.current?.addTick(tickData)
@@ -205,7 +208,10 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
             message: 'UI state updated with new market data',
             status: 'success'
           })
-        })
+        }
+
+        tickCallbackRef.current = tickHandler
+        const subscriptionId = await wsRef.current.subscribeTicks(symbol, tickHandler)
 
         subscriptionIdRef.current = subscriptionId
         addLog(`Subscribed to ${symbol} ticks`, "info")
@@ -227,7 +233,7 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
 
     return () => {
       if (subscriptionIdRef.current && wsRef.current) {
-        wsRef.current.unsubscribe(subscriptionIdRef.current).catch((error) => {
+        wsRef.current.unsubscribe(subscriptionIdRef.current, tickCallbackRef.current || undefined).catch((error) => {
           console.error("[v0] Cleanup unsubscribe error:", error)
         })
       }

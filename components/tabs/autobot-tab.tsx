@@ -152,6 +152,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
 
   const tickManagerRef = useRef<TickHistoryManager | null>(null)
   const tickSubscriptionRef = useRef<string | null>(null)
+  const tickHandlerRef = useRef<((tickData: any) => void) | null>(null)
   const analysisEngineRef = useRef<AnalysisEngine>(new AnalysisEngine(100))
 
   useEffect(() => {
@@ -182,8 +183,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
           tickManagerRef.current = new TickHistoryManager(apiClient)
         }
 
-        // Subscribe to ticks for the selected symbol
-        const subscriptionId = await derivWebSocket.subscribeTicks(symbol, (tickData) => {
+        const tickHandler = (tickData: any) => {
           // Update market price and last digit from WebSocket
           setCurrentMarketPrice(tickData.quote)
           setCurrentLastDigit(tickData.lastDigit)
@@ -194,7 +194,12 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
             quote: tickData.quote,
             symbol: symbol
           })
-        })
+        }
+
+        tickHandlerRef.current = tickHandler
+
+        // Subscribe to ticks for the selected symbol
+        const subscriptionId = await derivWebSocket.subscribeTicks(symbol, tickHandler)
 
         tickSubscriptionRef.current = subscriptionId
       } catch (error) {
@@ -255,7 +260,7 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
         tickManagerRef.current.cleanup()
       }
       if (tickSubscriptionRef.current) {
-        derivWebSocket.unsubscribe(tickSubscriptionRef.current)
+        derivWebSocket.unsubscribe(tickSubscriptionRef.current, tickHandlerRef.current || undefined)
       }
     }
   }, [apiClient, isConnected, symbol])

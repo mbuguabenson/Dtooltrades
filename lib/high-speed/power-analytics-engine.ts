@@ -29,6 +29,7 @@ export interface PowerSnapshot {
     isOddIncreasing: boolean
     isUnderIncreasing: boolean
     isOverIncreasing: boolean
+    isStrongestDigitIncreasing: boolean
 }
 
 export class PowerAnalyticsEngine {
@@ -116,7 +117,8 @@ export class PowerAnalyticsEngine {
             isEvenIncreasing,
             isOddIncreasing: !isEvenIncreasing,
             isUnderIncreasing,
-            isOverIncreasing: !isUnderIncreasing
+            isOverIncreasing: !isUnderIncreasing,
+            isStrongestDigitIncreasing: this.calculateTrend(this.buffer15, this.buffer50, d => d === strongest)
         }
     }
 

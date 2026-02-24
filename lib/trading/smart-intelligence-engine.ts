@@ -50,7 +50,7 @@ export class SmartIntelligenceEngine {
 
         for (const symbol of this.markets) {
             const subId = await this.wsManager.subscribeTicks(symbol, (tick) => {
-                this.processTick(symbol, tick.quote)
+                this.processTick(symbol, tick)
             })
             if (subId) {
                 this.subscriptionIds.set(symbol, subId)
@@ -89,7 +89,7 @@ export class SmartIntelligenceEngine {
                 this.tickWindows.set(symbol, [])
             }
             const subId = await this.wsManager.subscribeTicks(symbol, (tick) => {
-                this.processTick(symbol, tick.quote)
+                this.processTick(symbol, tick)
             })
             if (subId) {
                 this.subscriptionIds.set(symbol, subId)
@@ -102,8 +102,8 @@ export class SmartIntelligenceEngine {
         return this.isScanning
     }
 
-    private processTick(symbol: string, quote: number) {
-        const lastDigit = this.wsManager.extractLastDigit(quote)
+    private processTick(symbol: string, tick: any) {
+        const lastDigit = this.wsManager.extractLastDigit(tick.quote, tick.pip_size || 2)
         const window = this.tickWindows.get(symbol) || []
 
         window.push(lastDigit)

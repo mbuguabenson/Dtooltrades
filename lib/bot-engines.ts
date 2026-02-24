@@ -24,7 +24,8 @@ export class EvenOddBot {
     lastSignal: null,
   }
 
-  private powerThreshold = 55
+  private powerThreshold = 60
+  private waitThreshold = 55
   private maxRuns = 10
 
   analyze(snapshot: AnalysisSnapshot): BotSignal {
@@ -43,10 +44,10 @@ export class EvenOddBot {
     let action: 'trade' | 'wait' | 'skip' = 'skip'
     let confidence = 0
 
-    if (powerThresholdMet && trendPositive && hasPower) {
+    if (dominantPower >= this.powerThreshold && trendPositive && hasPower) {
       action = 'trade'
       confidence = Math.min(dominantPower + Math.abs(trend), 100)
-    } else if (powerThresholdMet) {
+    } else if (dominantPower >= this.waitThreshold) {
       action = 'wait'
       confidence = dominantPower
     }
@@ -71,9 +72,9 @@ export class EvenOddBot {
       confidence: Math.round(confidence),
       reason:
         action === 'trade'
-          ? `${dominant.toUpperCase()} power ${dominantPower.toFixed(1)}% with ${trend > 0 ? 'increasing' : 'neutral'} trend`
+          ? `${dominant.toUpperCase()} power ${dominantPower.toFixed(1)}% with ${trend > 0 ? 'increasing' : 'neutral'} trend - Ready to trade`
           : `Waiting for ${dominant.toUpperCase()} to exceed 55% (currently ${dominantPower.toFixed(1)}%)`,
-      powerThreshold: powerThresholdMet,
+      powerThreshold: dominantPower >= this.waitThreshold,
       trendCondition: trendPositive,
     }
 
@@ -143,17 +144,37 @@ export class OverUnderBot {
     let action: 'trade' | 'wait' | 'skip' = 'skip'
     let confidence = 0
 
-    if (powerThresholdMet && trendPositive && hasPower) {
+    if (dominantPower >= 60 && trendPositive && hasPower) {
       action = 'trade'
       confidence = Math.min(dominantPower + Math.abs(trend), 100)
-    } else if (powerThresholdMet) {
+    } else if (dominantPower >= 56 && trendPositive) {
+      action = 'trade'
+      confidence = dominantPower
+    } else if (dominantPower >= 53) {
       action = 'wait'
       confidence = dominantPower
     }
 
-    // Determine prediction digits
-    const predictionDigits = dominant === 'over' ? [5, 6, 7, 8, 9] : [0, 1, 2, 3, 4]
-    const prediction = predictionDigits[Math.floor(Math.random() * predictionDigits.length)]
+    // Determine prediction digits (Refined logic)
+    const getPrediction = () => {
+      if (dominant === 'under') {
+        const count06 = snapshot.digitPowers.filter(d => d.digit >= 0 && d.digit <= 6).reduce((s, d) => s + d.count, 0)
+        const count05 = snapshot.digitPowers.filter(d => d.digit >= 0 && d.digit <= 5).reduce((s, d) => s + d.count, 0)
+        const count04 = snapshot.digitPowers.filter(d => d.digit >= 0 && d.digit <= 4).reduce((s, d) => s + d.count, 0)
+        if (count04 >= count05 && count04 >= count06) return 6 // Under 6
+        if (count05 >= count06) return 7 // Under 7
+        return 8 // Under 8/9, returning 8 as default barrier
+      } else {
+        const count39 = snapshot.digitPowers.filter(d => d.digit >= 3 && d.digit <= 9).reduce((s, d) => s + d.count, 0)
+        const count49 = snapshot.digitPowers.filter(d => d.digit >= 4 && d.digit <= 9).reduce((s, d) => s + d.count, 0)
+        const count59 = snapshot.digitPowers.filter(d => d.digit >= 5 && d.digit <= 9).reduce((s, d) => s + d.count, 0)
+        if (count59 >= count49 && count59 >= count39) return 3 // Over 3
+        if (count49 >= count39) return 2 // Over 2
+        return 1 // Over 1/0, returning 1 as default barrier
+      }
+    }
+
+    const prediction = getPrediction()
 
     const signal: BotSignal = {
       botType: 'over_under',
@@ -162,9 +183,9 @@ export class OverUnderBot {
       confidence: Math.round(confidence),
       reason:
         action === 'trade'
-          ? `${dominant.toUpperCase()} power ${dominantPower.toFixed(1)}% with ${trend > 0 ? 'increasing' : 'neutral'} trend`
-          : `Waiting for ${dominant.toUpperCase()} to exceed 55% (currently ${dominantPower.toFixed(1)}%)`,
-      powerThreshold: powerThresholdMet,
+          ? `${dominant.toUpperCase()} signal at ${dominantPower.toFixed(1)}% - direction set (Barrier: ${prediction})`
+          : `Waiting for ${dominant.toUpperCase()} direction (current power: ${dominantPower.toFixed(1)}%)`,
+      powerThreshold: dominantPower >= 53,
       trendCondition: trendPositive,
     }
 
@@ -253,9 +274,9 @@ export class DiffersBot {
       })
 
       const selectedPower = snapshot.digitPowers.find(dp => dp.digit === bestDigit)
-      if (selectedPower && selectedPower.trend < 0) {
+      if (selectedPower && selectedPower.trend < 0 && selectedPower.power < 10.5) {
         action = 'trade'
-        confidence = Math.min(Math.abs(selectedPower.trend) * 5, 85)
+        confidence = Math.min((10.5 - selectedPower.power) * 10, 95)
         selectedDigit = bestDigit
       } else {
         action = 'wait'

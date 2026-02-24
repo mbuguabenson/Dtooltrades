@@ -75,32 +75,35 @@ export function useSmartAdaptiveTrading() {
 
         addLog(`Focusing analysis on ${selectedMarket.replace('_', ' ')}`, "system")
 
+        const tickHandler = (tick: any) => {
+            if (isCancelled) return
+
+            const pipSize = apiClient.getPipSize(selectedMarket)
+            const lastDigit = DerivWebSocketManager.getInstance().extractLastDigit(tick.quote, pipSize)
+            digits.push(lastDigit)
+            if (digits.length > 100) digits.shift()
+
+            patternRef.current.updateWindow(digits)
+            patternRef.current.setTickDuration(tickDuration)
+
+            const currentPatterns = patternRef.current.analyze()
+            setPatterns(currentPatterns)
+
+            const currentSignals = strategyRef.current.getSignals(currentPatterns)
+            setSignals(currentSignals)
+
+            if (tradingRef.current) {
+                setStats(tradingRef.current.getStats())
+                setTradingStatus(tradingRef.current.getStatus())
+            }
+        }
+
         const startLocalSub = async () => {
             try {
-                const id = await apiClient.subscribeTicks(selectedMarket, (tick) => {
-                    if (isCancelled) return
-
-                    const lastDigit = DerivWebSocketManager.getInstance().extractLastDigit(tick.quote)
-                    digits.push(lastDigit)
-                    if (digits.length > 100) digits.shift()
-
-                    patternRef.current.updateWindow(digits)
-                    patternRef.current.setTickDuration(tickDuration)
-
-                    const currentPatterns = patternRef.current.analyze()
-                    setPatterns(currentPatterns)
-
-                    const currentSignals = strategyRef.current.getSignals(currentPatterns)
-                    setSignals(currentSignals)
-
-                    if (tradingRef.current) {
-                        setStats(tradingRef.current.getStats())
-                        setTradingStatus(tradingRef.current.getStatus())
-                    }
-                })
+                const id = await apiClient.subscribeTicks(selectedMarket, tickHandler)
 
                 if (isCancelled) {
-                    if (id) apiClient.forget(id)
+                    if (id) apiClient.forget(id, tickHandler)
                 } else {
                     currentSubId = id
                 }
@@ -114,7 +117,7 @@ export function useSmartAdaptiveTrading() {
 
         return () => {
             isCancelled = true
-            if (currentSubId) apiClient.forget(currentSubId)
+            if (currentSubId) apiClient.forget(currentSubId, tickHandler)
         }
     }, [apiClient, isConnected, isAuthorized, selectedMarket, tickDuration])
 

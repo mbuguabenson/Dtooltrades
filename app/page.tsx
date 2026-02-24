@@ -16,7 +16,6 @@ import { OverUnderTab } from "@/components/tabs/over-under-tab"
 import { MatchesTab } from "@/components/tabs/matches-tab"
 import { DiffersTab } from "@/components/tabs/differs-tab"
 import { RiseFallTab } from "@/components/tabs/rise-fall-tab"
-import { TradingViewTab } from "@/components/tabs/trading-view-tab"
 import { StatisticalAnalysis } from "@/components/statistical-analysis"
 import { LastDigitsChart } from "@/components/charts/last-digits-chart"
 import { LastDigitsLineChart } from "@/components/charts/last-digits-line-chart"
@@ -32,10 +31,17 @@ import { verifier } from "@/lib/system-verifier"
 import { LiveTicker } from "@/components/live-ticker"
 import { ResponsiveTabs } from "@/components/responsive-tabs"
 import { MoneyMakerTab } from "@/components/tabs/money-maker-tab"
-import { TradeNowTab } from "@/components/tabs/trade-now-tab"
 import { ToolsInfoTab } from "@/components/tabs/tools-info-tab"
 import { UnifiedTradingDashboard } from "@/components/unified-trading-dashboard"
 import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function DerivAnalysisApp() {
   const [theme, setTheme] = useState<"light" | "dark">("dark")
@@ -43,6 +49,7 @@ export default function DerivAnalysisApp() {
   const [isLoading, setIsLoading] = useState(true)
   const [showTradingSlider, setShowTradingSlider] = useState(true)
   const [initError, setInitError] = useState<string | null>(null)
+  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
   const globalContext = useGlobalTradingContext()
 
   const {
@@ -181,24 +188,25 @@ export default function DerivAnalysisApp() {
             </div>
 
             {/* Right: Modern Controls */}
-            <div className="flex items-center gap-3 sm:gap-6">
-              {/* Desktop Ticker/Stats - Minimal */}
-              <div className="hidden lg:flex items-center gap-4 mr-4">
-                <div className={`flex items-center gap-3 px-4 py-1.5 rounded-full border ${theme === "dark" ? "bg-white/5 border-white/10" : "bg-gray-100 border-gray-200"}`}>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Market</span>
-                    <span className={`text-xs font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                      {symbol.replace("1HZ", "").replace("R_", "Vol_")}
-                    </span>
-                  </div>
-                  <div className={`w-px h-6 ${theme === "dark" ? "bg-white/10" : "bg-gray-300"}`} />
-                  <div className="flex flex-col items-start min-w-[60px]">
-                    <span className="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Price</span>
-                    <span className={`text-sm font-bold tabular-nums ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
-                      {currentPrice?.toFixed(2) || "---"}
-                    </span>
-                  </div>
-                </div>
+            <div className="flex items-center gap-3 sm:gap-6 flex-1 justify-end">
+              {/* Main Ticker in Header */}
+              <div className="flex-1 max-w-[120px] xs:max-w-none">
+                <LiveTicker
+                  price={currentPrice ?? undefined}
+                  digit={currentDigit}
+                  theme={theme}
+                  symbol={symbol}
+                  compact={true}
+                >
+                  {availableSymbols.length > 0 && (
+                    <MarketSelector
+                      symbols={availableSymbols}
+                      currentSymbol={symbol}
+                      onSymbolChange={changeSymbol}
+                      theme={theme}
+                    />
+                  )}
+                </LiveTicker>
               </div>
 
               <div className="flex items-center gap-2">
@@ -221,21 +229,6 @@ export default function DerivAnalysisApp() {
         </div>
       </header>
 
-      <div
-        className={`px-3 py-2 border-b ${theme === "dark" ? "bg-[#0a0e27]/80 border-blue-500/10" : "bg-white/80 border-gray-200"
-          } backdrop-blur-md`}
-      >
-        <LiveTicker price={currentPrice ?? undefined} digit={currentDigit} theme={theme} symbol={symbol}>
-          {availableSymbols.length > 0 && (
-            <MarketSelector
-              symbols={availableSymbols}
-              currentSymbol={symbol}
-              onSymbolChange={changeSymbol}
-              theme={theme}
-            />
-          )}
-        </LiveTicker>
-      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div
@@ -258,8 +251,6 @@ export default function DerivAnalysisApp() {
               "autobot",
               "automated",
               "automated-trades",
-              "trading-view",
-              "trade-now",
               "smartauto24",
               "tools-info",
             ].map((tab) => (
@@ -380,8 +371,8 @@ export default function DerivAnalysisApp() {
                         <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
                           <SelectTrigger
                             className={`w-[100px] sm:w-[120px] h-8 sm:h-9 text-xs sm:text-sm ${theme === "dark"
-                                ? "bg-blue-500/10 border-blue-500/30 text-white hover:bg-blue-500/20"
-                                : "bg-blue-50 border-blue-200 text-gray-900"
+                              ? "bg-blue-500/10 border-blue-500/30 text-white hover:bg-blue-500/20"
+                              : "bg-blue-50 border-blue-200 text-gray-900"
                               }`}
                           >
                             <SelectValue placeholder="Select ticks" />
@@ -392,8 +383,8 @@ export default function DerivAnalysisApp() {
                                 key={tickValue}
                                 value={tickValue.toString()}
                                 className={`text-xs sm:text-sm ${theme === "dark"
-                                    ? "text-white hover:bg-blue-500/20"
-                                    : "text-gray-900"
+                                  ? "text-white hover:bg-blue-500/20"
+                                  : "text-gray-900"
                                   }`}
                               >
                                 {tickValue} Ticks
@@ -627,16 +618,8 @@ export default function DerivAnalysisApp() {
                 <AutomatedTab theme={theme} symbol={symbol} />
               </TabsContent>
 
-              <TabsContent value="trading-view" className="mt-0">
-                <TradingViewTab theme={theme} />
-              </TabsContent>
-
-              <TabsContent value="trade-now" className="mt-0">
-                <TradeNowTab theme={theme} />
-              </TabsContent>
-
               <TabsContent value="smartauto24" className="mt-0">
-                <SmartAuto24Tab theme={theme} />
+                <SmartAuto24Tab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />
               </TabsContent>
 
 
@@ -669,6 +652,12 @@ export default function DerivAnalysisApp() {
             </div>
 
             <div className="flex items-center gap-4 text-gray-500">
+              <button
+                onClick={() => setIsDisclaimerOpen(true)}
+                className="hover:text-blue-500 transition-colors font-medium border border-gray-500/20 px-2 py-0.5 rounded-md hover:border-blue-500/30"
+              >
+                Risk Disclaimer
+              </button>
               <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
               <a href="#" className="hover:text-blue-500 transition-colors">Terms</a>
               <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
@@ -680,6 +669,48 @@ export default function DerivAnalysisApp() {
           </div>
         </div>
       </footer>
+
+      {/* Risk Disclaimer Modal */}
+      <Dialog open={isDisclaimerOpen} onOpenChange={setIsDisclaimerOpen}>
+        <DialogContent className={`${theme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : "bg-white"} sm:max-w-2xl`}>
+          <DialogHeader>
+            <DialogTitle className={`text-xl font-bold mb-2 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+              Risk Disclaimer
+            </DialogTitle>
+            <DialogDescription className={`${theme === "dark" ? "text-gray-300" : "text-gray-700"} text-sm leading-relaxed space-y-4`}>
+              <p>
+                Deriv offers complex derivatives, such as options and contracts for difference (&quot;CFDs&quot;). These products may not be suitable for all clients, and trading them puts you at risk. Please understand the following risks before trading Deriv products:
+              </p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>
+                  <strong>a)</strong> You may lose some or all of the money you invest in the trade
+                </li>
+                <li>
+                  <strong>b)</strong> If your trade involves currency conversion, exchange rates will affect your profit and loss.
+                </li>
+              </ul>
+              <p className="font-bold border-l-2 border-blue-500 pl-3 italic">
+                You should never trade with borrowed money or with money that you cannot afford to lose.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsDisclaimerOpen(false)}
+              className={theme === "dark" ? "border-gray-500 text-gray-300 hover:bg-gray-800" : ""}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => setIsDisclaimerOpen(false)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Accept
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

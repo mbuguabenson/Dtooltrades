@@ -63,9 +63,10 @@ export class MarketDataService {
     })
   }
 
-  private extractLastDigit(price: number): number {
-    const priceStr = price.toString().replace(".", "")
-    return Number.parseInt(priceStr[priceStr.length - 1], 10)
+  private extractLastDigit(price: number, symbol: string): number {
+    if (!this.ws) return Math.floor(price) % 10
+    const pipSize = this.ws.getPipSize(symbol)
+    return this.ws.extractLastDigit(price, pipSize)
   }
 
   getDigitFrequencies(): Record<number, DigitAnalysis> {

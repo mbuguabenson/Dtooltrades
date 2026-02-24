@@ -21,9 +21,11 @@ import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 
 interface TradingTabProps {
   theme?: "light" | "dark"
+  symbol: string
+  onSymbolChange: (symbol: string) => void
 }
 
-export function TradingTab({ theme: propTheme }: TradingTabProps) {
+export function TradingTab({ theme: propTheme, symbol, onSymbolChange }: TradingTabProps) {
   const {
     apiClient,
     isConnected,
@@ -54,10 +56,6 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
 
   const [currentTheme, setCurrentTheme] = useState(currentThemeFromProps)
   const [activeTab, setActiveTab] = useState("manual")
-
-  const [selectedMarket, setSelectedMarket] = useState<string>("")
-  const [selectedSubmarket, setSelectedSubmarket] = useState<string>("")
-  const [selectedSymbol, setSelectedSymbol] = useState<string>("")
 
   const [currentTick, setCurrentTick] = useState<number | null>(null)
   const [tickTimestamp, setTickTimestamp] = useState<string>("")
@@ -186,15 +184,8 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
       )
       setActiveSymbols(continuousIndices)
 
-      const defaultMarket = Array.from(uniqueMarkets)[0]
-      const defaultSubmarket = Object.keys(marketGroups[defaultMarket])[0]
-      const defaultSymbol = marketGroups[defaultMarket][defaultSubmarket][0].symbol
-
-      setSelectedMarket(defaultMarket)
-      setSelectedSubmarket(defaultSubmarket)
-      setSelectedSymbol(defaultSymbol)
-
-      await loadContractsForMarket(defaultSymbol)
+      // Sync with passed symbol
+      loadContractsForMarket(symbol)
 
       logJournal(
         `Continuous Indices loaded: ${uniqueMarkets.size} markets with ${continuousIndices.length} instruments`,
@@ -241,29 +232,30 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
   }
 
   useEffect(() => {
-    if (!apiClient || !selectedSymbol || !isConnected || !isAuthorized) return
+    if (!apiClient || !symbol || !isConnected || !isAuthorized) return
 
     let tickSubscriptionId: string | null = null
 
     const subscribeTicks = async () => {
       try {
-        tickSubscriptionId = await apiClient.subscribeTicks(selectedSymbol, (tick: any) => {
+        tickSubscriptionId = await apiClient.subscribeTicks(symbol, (tick: any) => {
           if (tick.quote) {
+            const pipSize = apiClient.getPipSize(symbol)
             setCurrentTick(tick.quote)
             setTickTimestamp(new Date(tick.epoch * 1000).toLocaleTimeString())
 
             // Trigger Power Engine
             const price = tick.quote
-            const lastDigit = derivWebSocket.extractLastDigit(price)
+            const lastDigit = derivWebSocket.extractLastDigit(price, pipSize)
             const snapshot = powerEngine.addDigit(lastDigit)
             setPowerSnapshot(snapshot)
 
             // Trigger Strategy Router
-            strategyRouter.onTickUpdate(snapshot, selectedStrategy, selectedSymbol)
+            strategyRouter.onTickUpdate(snapshot, selectedStrategy, symbol)
           }
         })
       } catch (error: any) {
-        console.error(`[v0] ❌ Failed to subscribe to ${selectedSymbol}:`, error.message || error);
+        console.error(`[v0] ❌ Failed to subscribe to ${symbol}:`, error.message || error);
       }
     }
 
@@ -274,7 +266,7 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
         apiClient.forget(tickSubscriptionId).catch(() => { })
       }
     }
-  }, [apiClient, selectedSymbol, isConnected, isAuthorized])
+  }, [apiClient, symbol, isConnected, isAuthorized, selectedStrategy])
 
   const [manualJournal] = useState(() => new TradingJournal("manual-trader"))
   const [autorunJournal] = useState(() => new TradingJournal("autorun-bot"))
@@ -296,38 +288,10 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
     }
   }, [])
 
-  const handleMarketChange = useCallback(
-    (market: string) => {
-      setSelectedMarket(market)
-      const firstSubmarket = submarkets[market]?.[0] || ""
-      setSelectedSubmarket(firstSubmarket)
-      const key = `${market}_${firstSubmarket}`
-      const firstInstrument = instruments[key]?.[0]
-      if (firstInstrument) {
-        setSelectedSymbol(firstInstrument.symbol)
-        loadContractsForMarket(firstInstrument.symbol)
-      }
-    },
-    [submarkets, instruments],
-  )
-
-  const handleSubmarketChange = useCallback(
-    (submarket: string) => {
-      setSelectedSubmarket(submarket)
-      const key = `${selectedMarket}_${submarket}`
-      const firstInstrument = instruments[key]?.[0]
-      if (firstInstrument) {
-        setSelectedSymbol(firstInstrument.symbol)
-        loadContractsForMarket(firstInstrument.symbol)
-      }
-    },
-    [selectedMarket, instruments],
-  )
-
-  const handleSymbolChange = useCallback((symbol: string) => {
-    setSelectedSymbol(symbol)
-    loadContractsForMarket(symbol)
-  }, [])
+  const handleSymbolChange = useCallback((newSymbol: string) => {
+    onSymbolChange(newSymbol)
+    loadContractsForMarket(newSymbol)
+  }, [onSymbolChange])
 
   return (
     <div
@@ -401,91 +365,30 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
           <Card
             className={`p-4 border mb-4 ${currentTheme === "dark" ? "bg-[#0a0e27]/50 border-blue-500/20" : "bg-gray-50 border-gray-200"}`}
           >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market</label>
-                <Select value={selectedMarket} onValueChange={handleMarketChange}>
-                  <SelectTrigger className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
-                    <SelectValue placeholder="Select Market" />
-                  </SelectTrigger>
-                  <SelectContent className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
-                    {markets.map((m) => (
-                      <SelectItem key={m} value={m}>{m.replace(/_/g, " ").toUpperCase()}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Submarket</label>
-                <Select value={selectedSubmarket} onValueChange={handleSubmarketChange}>
-                  <SelectTrigger className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
-                    <SelectValue placeholder="Select Submarket" />
-                  </SelectTrigger>
-                  <SelectContent className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
-                    {submarkets[selectedMarket]?.map((sm) => (
-                      <SelectItem key={sm} value={sm}>{sm.replace(/_/g, " ").toUpperCase()}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Symbol</label>
-                <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
+                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market Selector</label>
+                <Select value={symbol} onValueChange={handleSymbolChange}>
                   <SelectTrigger className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white font-bold" : ""}>
                     <SelectValue placeholder="Select Symbol" />
                   </SelectTrigger>
                   <SelectContent className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
-                    {instruments[`${selectedMarket}_${selectedSubmarket}`]?.map((s) => (
+                    {activeSymbols.map((s) => (
                       <SelectItem key={s.symbol} value={s.symbol}>{s.display_name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="flex items-center justify-end h-full">
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-sm px-3 py-1 font-mono">
+                  {symbol}
+                </Badge>
+              </div>
             </div>
           </Card>
 
-          {currentTick !== null && (
-            <div
-              className={`p-4 rounded-lg border mb-4 ${currentTheme === "dark" ? "bg-linear-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30" : "bg-linear-to-r from-blue-50 to-purple-50 border-blue-200"}`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div
-                    className={`text-xs font-semibold mb-1 ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    Current Tick Price
-                  </div>
-                  <div className={`text-2xl font-bold ${currentTheme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
-                    {currentTick.toFixed(4)}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div
-                    className={`text-xs font-semibold mb-1 ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    Timestamp
-                  </div>
-                  <div className={`text-sm ${currentTheme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                    {tickTimestamp}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div
-                    className={`text-xs font-semibold mb-1 ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    Symbol
-                  </div>
-                  <div
-                    className={`text-sm font-bold ${currentTheme === "dark" ? "text-orange-400" : "text-orange-600"}`}
-                  >
-                    {selectedSymbol}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Redundant Price Card Removed - Using global price from Ticker */}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
             <TabsList
@@ -596,7 +499,7 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
                 activeSymbols={activeSymbols}
                 contractsCache={contractsCache}
                 journal={manualJournal}
-                selectedSymbol={selectedSymbol}
+                selectedSymbol={symbol}
               />
             </TabsContent>
 
@@ -610,7 +513,7 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
                 activeSymbols={activeSymbols}
                 contractsCache={contractsCache}
                 journal={autorunJournal}
-                selectedSymbol={selectedSymbol}
+                selectedSymbol={symbol}
               />
             </TabsContent>
 
@@ -624,7 +527,7 @@ export function TradingTab({ theme: propTheme }: TradingTabProps) {
                 activeSymbols={activeSymbols}
                 contractsCache={contractsCache}
                 journal={speedbotJournal}
-                selectedSymbol={selectedSymbol}
+                selectedSymbol={symbol}
               />
             </TabsContent>
           </Tabs>

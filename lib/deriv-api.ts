@@ -76,6 +76,7 @@ export interface TickData {
   symbol: string
   quote: number
   epoch: number
+  pip_size?: number
   id?: string
 }
 
@@ -95,6 +96,7 @@ export class DerivAPIClient {
   private config: DerivAPIConfig
   private isAuthorised = false
   private onErrorCallback?: (error: any) => void
+  private wildcardListener?: (data: any) => void
 
   constructor(config: DerivAPIConfig) {
     this.config = config
@@ -111,9 +113,10 @@ export class DerivAPIClient {
   }
 
   private setupListeners() {
-    this.manager.on("*", (data: any) => {
+    this.wildcardListener = (data: any) => {
       this.handleMessage(data)
-    })
+    }
+    this.manager.on("*", this.wildcardListener)
   }
 
   setErrorCallback(callback: (error: any) => void) {
@@ -365,11 +368,11 @@ export class DerivAPIClient {
     }
   }
 
-  async forget(subscriptionId: string): Promise<void> {
+  async forget(subscriptionId: string, callback?: (data: any) => void): Promise<void> {
     if (!subscriptionId) return
     try {
       // Use manager's unsubscribe to handle reference counting
-      await this.manager.unsubscribe(subscriptionId)
+      await this.manager.unsubscribe(subscriptionId, callback)
       this.subscriptions.delete(subscriptionId)
 
       for (const [key, value] of this.activeSubscriptions.entries()) {
@@ -428,11 +431,18 @@ export class DerivAPIClient {
     this.pendingRequests.clear()
     this.subscriptions.clear()
     this.activeSubscriptions.clear()
+    if (this.wildcardListener) {
+      this.manager.off("*", this.wildcardListener)
+    }
     console.log("[v0] DerivAPIClient detached from manager")
   }
 
   isConnected(): boolean {
     return this.manager.isConnected()
+  }
+
+  getPipSize(symbol: string): number {
+    return this.manager.getPipSize(symbol)
   }
 
   isAuth(): boolean {

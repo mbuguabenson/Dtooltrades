@@ -177,11 +177,10 @@ export function OverUnderTab({
       <OverUnderAnalyzer ticks={analysisDigits} currentPrice={currentPrice} theme={theme} />
 
       <div
-        className={`rounded-xl p-6 border ${
-          theme === "dark"
+        className={`rounded-xl p-6 border ${theme === "dark"
             ? "bg-gradient-to-br from-[#0a0e27] to-[#0f1535] border-blue-500/20"
             : "bg-white border-gray-200"
-        }`}
+          }`}
       >
         <h3 className={`text-xl font-bold mb-4 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
           Under (0-4) / Over (5-9) Analysis
@@ -215,11 +214,10 @@ export function OverUnderTab({
       </div>
 
       <div
-        className={`rounded-xl p-6 border ${
-          theme === "dark"
+        className={`rounded-xl p-6 border ${theme === "dark"
             ? "bg-gradient-to-br from-[#0a0e27] to-[#0f1535] border-blue-500/20"
             : "bg-white border-gray-200"
-        }`}
+          }`}
       >
         <h3 className={`text-xl font-bold mb-4 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
           Select Digit for Over/Under Analysis
@@ -230,15 +228,14 @@ export function OverUnderTab({
             <button
               key={digit}
               onClick={() => setSelectedDigit(digit)}
-              className={`w-12 h-12 rounded-lg font-bold text-lg transition-all ${
-                selectedDigit === digit
+              className={`w-12 h-12 rounded-lg font-bold text-lg transition-all ${selectedDigit === digit
                   ? theme === "dark"
                     ? "bg-gradient-to-br from-yellow-500 to-orange-500 text-white shadow-[0_0_20px_rgba(234,179,8,0.6)] scale-110 border-2 border-yellow-400"
                     : "bg-yellow-500 text-white shadow-lg scale-110"
                   : theme === "dark"
                     ? "bg-gray-800/50 text-gray-400 border border-gray-700 hover:bg-gray-700/50 hover:text-gray-200"
                     : "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
-              }`}
+                }`}
             >
               {digit}
             </button>
@@ -246,11 +243,10 @@ export function OverUnderTab({
         </div>
 
         <div
-          className={`mb-6 p-5 rounded-xl border ${
-            theme === "dark"
+          className={`mb-6 p-5 rounded-xl border ${theme === "dark"
               ? "bg-gradient-to-br from-purple-900/30 to-blue-900/30 border-purple-500/30"
               : "bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200"
-          }`}
+            }`}
         >
           <h4
             className={`text-lg font-bold mb-4 text-center ${theme === "dark" ? "text-purple-300" : "text-purple-800"}`}
@@ -304,15 +300,14 @@ export function OverUnderTab({
 
             <div className={`w-full rounded-full h-3 ${theme === "dark" ? "bg-gray-800" : "bg-gray-200"}`}>
               <div
-                className={`h-3 rounded-full transition-all ${
-                  digitPower.strength === "VERY STRONG"
+                className={`h-3 rounded-full transition-all ${digitPower.strength === "VERY STRONG"
                     ? "bg-gradient-to-r from-green-600 to-green-400"
                     : digitPower.strength === "STRONG"
                       ? "bg-gradient-to-r from-blue-600 to-blue-400"
                       : digitPower.strength === "MODERATE"
                         ? "bg-gradient-to-r from-yellow-600 to-yellow-400"
                         : "bg-gradient-to-r from-gray-600 to-gray-400"
-                }`}
+                  }`}
                 style={{ width: `${Math.min(Number.parseFloat(digitPower.confidence), 100)}%` }}
               />
             </div>
@@ -332,11 +327,10 @@ export function OverUnderTab({
             <div className="flex-1 relative">
               <div className={`w-full rounded-full h-8 ${theme === "dark" ? "bg-gray-800" : "bg-gray-200"}`}>
                 <div
-                  className={`h-8 rounded-full transition-all ${
-                    theme === "dark"
+                  className={`h-8 rounded-full transition-all ${theme === "dark"
                       ? "bg-gradient-to-r from-green-600 to-green-500"
                       : "bg-gradient-to-r from-green-500 to-green-400"
-                  }`}
+                    }`}
                   style={{ width: `${Math.min(overPercent, 100)}%` }}
                 />
               </div>
@@ -355,11 +349,10 @@ export function OverUnderTab({
             <div className="flex-1 relative">
               <div className={`w-full rounded-full h-8 ${theme === "dark" ? "bg-gray-800" : "bg-gray-200"}`}>
                 <div
-                  className={`h-8 rounded-full transition-all ${
-                    theme === "dark"
+                  className={`h-8 rounded-full transition-all ${theme === "dark"
                       ? "bg-gradient-to-r from-blue-600 to-cyan-500"
                       : "bg-gradient-to-r from-blue-500 to-cyan-400"
-                  }`}
+                    }`}
                   style={{ width: `${Math.min(underPercent, 100)}%` }}
                 />
               </div>
@@ -393,13 +386,12 @@ export function OverUnderTab({
               return (
                 <div
                   key={idx}
-                  className={`w-10 h-10 rounded flex items-center justify-center text-xs font-bold transition-all ${
-                    isCurrentDigit
+                  className={`w-10 h-10 rounded flex items-center justify-center text-xs font-bold transition-all ${isCurrentDigit
                       ? "bg-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.6)] scale-110"
                       : isOver
                         ? "bg-green-500 text-white"
                         : "bg-red-500 text-white"
-                  }`}
+                    }`}
                 >
                   {isCurrentDigit ? "C" : isOver ? "O" : "U"}
                 </div>
@@ -410,8 +402,7 @@ export function OverUnderTab({
       </div>
 
       <div
-        className={`rounded-xl p-6 border text-center ${
-          signalStatus === "TRADE NOW"
+        className={`rounded-xl p-6 border text-center ${signalStatus === "TRADE NOW"
             ? theme === "dark"
               ? "bg-gradient-to-br from-green-900/30 to-green-800/30 border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.4)]"
               : "bg-green-50 border-green-300 shadow-lg"
@@ -422,16 +413,15 @@ export function OverUnderTab({
               : theme === "dark"
                 ? "bg-gradient-to-br from-gray-900/30 to-gray-800/30 border-gray-500/30"
                 : "bg-gray-50 border-gray-300"
-        }`}
+          }`}
       >
         <Badge
-          className={`text-xl px-6 py-3 font-bold mb-4 ${
-            signalStatus === "TRADE NOW"
+          className={`text-xl px-6 py-3 font-bold mb-4 ${signalStatus === "TRADE NOW"
               ? "bg-green-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.6)] animate-pulse"
               : signalStatus === "WAIT"
                 ? "bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)] animate-pulse"
                 : "bg-gray-500 text-white"
-          }`}
+            }`}
         >
           {signalStatus} {tradeTimer > 0 && `(${tradeTimer}s)`}
         </Badge>
@@ -455,36 +445,35 @@ export function OverUnderTab({
       </div>
 
       <div
-        className={`rounded-xl p-4 border text-center ${
-          theme === "dark"
-            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-            : "bg-white border-gray-200 shadow-lg"
-        }`}
-      >
-        <div className={`text-sm mb-2 font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-700"}`}>
-          Current Digit:
-        </div>
-        <div
-          className={`text-4xl font-bold animate-pulse ${
-            theme === "dark"
-              ? "bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent"
-              : "text-orange-600"
+        className={`rounded-xl p-2 px-4 border flex items-center justify-between gap-4 ${theme === "dark"
+            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+            : "bg-white border-gray-200 shadow-md"
           }`}
-        >
-          {currentDigit !== null ? currentDigit : "0"}
+      >
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-700"}`}>
+            Current Digit:
+          </span>
+          <span
+            className={`text-2xl font-bold animate-pulse ${theme === "dark"
+                ? "bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent"
+                : "text-orange-600"
+              }`}
+          >
+            {currentDigit !== null ? currentDigit : "0"}
+          </span>
         </div>
-        <div className={`text-xl mt-2 font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-          Price: {currentPrice?.toFixed(5) || "---"}
+        <div className={`text-sm font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+          Price: <span className="font-mono">{currentPrice?.toFixed(5) || "---"}</span>
         </div>
       </div>
 
       {last20Digits.length > 0 && (
         <div
-          className={`rounded-xl p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
               : "bg-white border-gray-200 shadow-lg"
-          }`}
+            }`}
         >
           <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
             Last 20 Digits
@@ -495,11 +484,10 @@ export function OverUnderTab({
 
       {last20Digits.length > 0 && (
         <div
-          className={`rounded-xl p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
               : "bg-white border-gray-200 shadow-lg"
-          }`}
+            }`}
         >
           <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
             Digits Line Chart
@@ -511,11 +499,10 @@ export function OverUnderTab({
       {signalStatus === "TRADE NOW" && (
         <Button
           size="lg"
-          className={`w-full px-8 py-6 text-xl font-bold text-white ${
-            favored === "under"
+          className={`w-full px-8 py-6 text-xl font-bold text-white ${favored === "under"
               ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-[0_0_30px_rgba(59,130,246,0.7)]"
               : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-[0_0_30px_rgba(34,197,94,0.7)]"
-          } animate-pulse`}
+            } animate-pulse`}
         >
           TRADE NOW {favored.toUpperCase()}
         </Button>

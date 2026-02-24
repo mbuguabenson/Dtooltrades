@@ -39,7 +39,13 @@ interface BotStats {
   contractsWon: number
 }
 
-export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
+interface SmartAuto24TabProps {
+  theme: "light" | "dark"
+  symbol: string
+  onSymbolChange: (symbol: string) => void
+}
+
+export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24TabProps) {
   const {
     apiClient,
     isConnected,
@@ -54,7 +60,6 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   const [loadingMarkets, setLoadingMarkets] = useState(true)
 
   // Configuration state
-  const [market, setMarket] = useState("R_100")
   const [stake, setStake] = useState("0.35")
   const [targetProfit, setTargetProfit] = useState("1")
   const [analysisTimeMinutes, setAnalysisTimeMinutes] = useState("30")
@@ -122,7 +127,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   const differsSelectedDigitRef = useRef<number | null>(null)
 
   // SmartAuto24 Engine
-  const smartAuto24Engine = useSmartAuto24(market, isConnected)
+  const smartAuto24Engine = useSmartAuto24(symbol, isConnected)
 
   // Modal state
   const [showResultModal, setShowResultModal] = useState(false)
@@ -139,6 +144,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   const [consecutiveEvenCount, setConsecutiveEvenCount] = useState(0)
   const [consecutiveOddCount, setConsecutiveOddCount] = useState(0)
   const [lastDigitWasEven, setLastDigitWasEven] = useState<boolean | null>(null)
+  const [marketSuggestions, setMarketSuggestions] = useState<Signal[]>([])
 
   // New state for stop loss percentage
   const [stopLossPercent, setStopLossPercent] = useState("50")
@@ -147,6 +153,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   useEffect(() => { lastDigitWasEvenRef.current = lastDigitWasEven }, [lastDigitWasEven])
   useEffect(() => { differsWaitingForEntryRef.current = differsWaitingForEntry }, [differsWaitingForEntry])
   useEffect(() => { differsSelectedDigitRef.current = differsSelectedDigit }, [differsSelectedDigit])
+  useEffect(() => { differsWaitingForEntryRef.current = differsWaitingForEntry }, [differsWaitingForEntry])
 
   useEffect(() => {
     if (!apiClient || !isConnected || !isAuthorized) return
@@ -168,87 +175,89 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   }, [apiClient, isConnected, isAuthorized])
 
   useEffect(() => {
-    if (!apiClient || !isConnected || !market) return
+    if (!apiClient || !isConnected || !symbol) return
 
     let tickSubscriptionId: string | null = null
+    const tickHandler = (tick: any) => {
+      setMarketPrice(tick.quote)
+
+      // Feed the analysis engine
+      if (strategiesRef.current) {
+        strategiesRef.current.addTick({
+          epoch: tick.epoch,
+          quote: tick.quote,
+          symbol: symbol,
+          pipSize: apiClient?.getPipSize(symbol) || 2
+        })
+      }
+
+      // Extract last digit properly using unified engine logic
+      const pipSize = apiClient?.getPipSize(symbol) || 2
+      const lastDigitValue = strategiesRef.current.extractLastDigit(tick.quote, pipSize)
+      setLastDigit(lastDigitValue)
+
+      // Process through SmartAuto24 engine
+      if (isRunning) {
+        const result = smartAuto24Engine.processTick(tick.quote)
+        // Engine now handles analysis internally
+      }
+
+      const isEven = lastDigitValue % 2 === 0
+      const currentLastDigitWasEven = lastDigitWasEvenRef.current
+      if (currentLastDigitWasEven === null) {
+        setLastDigitWasEven(isEven)
+      } else if (currentLastDigitWasEven === isEven) {
+        // Same parity continues
+        if (isEven) {
+          setConsecutiveEvenCount((prev) => prev + 1)
+          setConsecutiveOddCount(0)
+        } else {
+          setConsecutiveOddCount((prev) => prev + 1)
+          setConsecutiveEvenCount(0)
+        }
+      } else {
+        // Parity changed
+        if (isEven) {
+          setConsecutiveEvenCount(1)
+        } else {
+          setConsecutiveOddCount(1)
+        }
+      }
+      setLastDigitWasEven(isEven)
+
+      // Update digit frequencies
+      setDigitFrequencies((prev) => {
+        const newFreq = [...prev]
+        newFreq[lastDigitValue]++
+        return newFreq
+      })
+
+      // Update over/under
+      setOverUnderAnalysis((prev) => {
+        const isOver = lastDigitValue >= 5
+        return {
+          over: prev.over + (isOver ? 1 : 0),
+          under: prev.under + (isOver ? 0 : 1),
+          total: prev.total + 1,
+        }
+      })
+
+      setTicksCollected((prev) => prev + 1)
+
+      if (differsWaitingForEntryRef.current && differsSelectedDigitRef.current !== null) {
+        if (lastDigitValue === differsSelectedDigitRef.current) {
+          // Reset if selected digit appears
+          setDiffersTicksSinceAppearance(0)
+        } else {
+          // Increment ticks since appearance
+          setDiffersTicksSinceAppearance((prev) => prev + 1)
+        }
+      }
+    }
 
     const subscribeTicks = async () => {
       try {
-        tickSubscriptionId = await apiClient.subscribeTicks(market, (tick) => {
-          setMarketPrice(tick.quote)
-
-          // Feed the analysis engine
-          if (strategiesRef.current) {
-            strategiesRef.current.addTick({
-              epoch: tick.epoch,
-              quote: tick.quote,
-              symbol: market,
-              pipSize: 2
-            })
-          }
-
-          // Extract last digit properly using unified engine logic
-          const lastDigitValue = strategiesRef.current.extractLastDigit(tick.quote)
-          setLastDigit(lastDigitValue)
-
-          // Process through SmartAuto24 engine
-          if (isRunning) {
-            const result = smartAuto24Engine.processTick(tick.quote)
-            // Engine now handles analysis internally
-          }
-
-          const isEven = lastDigitValue % 2 === 0
-          const currentLastDigitWasEven = lastDigitWasEvenRef.current
-          if (currentLastDigitWasEven === null) {
-            setLastDigitWasEven(isEven)
-          } else if (currentLastDigitWasEven === isEven) {
-            // Same parity continues
-            if (isEven) {
-              setConsecutiveEvenCount((prev) => prev + 1)
-              setConsecutiveOddCount(0)
-            } else {
-              setConsecutiveOddCount((prev) => prev + 1)
-              setConsecutiveEvenCount(0)
-            }
-          } else {
-            // Parity changed
-            if (isEven) {
-              setConsecutiveEvenCount(1)
-            } else {
-              setConsecutiveOddCount(1)
-            }
-          }
-          setLastDigitWasEven(isEven)
-
-          // Update digit frequencies
-          setDigitFrequencies((prev) => {
-            const newFreq = [...prev]
-            newFreq[lastDigitValue]++
-            return newFreq
-          })
-
-          // Update over/under
-          setOverUnderAnalysis((prev) => {
-            const isOver = lastDigitValue >= 5
-            return {
-              over: prev.over + (isOver ? 1 : 0),
-              under: prev.under + (isOver ? 0 : 1),
-              total: prev.total + 1,
-            }
-          })
-
-          setTicksCollected((prev) => prev + 1)
-
-          if (differsWaitingForEntryRef.current && differsSelectedDigitRef.current !== null) {
-            if (lastDigitValue === differsSelectedDigitRef.current) {
-              // Reset if selected digit appears
-              setDiffersTicksSinceAppearance(0)
-            } else {
-              // Increment ticks since appearance
-              setDiffersTicksSinceAppearance((prev) => prev + 1)
-            }
-          }
-        })
+        tickSubscriptionId = await apiClient.subscribeTicks(symbol, tickHandler)
       } catch (error) {
         console.error("[v0] Failed to subscribe to ticks:", error)
       }
@@ -258,10 +267,10 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
 
     return () => {
       if (tickSubscriptionId) {
-        apiClient.forget(tickSubscriptionId).catch((err) => console.log("[v0] Forget error:", err))
+        apiClient.forget(tickSubscriptionId, tickHandler).catch((err) => console.log("[v0] Forget error:", err))
       }
     }
-  }, [apiClient, isConnected, market])
+  }, [apiClient, isConnected, symbol])
 
   const addAnalysisLog = (message: string, type: "info" | "success" | "warning" = "info") => {
     setAnalysisLog((prev) => [
@@ -293,7 +302,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
     setDiffersWaitingForEntry(false)
     setDiffersTicksSinceAppearance(0)
 
-    addAnalysisLog(`Starting ${analysisTimeMinutes} minute analysis on ${market}...`, "info")
+    addAnalysisLog(`Starting ${analysisTimeMinutes} minute analysis on ${symbol}...`, "info")
 
     // Initialize trader
     traderRef.current = new DerivRealTrader(apiClient)
@@ -315,131 +324,74 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
   }
 
   const completeAnalysis = async () => {
-    setStatus("trading")
-    addAnalysisLog("Analysis complete! Analyzing with selected strategy...", "success")
+    setStatus("completed")
+    setIsRunning(false)
+    addAnalysisLog("Analysis complete! Reviewing all market conditions...", "success")
 
-    // Generate signals using the unified AnalysisEngine
+    // Generate signals for all strategies
     const signals = strategiesRef.current.generateSignals()
     const currentAnalysis = strategiesRef.current.getAnalysis()
 
-    let analysis: any = null
-
-    if (selectedStrategy === "Differs") {
-      const signal = signals.find(s => s.type === "differs")
-      if (!signal || signal.status === "NEUTRAL") {
-        addAnalysisLog("Differs strategy: No suitable digit found. Stopping.", "warning")
-        setIsRunning(false)
-        setStatus("idle")
-        return
-      }
-      analysis = {
-        signal: "DIFFERS",
-        power: signal.probability,
-        confidence: signal.probability,
-        description: signal.recommendation,
-        status: signal.status
-      }
-      if (signal.targetDigit !== undefined) {
-        setDiffersSelectedDigit(signal.targetDigit)
-      }
-    } else if (selectedStrategy === "Even/Odd") {
-      const signal = signals.find(s => s.type === "even_odd")
-      if (!signal || signal.status === "NEUTRAL") {
-        addAnalysisLog("Even/Odd strategy: No clear signal. Stopping.", "warning")
-        setIsRunning(false)
-        setStatus("idle")
-        return
-      }
-      analysis = {
-        signal: currentAnalysis.evenPercentage > currentAnalysis.oddPercentage ? "EVEN" : "ODD",
-        power: signal.probability,
-        confidence: signal.probability,
-        description: signal.recommendation,
-        status: signal.status
-      }
-    } else if (selectedStrategy === "Over/Under") {
-      const signal = signals.find(s => s.type === "over_under")
-      if (!signal || signal.status === "NEUTRAL") {
-        addAnalysisLog("Over/Under strategy: No clear signal. Stopping.", "warning")
-        setIsRunning(false)
-        setStatus("idle")
-        return
-      }
-      analysis = {
-        signal: currentAnalysis.highPercentage > currentAnalysis.lowPercentage ? "OVER" : "UNDER",
-        power: signal.probability,
-        confidence: signal.probability,
-        description: signal.recommendation,
-        status: signal.status
-      }
-    } else if (selectedStrategy === "Matches") {
-      const signal = signals.find(s => s.type === "matches")
-      if (!signal || signal.status === "NEUTRAL") {
-        addAnalysisLog("Matches strategy: No clear signal. Stopping.", "warning")
-        setIsRunning(false)
-        setStatus("idle")
-        return
-      }
-      analysis = {
-        signal: "MATCHES",
-        power: signal.probability,
-        confidence: signal.probability,
-        description: signal.recommendation,
-        status: signal.status
-      }
-    }
-
-    if (!analysis) {
-      addAnalysisLog(`${selectedStrategy} strategy: Failed to generate analysis. Stopping.`, "warning")
-      setIsRunning(false)
-      setStatus("idle")
-      return
-    }
-
-    setAnalysisData({
-      strategy: selectedStrategy,
-      power: analysis.power,
-      signal: analysis.signal,
-      confidence: analysis.confidence,
-      description: analysis.description,
-      status: analysis.status,
-      digitFrequencies,
-      ticksCollected,
-      differsDigit: selectedStrategy === "Differs" ? differsSelectedDigit : undefined,
-    })
+    // Filter for viable signals
+    const viableSignals = signals.filter(s => s.status !== "NEUTRAL")
+    setMarketSuggestions(viableSignals)
     setShowAnalysisResults(true)
 
-    if (analysis.status === "WAIT") {
-      addAnalysisLog(`Strategy Status: WAIT - ${analysis.description}`, "warning")
-      setIsRunning(false)
-      setStatus("idle")
-      return
+    if (viableSignals.length === 0) {
+      addAnalysisLog("No clear bias found in the market. Consider increasing analysis time.", "warning")
+    } else {
+      addAnalysisLog(`Analysis finished! Found ${viableSignals.length} suggested strategies based on current market power.`, "success")
+    }
+  }
+
+  const handleSelectSuggestion = (signal: Signal) => {
+    // Map signal type to strategy name
+    const strategyMap: Record<string, string> = {
+      "even_odd": "Even/Odd",
+      "over_under": "Over/Under",
+      "differs": "Differs",
+      "matches": "Matches"
     }
 
-    addAnalysisLog(`${selectedStrategy} Power: ${analysis.power.toFixed(1)}% - Signal: ${analysis.signal}`, "success")
+    const strategyName = strategyMap[signal.type]
+    if (strategyName) {
+      setSelectedStrategy(strategyName)
+      addAnalysisLog(`Selected suggestion: ${strategyName}. Configuring bot parameters...`, "info")
 
-    if (selectedStrategy === "Differs" && differsSelectedDigit !== null) {
-      setDiffersWaitingForEntry(true)
-      setDiffersTicksSinceAppearance(0)
-      addAnalysisLog(`Waiting for digit ${differsSelectedDigit} to appear, then watching next 3 ticks...`, "info")
+      // Special setup for specific strategies
+      if (signal.type === "differs" && signal.targetDigit !== undefined) {
+        setDiffersSelectedDigit(signal.targetDigit)
+        setDiffersWaitingForEntry(true)
+        setDiffersTicksSinceAppearance(0)
+      }
 
-      const checkEntryInterval = setInterval(() => {
-        if (differsTicksSinceAppearance >= 3) {
-          clearInterval(checkEntryInterval)
-          setDiffersWaitingForEntry(false)
-          addAnalysisLog(
-            `Entry condition met! Digit ${differsSelectedDigit} didn't appear in 3 ticks. Starting trades.`,
-            "success",
-          )
-          startDiffersTrades(analysis)
-        }
-      }, 1000)
+      // Convert signal to internal analysis format for executeTrades
+      const executionAnalysis = {
+        strategy: strategyName,
+        power: signal.probability,
+        signal: signal.type === "even_odd"
+          ? (strategiesRef.current.getAnalysis().evenPercentage > strategiesRef.current.getAnalysis().oddPercentage ? "EVEN" : "ODD")
+          : (signal.type === "over_under"
+            ? (strategiesRef.current.getAnalysis().highPercentage > strategiesRef.current.getAnalysis().lowPercentage ? "OVER" : "UNDER")
+            : signal.type.toUpperCase()),
+        confidence: signal.probability,
+        description: signal.recommendation,
+        status: signal.status,
+        targetDigit: signal.targetDigit
+      }
 
-      return
+      setAnalysisData({
+        ...executionAnalysis,
+        digitFrequencies,
+        ticksCollected,
+      })
+
+      setIsRunning(true)
+      setStatus("trading")
+      addAnalysisLog(`Starting ${strategyName} bot...`, "success")
+
+      executeTrades(executionAnalysis)
     }
-
-    // Execute trades for other strategies
-    executeTrades(analysis)
   }
 
   const startDiffersTrades = (analysis: any) => {
@@ -461,31 +413,42 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
       }
 
       if (!entryPointMet) {
-        if (selectedStrategy === "Even/Odd") {
+        if (selectedStrategy === "Even/Odd" || analysis.strategy === "Even/Odd") {
           const targetIsEven = analysis.signal === "EVEN"
+          // Refined entry: Wait for 2+ consecutive opposite, then favored side appears
           if (targetIsEven && consecutiveOddCount >= 2 && lastDigit !== null && lastDigit % 2 === 0) {
             entryPointMet = true
             addAnalysisLog(
-              `Entry point met: ${consecutiveOddCount} consecutive odd digits, then even appeared`,
+              `Entry point met: ${consecutiveOddCount} consecutive ODD digits followed by EVEN. Entering EVEN trade.`,
               "success",
             )
           } else if (!targetIsEven && consecutiveEvenCount >= 2 && lastDigit !== null && lastDigit % 2 === 1) {
             entryPointMet = true
             addAnalysisLog(
-              `Entry point met: ${consecutiveEvenCount} consecutive even digits, then odd appeared`,
+              `Entry point met: ${consecutiveEvenCount} consecutive EVEN digits followed by ODD. Entering ODD trade.`,
               "success",
             )
           } else {
-            return // Wait for entry point
+            return // Wait for 2+ consecutive opposite etc.
           }
-        } else if (selectedStrategy === "Over/Under") {
-          entryPointMet = true // Entry point logic simplified for now
-        } else if (selectedStrategy === "Differs") {
-          if (differsTicksSinceAppearance >= 3) {
-            entryPointMet = true
-            addAnalysisLog(`Differs entry point met: ${differsSelectedDigit} didn't appear for 3 ticks`, "success")
+        } else if (selectedStrategy === "Differs" || analysis.strategy === "Differs") {
+          // Refined entry: Wait for the digit to appear, then wait 3 ticks
+          if (differsWaitingForEntryRef.current) {
+            if (differsTicksSinceAppearance >= 3) {
+              setDiffersWaitingForEntry(false)
+              entryPointMet = true
+              addAnalysisLog(`Differs entry point met: Digit ${differsSelectedDigit} hasn't appeared for 3 clean ticks.`, "success")
+            } else {
+              return
+            }
           } else {
-            return // Wait for entry point
+            // If we are not currently waiting, but we should be (e.g. at start)
+            if (lastDigit === differsSelectedDigit) {
+              setDiffersWaitingForEntry(true)
+              setDiffersTicksSinceAppearance(0)
+              addAnalysisLog(`Target digit ${differsSelectedDigit} appeared! Starting 3-tick clearance...`, "info")
+            }
+            return
           }
         } else {
           entryPointMet = true
@@ -533,7 +496,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
         )
 
         const tradeConfig: any = {
-          symbol: market,
+          symbol: symbol,
           contractType: contractType,
           stake: adjustedStake.toFixed(2),
           duration: ticksPerTrade,
@@ -579,7 +542,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
             {
               id: result.contractId?.toString() || `trade-${Date.now()}`,
               contractType: selectedStrategy === "Differs" ? `DIFFERS ${differsSelectedDigit}` : contractType,
-              market,
+              market: symbol,
               entrySpot: result.entrySpot?.toString() || "N/A",
               exitSpot: result.exitSpot?.toString() || "N/A",
               buyPrice: adjustedStake,
@@ -597,7 +560,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
             stake: adjustedStake,
             profit: result.profit,
             contractType: contractType,
-            market,
+            market: symbol,
             strategy: selectedStrategy,
           })
 
@@ -696,34 +659,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
             </div>
           </Card>
 
-          {marketPrice !== null && (
-            <Card
-              className={`p-6 border ${theme === "dark"
-                ? "bg-linear-to-r from-blue-500/20 via-cyan-500/20 to-teal-500/20 border-blue-500/30"
-                : "bg-linear-to-r from-blue-50 to-cyan-50 border-blue-200"
-                }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                    Current Market Price - {allMarkets.find((m) => m.symbol === market)?.display_name || market}
-                  </p>
-                  <h3 className={`text-3xl font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
-                    {marketPrice.toFixed(4)}
-                  </h3>
-                  <p className={`text-xs mt-1 ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}>
-                    Last Digit: {lastDigit !== null ? lastDigit : "N/A"} | Ticks: {ticksCollected}
-                  </p>
-                </div>
-                <Badge
-                  className={`text-lg px-4 py-2 ${theme === "dark" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : "bg-blue-100 text-blue-700"
-                    }`}
-                >
-                  Live
-                </Badge>
-              </div>
-            </Card>
-          )}
+          {/* Redundant Price Card Removed - Using global price from Ticker */}
 
           {showAnalysisResults && analysisData && (
             <Card
@@ -818,7 +754,7 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                 >
                   Market
                 </label>
-                <Select value={market} onValueChange={setMarket} disabled={loadingMarkets}>
+                <Select value={symbol} onValueChange={onSymbolChange} disabled={loadingMarkets}>
                   <SelectTrigger
                     className={`${theme === "dark"
                       ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
@@ -1085,6 +1021,92 @@ export function SmartAuto24Tab({ theme }: { theme: "light" | "dark" }) {
                   )}
                 </div>
               </div>
+            </Card>
+          )}
+
+          {/* Market Suggestions */}
+          {status === "completed" && (
+            <Card
+              className={`p-6 border ${theme === "dark"
+                ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
+                : "bg-white border-blue-200"
+                }`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className={`text-lg font-bold flex items-center gap-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                  <Zap className="w-5 h-5 text-yellow-400" />
+                  Best Market Conditions Detected
+                </h3>
+                <Badge variant="outline" className="border-cyan-500/30 text-cyan-400">
+                  {marketSuggestions.length} Opportunities
+                </Badge>
+              </div>
+
+              {marketSuggestions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {marketSuggestions.map((suggestion, idx) => (
+                    <Card
+                      key={idx}
+                      className={`p-4 border transition-all duration-300 hover:scale-[1.02] cursor-pointer ${theme === "dark"
+                        ? "bg-slate-900/50 border-cyan-500/20 hover:border-cyan-400/50 shadow-inner"
+                        : "bg-slate-50 border-gray-200 hover:border-blue-300"
+                        }`}
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`text-sm font-bold uppercase tracking-tight ${theme === "dark" ? "text-cyan-400" : "text-blue-600"}`}>
+                          {suggestion.type.toUpperCase().replace('_', ' ')}
+                        </span>
+                        <Badge className={`${suggestion.status === "TRADE NOW" ? "bg-green-500 text-white" : "bg-yellow-500 text-black"} font-black`}>
+                          {suggestion.status}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`h-1.5 flex-1 rounded-full ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`}>
+                          <div
+                            className={`h-full rounded-full ${suggestion.probability >= 60 ? "bg-green-500" : "bg-yellow-500"}`}
+                            style={{ width: `${suggestion.probability}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-black ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                          {suggestion.probability.toFixed(0)}%
+                        </span>
+                      </div>
+
+                      <p className={`text-[10px] mb-4 leading-relaxed line-clamp-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                        {suggestion.recommendation}
+                      </p>
+
+                      <Button
+                        size="sm"
+                        className="w-full h-8 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold text-[10px] uppercase tracking-wider"
+                      >
+                        Trade with this Strategy
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-gray-500/10 flex items-center justify-center">
+                    <AlertCircle className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className={`font-bold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>No Strong Signals Found</p>
+                    <p className="text-xs text-gray-500 max-w-[250px]">
+                      The market currently shows neutral patterns. You can try a different timeframe or asset.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setStatus("idle")}
+                    className="mt-4 border-yellow-500/50 text-yellow-500"
+                  >
+                    Reset and Try Again
+                  </Button>
+                </div>
+              )}
             </Card>
           )}
 

@@ -8,6 +8,7 @@ interface TickData {
   epoch: number
   symbol: string
   id?: string
+  pip_size?: number
 }
 
 interface ConnectionLog {
@@ -41,6 +42,7 @@ export class DerivWebSocketManager {
 
   private symbolsCache: any[] | null = null
   private symbolsPromise: Promise<any[]> | null = null
+  private pipSizeMap: Map<string, number> = new Map()
 
   public getNextReqId(): number {
     return ++this.reqIdCounter;
@@ -321,12 +323,14 @@ export class DerivWebSocketManager {
 
         const callbacks = this.tickCallbacks.get(symbol)
         if (callbacks) {
+          const pipSize = this.getPipSize(symbol)
           const tickData: TickData = {
             quote: message.tick.quote,
-            lastDigit: this.extractLastDigit(message.tick.quote),
+            lastDigit: this.extractLastDigit(message.tick.quote, pipSize),
             epoch: message.tick.epoch,
             symbol: symbol,
-            id: message.subscription?.id
+            id: message.subscription?.id,
+            pip_size: pipSize
           }
           callbacks.forEach(cb => cb(tickData))
         }
@@ -494,15 +498,15 @@ export class DerivWebSocketManager {
           console.log(`[v0] Successfully subscribed to ${symbol}: ${subscriptionId}`)
 
           // Push initial tick if available
-          if (response.tick) {
-            callback({
-              quote: response.tick.quote,
-              lastDigit: this.extractLastDigit(response.tick.quote),
-              epoch: response.tick.epoch,
-              symbol: symbol,
-              id: subscriptionId
-            })
-          }
+          const pipSize = this.getPipSize(symbol)
+          callback({
+            quote: response.tick.quote,
+            lastDigit: this.extractLastDigit(response.tick.quote, pipSize),
+            epoch: response.tick.epoch,
+            symbol: symbol,
+            id: subscriptionId,
+            pip_size: pipSize
+          })
 
           return subscriptionId
         } else {
@@ -572,15 +576,16 @@ export class DerivWebSocketManager {
     this.pendingRequests.clear()
   }
 
-  public extractLastDigit(quote: number): number {
-    // This is the most reliable way to get the last digit from Deriv quotes
-    // Quotes usually have 2-4 decimal places.
-    const parts = quote.toString().split('.')
-    const decimals = parts[1] || ""
-    if (decimals.length > 0) {
-      return parseInt(decimals[decimals.length - 1])
-    }
-    return Math.floor(quote) % 10
+  public getPipSize(symbol: string): number {
+    return this.pipSizeMap.get(symbol) || 2
+  }
+
+  public extractLastDigit(quote: number, pipSize: number = 2): number {
+    // Fixed point formatting ensures we keep trailing zeros
+    const formatted = quote.toFixed(pipSize)
+    const lastChar = formatted.charAt(formatted.length - 1)
+    const digit = parseInt(lastChar, 10)
+    return isNaN(digit) ? 0 : digit
   }
 
   public async unsubscribe(subscriptionId: string, callback?: (tick: TickData) => void) {
@@ -649,13 +654,17 @@ export class DerivWebSocketManager {
             product_type: "basic"
           }, 30000); // 30s timeout for symbols
 
-          if (response.active_symbols) {
-            this.symbolsCache = response.active_symbols.map((s: any) => ({
-              symbol: s.symbol,
-              display_name: s.display_name,
-              market: s.market,
-              market_display_name: s.market_display_name
-            }));
+          if (response && response.active_symbols) {
+            this.symbolsCache = response.active_symbols.map((s: any) => {
+              this.pipSizeMap.set(s.symbol, s.pip_size)
+              return {
+                symbol: s.symbol,
+                display_name: s.display_name,
+                market: s.market,
+                market_display_name: s.market_display_name,
+                pip_size: s.pip_size
+              }
+            });
             console.log(`[v0] Successfully loaded ${this.symbolsCache?.length} symbols`);
             return this.symbolsCache!;
           }
@@ -679,7 +688,7 @@ export class DerivWebSocketManager {
           await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
         }
       }
-      return []; // Should not reach here
+      return [];
     })();
 
     return this.symbolsPromise.finally(() => {

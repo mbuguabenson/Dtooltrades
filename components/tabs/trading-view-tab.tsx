@@ -10,6 +10,7 @@ import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 import { useDeriv } from "@/hooks/use-deriv"
 import { PatternChart, CandleData, PricePoint, SupportResistance, EntryExit, IndicatorData } from "@/components/pattern-chart"
 import { DigitDistribution } from "@/components/digit-distribution"
+import { tradingSessionCache } from "@/lib/trading-session-cache"
 
 interface ReversalPattern {
   type: string
@@ -25,14 +26,16 @@ type Timeframe = "1t" | "1m" | "5m" | "15m" | "1h"
 
 interface TradingViewTabProps {
   theme?: "light" | "dark"
+  symbol: string
+  onSymbolChange: (symbol: string) => void
 }
 
-export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
-  const { symbol, currentPrice, currentDigit, analysis } = useDeriv()
+export function TradingViewTab({ theme = "dark", symbol, onSymbolChange }: TradingViewTabProps) {
+  const { currentPrice, currentDigit, analysis } = useDeriv()
   const [timeframe, setTimeframe] = useState<Timeframe>("1t")
   const [chartType, setChartType] = useState<"line" | "candle">("line")
-  const [priceHistory, setPriceHistory] = useState<PricePoint[]>([])
-  const [candleHistory, setCandleHistory] = useState<CandleData[]>([])
+  const [priceHistory, setPriceHistory] = useState<PricePoint[]>(() => tradingSessionCache.getTicks(symbol) || [])
+  const [candleHistory, setCandleHistory] = useState<CandleData[]>(() => tradingSessionCache.getCandles(symbol, timeframe) || [])
   const [indicators, setIndicators] = useState<IndicatorData[]>([])
   const [detectedPatterns, setDetectedPatterns] = useState<ReversalPattern[]>([])
   const [supportResistance, setSupportResistance] = useState<SupportResistance[]>([])
@@ -48,6 +51,20 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
   useEffect(() => {
     if (!isMonitoring) return
 
+    // Sync state with cache when symbol/timeframe changes
+    if (timeframe === "1t") {
+      const cached = tradingSessionCache.getTicks(symbol) || []
+      setPriceHistory(cached)
+      if (cached.length > 0) analyzeData(cached, [])
+    } else {
+      const cached = tradingSessionCache.getCandles(symbol, timeframe) || []
+      setCandleHistory(cached)
+      if (cached.length > 0) analyzeData([], cached)
+    }
+
+    // Pin symbol for background data collection
+    tradingSessionCache.pinSymbol(symbol)
+
     const fetchData = async () => {
       if (timeframe === "1t") {
         setChartType("line")
@@ -58,11 +75,9 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
             timestamp: tick.epoch,
             digit: tick.lastDigit,
           }
-          setPriceHistory((prev) => {
-            const updated = [...prev, newPoint].slice(-100)
-            analyzeData(updated, [])
-            return updated
-          })
+          const updated = tradingSessionCache.updateTickInCache(symbol, newPoint)
+          setPriceHistory(updated)
+          analyzeData(updated, [])
         }
         const id = await derivWebSocket.subscribeTicks(symbol, callback)
         subscriptionRef.current = id
@@ -72,7 +87,7 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
         // Candles (History + Stream)
         const granularity = timeframe === "1m" ? 60 : timeframe === "5m" ? 300 : timeframe === "15m" ? 900 : 3600
 
-        // Initial Fetch
+        // Only fetch if cache is small or empty to minimize flicker
         const response = await derivWebSocket.sendAndWait({
           ticks_history: symbol,
           adjust_start_time: 1,
@@ -90,6 +105,7 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
             close: c.close,
             timestamp: c.epoch,
           }))
+          tradingSessionCache.setCandles(symbol, timeframe, candles)
           setCandleHistory(candles)
           analyzeData([], candles)
         }
@@ -101,14 +117,13 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
             if (!last) return prev
             const now = tick.epoch
             const isNewCandle = Math.floor(now / granularity) > Math.floor(last.timestamp / granularity)
+            let updated: CandleData[]
             if (isNewCandle) {
               const newCandle: CandleData = {
                 open: tick.quote, high: tick.quote, low: tick.quote, close: tick.quote,
                 timestamp: Math.floor(now / granularity) * granularity
               }
-              const updated = [...prev, newCandle].slice(-100)
-              analyzeData([], updated)
-              return updated
+              updated = [...prev, newCandle].slice(-100)
             } else {
               const updatedLast = {
                 ...last,
@@ -116,10 +131,11 @@ export function TradingViewTab({ theme = "dark" }: TradingViewTabProps) {
                 low: Math.min(last.low, tick.quote),
                 close: tick.quote
               }
-              const updated = [...prev.slice(0, -1), updatedLast]
-              analyzeData([], updated)
-              return updated
+              updated = [...prev.slice(0, -1), updatedLast]
             }
+            tradingSessionCache.setCandles(symbol, timeframe, updated)
+            analyzeData([], updated)
+            return updated
           })
         }
         const id = await derivWebSocket.subscribeTicks(symbol, callback)

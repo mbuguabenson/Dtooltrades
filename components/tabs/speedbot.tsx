@@ -345,7 +345,8 @@ export function SpeedBot({
       return
     }
 
-    const lastDigit = derivWebSocket.extractLastDigit(tradeData.price)
+    const pipSize = derivWebSocket.getPipSize(market)
+    const lastDigit = derivWebSocket.extractLastDigit(tradeData.price, pipSize)
     if (isNaN(lastDigit) || lastDigit < 0 || lastDigit > 9) {
       logJournal(`Tick ${tradeData.tickId}: Invalid digit ${lastDigit} - skipping`, "warn")
       processingRef.current = false
@@ -476,6 +477,8 @@ export function SpeedBot({
     processedTicksRef.current.clear()
     logJournal("SpeedBot started - NO TICK SKIPPING MODE", "info")
 
+    let currentTickHandler: ((tick: any) => void) | null = null
+
     const subscribeToTicks = async () => {
       try {
         const callback = async (tick: any) => {
@@ -488,7 +491,8 @@ export function SpeedBot({
             return
           }
 
-          const lastDigit = derivWebSocket.extractLastDigit(tick.quote)
+          const pipSize = derivWebSocket.getPipSize(market)
+          const lastDigit = derivWebSocket.extractLastDigit(tick.quote, pipSize)
 
           tradeQueueRef.current.push({
             tickId: tickCountRef.current,
@@ -496,7 +500,7 @@ export function SpeedBot({
           })
 
           logJournal(
-            `Tick ${tickCountRef.current} queued - Price: ${tick.quote.toFixed(5)} (Digit: ${lastDigit}) | Queue: ${tradeQueueRef.current.length}`,
+            `Tick ${tickCountRef.current} queued - Price: ${tick.quote.toFixed(pipSize)} (Digit: ${lastDigit}) | Queue: ${tradeQueueRef.current.length}`,
             "info",
           )
 
@@ -505,6 +509,7 @@ export function SpeedBot({
           }
         }
 
+        currentTickHandler = callback
         tickSubscriptionRef.current = await apiClient.subscribeTicks(market, callback)
       } catch (error: any) {
         if (error.message?.includes("already subscribed")) {
@@ -524,7 +529,7 @@ export function SpeedBot({
       processedTicksRef.current.clear()
       if (tickSubscriptionRef.current && apiClient) {
         try {
-          apiClient.forget(tickSubscriptionRef.current).catch(() => { })
+          apiClient.forget(tickSubscriptionRef.current, currentTickHandler || undefined).catch(() => { })
         } catch (e) { }
       }
       tradeQueueRef.current = []
