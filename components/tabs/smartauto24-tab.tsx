@@ -497,7 +497,6 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
         barrier = analysis.targetDigit?.toString()
       }
 
-      const strat = selectedStrategyRef.current
       const currentLosses = contractsLostRef.current
 
       const martingaleMultiplier = martingaleRatios[strat] || 2.0
