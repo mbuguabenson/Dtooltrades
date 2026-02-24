@@ -51,23 +51,23 @@ export function LiveTicker({
   if (compact) {
     return (
       <div
-        className={`relative group overflow-hidden flex flex-wrap items-center h-auto min-h-[56px] sm:min-h-[80px] rounded-2xl sm:rounded-[2rem] transition-all duration-500 border p-1 sm:p-2 ${theme === "dark"
+        className={`relative group overflow-hidden flex flex-wrap items-center h-auto min-h-[40px] sm:min-h-[44px] rounded-xl sm:rounded-2xl transition-all duration-500 border p-0.5 sm:p-1 ${theme === "dark"
           ? "glass-fintech border-cyan-500/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
           : "bg-white border-cyan-50 shadow-sm"
           } ${animatingPrice || animatingDigit ? "border-cyan-400/40" : ""}`}
       >
         {/* Market Selector area */}
-        <div className="flex items-center px-3 sm:px-6 h-10 sm:h-16 bg-white/5 rounded-xl sm:rounded-[1.5rem] transition-colors overflow-hidden flex-1 sm:flex-none">
+        <div className="flex items-center px-2 sm:px-4 h-8 sm:h-9 bg-white/5 rounded-lg sm:rounded-xl transition-colors overflow-hidden flex-1 sm:flex-none">
           <div className="w-full">
             {children}
           </div>
         </div>
 
         {/* Data area - Wraps on mobile if needed */}
-        <div className="flex flex-1 items-center justify-between px-2 sm:px-8 h-10 sm:h-16 gap-2 sm:gap-10 min-w-0">
+        <div className="flex flex-1 items-center justify-between px-2 sm:px-4 h-8 sm:h-9 gap-2 sm:gap-6 min-w-0">
 
           {/* Depth/Price Cluster */}
-          <div className="flex items-center gap-2 sm:gap-8 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             {depthSelector && (
               <div className="hidden md:block">
                 {depthSelector}
@@ -75,11 +75,11 @@ export function LiveTicker({
             )}
 
             <div className="flex flex-col min-w-0">
-              <span className={`text-[7px] sm:text-[9px] uppercase tracking-[0.2em] opacity-80 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-                Spot Stream
+              <span className={`text-[6px] sm:text-[8px] uppercase tracking-[0.2em] opacity-80 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                Spot
               </span>
               <div
-                className={`text-xs sm:text-xl md:text-2xl font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-1 sm:gap-2 ${animatingPrice
+                className={`text-[10px] sm:text-base md:text-lg font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-1 ${animatingPrice
                   ? priceUp
                     ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"
                     : priceDown
@@ -91,28 +91,28 @@ export function LiveTicker({
                   }`}
               >
                 <span className="truncate">{price?.toFixed(5) || "-----.--"}</span>
-                <div className="flex flex-col text-[8px] sm:text-xs leading-none shrink-0">
-                  {priceUp && <span className="text-emerald-400 animate-bounce">▲</span>}
-                  {priceDown && <span className="text-rose-400 animate-bounce">▼</span>}
+                <div className="flex flex-col text-[7px] sm:text-[10px] leading-none shrink-0">
+                  {priceUp && <span className="text-emerald-400">▲</span>}
+                  {priceDown && <span className="text-rose-400">▼</span>}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Vertical Divider (Desktop) */}
-          <div className="h-6 sm:h-10 w-px bg-cyan-500/10 hidden lg:block" />
+          <div className="h-5 sm:h-7 w-px bg-cyan-500/10 hidden lg:block" />
 
           {/* Digit Cluster */}
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <div className="flex flex-col text-right hidden lg:flex">
-              <span className={`text-[8px] sm:text-[9px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+              <span className={`text-[7px] sm:text-[8px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
                 Live
               </span>
-              <span className="text-[10px] text-gray-400 font-bold leading-none">Tick</span>
+              <span className="text-[8px] sm:text-[9px] text-gray-500 font-bold leading-none">Digit</span>
             </div>
             <div
-              className={`text-sm sm:text-3xl font-black w-9 h-9 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all duration-500 ${animatingDigit
-                ? "bg-orange-500/40 text-orange-400 scale-110 shadow-[0_0_15px_rgba(249,115,22,0.4)] border border-orange-500/40"
+              className={`text-[10px] sm:text-lg font-black w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg sm:rounded-xl transition-all duration-500 ${animatingDigit
+                ? "bg-orange-500/40 text-orange-400 scale-110 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-500/40"
                 : theme === "dark"
                   ? "bg-slate-900/80 text-orange-500 border border-orange-500/20"
                   : "bg-slate-50 text-orange-600 border border-orange-200"
@@ -123,9 +123,9 @@ export function LiveTicker({
           </div>
         </div>
 
-        {/* Mobile Depth Selector (Shown below on very small screens or as needed) */}
+        {/* Mobile Depth Selector */}
         {depthSelector && (
-          <div className="w-full md:hidden pt-1 pb-1 px-3 border-t border-white/5 flex justify-center">
+          <div className="w-full md:hidden pt-0.5 pb-0.5 px-2 border-t border-white/5 flex justify-center">
             {depthSelector}
           </div>
         )}

@@ -159,136 +159,131 @@ export default function DerivAnalysisApp() {
     <div
       className={`min-h-screen overflow-x-hidden ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
     >
-      <header
-        className={`sticky top-3 z-[60] w-[96%] sm:w-[92%] mx-auto transition-all duration-500 rounded-3xl border ${theme === "dark"
-          ? "bg-[#050505]/80 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
-          : "bg-white/90 border-gray-200 shadow-xl"
-          } backdrop-blur-3xl`}
-      >
-        <div className="mx-auto w-full px-2 sm:px-8">
-          <div className="flex h-16 sm:h-24 items-center justify-between gap-2 sm:gap-4">
-            {/* Left: Premium Brand */}
-            <div className="flex items-center gap-4">
-              <div className="relative group cursor-pointer">
-                <div className="absolute -inset-2 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative flex items-center gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-linear-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <span className="text-white font-bold text-sm">P</span>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full relative">
+        <header
+          className={`sticky top-0 sm:top-2 z-[60] w-full sm:w-[96%] mx-auto transition-all duration-500 sm:rounded-3xl border ${theme === "dark"
+            ? "bg-[#050505]/95 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+            : "bg-white/95 border-gray-200 shadow-xl"
+            } backdrop-blur-3xl`}
+        >
+          <div className="mx-auto w-full px-2 sm:px-6">
+            <div className="flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-4">
+              {/* Left: Premium Brand */}
+              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                <div className="relative group cursor-pointer">
+                  <div className="absolute -inset-2 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative flex items-center gap-2 sm:gap-3">
+                    <div className="h-5 w-5 sm:h-6 sm:w-6 rounded bg-linear-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                      <span className="text-white font-bold text-[10px] sm:text-xs">P</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <h1 className={`text-sm sm:text-base font-bold tracking-tight leading-none ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                        PROFIT<span className="text-blue-500">HUB</span>
+                      </h1>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <h1 className={`text-lg font-bold tracking-tight leading-none ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                      PROFIT<span className="text-blue-500">HUB</span>
-                    </h1>
-                    <span className="text-[7px] uppercase tracking-[0.2em] text-gray-500 font-medium leading-tight">
-                      Quantum Terminal
-                    </span>
-                  </div>
+                </div>
+              </div>
+
+              {/* Right: Modern Controls */}
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end min-w-0">
+                {/* Main Ticker in Header */}
+                <div className="flex-1 flex items-center gap-2 min-w-0 max-w-2xl">
+                  <LiveTicker
+                    price={currentPrice ?? undefined}
+                    digit={currentDigit}
+                    theme={theme}
+                    symbol={symbol}
+                    compact={true}
+                    depthSelector={
+                      <div className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg border border-blue-500/10 bg-blue-500/5 group/depth">
+                        <span className={`text-[6px] sm:text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                          D
+                        </span>
+                        <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
+                          <SelectTrigger className="w-[40px] sm:w-[50px] h-5 sm:h-7 text-[8px] sm:text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none p-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-blue-500/30" : "bg-white"}>
+                            {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tv) => (
+                              <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    }
+                  >
+                    {availableSymbols.length > 0 && (
+                      <MarketSelector
+                        symbols={availableSymbols}
+                        currentSymbol={symbol}
+                        onSymbolChange={changeSymbol}
+                        theme={theme}
+                      />
+                    )}
+                  </LiveTicker>
+                </div>
+
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  <DerivAuth theme={theme} />
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleTheme}
+                    className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl transition-all ${theme === "dark"
+                      ? "bg-white/5 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-300"
+                      : "bg-gray-100 text-indigo-600 hover:bg-indigo-50"
+                      }`}
+                  >
+                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Right: Modern Controls */}
-            <div className="flex items-center gap-3 sm:gap-6 flex-1 justify-end">
-              {/* Main Ticker in Header */}
-              <div className="flex-1 flex items-center gap-2 sm:gap-4 min-w-0">
-                <LiveTicker
-                  price={currentPrice ?? undefined}
-                  digit={currentDigit}
-                  theme={theme}
-                  symbol={symbol}
-                  compact={true}
-                  depthSelector={
-                    <div className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-blue-500/10 bg-blue-500/5 group/depth">
-                      <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                        Depth
-                      </span>
-                      <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
-                        <SelectTrigger className="w-[50px] sm:w-[85px] h-6 sm:h-8 text-[9px] sm:text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none p-0 sm:p-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-blue-500/30" : "bg-white"}>
-                          {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tv) => (
-                            <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  }
-                >
-                  {availableSymbols.length > 0 && (
-                    <MarketSelector
-                      symbols={availableSymbols}
-                      currentSymbol={symbol}
-                      onSymbolChange={changeSymbol}
-                      theme={theme}
-                    />
-                  )}
-                </LiveTicker>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <DerivAuth theme={theme} />
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleTheme}
-                  className={`h-9 w-9 rounded-full transition-all ${theme === "dark"
-                    ? "bg-white/5 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-300"
-                    : "bg-gray-100 text-indigo-600 hover:bg-indigo-50"
-                    }`}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-              </div>
+            {/* Navigation Row within Header */}
+            <div className={`border-t px-2 sm:px-4 py-1.5 ${theme === "dark" ? "border-white/5" : "border-gray-100"}`}>
+              <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
+                {[
+                  "smart-adaptive",
+                  "smart-analysis",
+                  "smartauto24",
+                  "autobot",
+                  "automated",
+                  "signals",
+                  "pro-signals",
+                  "super-signals",
+                  "even-odd",
+                  "over-under",
+                  "advanced-over-under",
+                  "matches",
+                  "differs",
+                  "rise-fall",
+                  "ai-analysis",
+                  "tools-info",
+                ].map((tab) => (
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    className={`shrink-0 rounded-lg sm:rounded-xl text-[9px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap transition-all capitalize font-bold ${activeTab === tab
+                      ? theme === "dark"
+                        ? "bg-blue-600/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] border border-blue-500/30"
+                        : "bg-blue-50 text-blue-600 border border-blue-100"
+                      : theme === "dark"
+                        ? "text-gray-400 hover:text-white hover:bg-white/5"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                  >
+                    {tab === "autobot" ? "Autobot 🤖" : tab === "automated" ? "Autotrader 🚀" : tab.replace("-", " ")}
+                  </TabsTrigger>
+                ))}
+              </ResponsiveTabs>
             </div>
           </div>
+        </header>
 
-          {/* Navigation Row within Header */}
-          <div className={`mt-2 border-t px-4 pb-2 pt-2 ${theme === "dark" ? "border-white/5" : "border-gray-100"}`}>
-            <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
-              {[
-                "smart-adaptive",
-                "smart-analysis",
-                "smartauto24",
-                "autobot",
-                "automated",
-                "signals",
-                "pro-signals",
-                "super-signals",
-                "even-odd",
-                "over-under",
-                "advanced-over-under",
-                "matches",
-                "differs",
-                "rise-fall",
-                "ai-analysis",
-                "tools-info",
-              ].map((tab) => (
-                <TabsTrigger
-                  key={tab}
-                  value={tab}
-                  className={`shrink-0 rounded-xl text-[10px] sm:text-xs px-2.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap transition-all capitalize font-bold ${activeTab === tab
-                    ? theme === "dark"
-                      ? "bg-blue-600/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] border border-blue-500/30"
-                      : "bg-blue-50 text-blue-600 border border-blue-100"
-                    : theme === "dark"
-                      ? "text-gray-400 hover:text-white hover:bg-white/5"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                >
-                  {tab === "autobot" ? "Auto Trader 🤖" : tab === "automated" ? "Autonomous 🚀" : tab.replace("-", " ")}
-                </TabsTrigger>
-              ))}
-            </ResponsiveTabs>
-          </div>
-        </div>
-      </header>
-
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-36">
-
-        <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6">
+        <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 mt-28">
           {connectionStatus !== "connected" ? (
             <div className="text-center py-12 sm:py-20 md:py-32">
               <h2
@@ -569,10 +564,17 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
 
+              <TabsContent value="autobot" className="mt-0">
+                <AutoBotTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />
+              </TabsContent>
+
+              <TabsContent value="automated" className="mt-0">
+                <AutomatedTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />
+              </TabsContent>
+
               <TabsContent value="smartauto24" className="mt-0">
                 <SmartAuto24Tab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />
               </TabsContent>
-
 
               <TabsContent value="smart-adaptive" className="mt-0">
                 {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} symbol={symbol} />}
