@@ -160,13 +160,13 @@ export default function DerivAnalysisApp() {
       className={`min-h-screen overflow-x-hidden ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
     >
       <header
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${theme === "dark"
-          ? "bg-[#050505]/80 border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
-          : "bg-white/90 border-b border-gray-200"
-          } backdrop-blur-2xl`}
+        className={`sticky top-3 z-[60] w-[96%] sm:w-[92%] mx-auto transition-all duration-500 rounded-3xl border ${theme === "dark"
+          ? "bg-[#050505]/80 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+          : "bg-white/90 border-gray-200 shadow-xl"
+          } backdrop-blur-3xl`}
       >
-        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
+        <div className="mx-auto w-full px-4 sm:px-8">
+          <div className="flex h-20 sm:h-28 items-center justify-between gap-4">
             {/* Left: Premium Brand */}
             <div className="flex items-center gap-4">
               <div className="relative group cursor-pointer">
@@ -190,7 +190,7 @@ export default function DerivAnalysisApp() {
             {/* Right: Modern Controls */}
             <div className="flex items-center gap-3 sm:gap-6 flex-1 justify-end">
               {/* Main Ticker in Header */}
-              <div className="flex-1 max-w-[120px] xs:max-w-none">
+              <div className="flex-1 flex items-center gap-4">
                 <LiveTicker
                   price={currentPrice ?? undefined}
                   digit={currentDigit}
@@ -198,14 +198,33 @@ export default function DerivAnalysisApp() {
                   symbol={symbol}
                   compact={true}
                 >
-                  {availableSymbols.length > 0 && (
-                    <MarketSelector
-                      symbols={availableSymbols}
-                      currentSymbol={symbol}
-                      onSymbolChange={changeSymbol}
-                      theme={theme}
-                    />
-                  )}
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {availableSymbols.length > 0 && (
+                      <MarketSelector
+                        symbols={availableSymbols}
+                        currentSymbol={symbol}
+                        onSymbolChange={changeSymbol}
+                        theme={theme}
+                      />
+                    )}
+
+                    {/* Ticks Selection - Now in Header */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-500/10 bg-blue-500/5 hidden sm:flex">
+                      <span className={`text-[9px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                        Depth
+                      </span>
+                      <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
+                        <SelectTrigger className="w-[85px] h-8 text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-blue-500/30" : "bg-white"}>
+                          {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tv) => (
+                            <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv} Ticks</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </LiveTicker>
               </div>
 
@@ -364,37 +383,6 @@ export default function DerivAnalysisApp() {
                       >
                         Digits Distribution
                       </h3>
-
-                      {/* Tick Selector */}
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <label className={`text-xs sm:text-sm font-medium ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                          Analysis Depth:
-                        </label>
-                        <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
-                          <SelectTrigger
-                            className={`w-[100px] sm:w-[120px] h-8 sm:h-9 text-xs sm:text-sm ${theme === "dark"
-                              ? "bg-blue-500/10 border-blue-500/30 text-white hover:bg-blue-500/20"
-                              : "bg-blue-50 border-blue-200 text-gray-900"
-                              }`}
-                          >
-                            <SelectValue placeholder="Select ticks" />
-                          </SelectTrigger>
-                          <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-blue-500/30" : "bg-white"}>
-                            {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tickValue) => (
-                              <SelectItem
-                                key={tickValue}
-                                value={tickValue.toString()}
-                                className={`text-xs sm:text-sm ${theme === "dark"
-                                  ? "text-white hover:bg-blue-500/20"
-                                  : "text-gray-900"
-                                  }`}
-                              >
-                                {tickValue} Ticks
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
 
                     <DigitDistribution

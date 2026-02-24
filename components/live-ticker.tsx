@@ -49,34 +49,30 @@ export function LiveTicker({
   if (compact) {
     return (
       <div
-        className={`relative group overflow-hidden flex items-center h-10 sm:h-14 rounded-xl transition-all duration-500 border ${theme === "dark"
-          ? "glass-fintech border-cyan-500/10 bg-black/40 shadow-inner"
+        className={`relative group overflow-hidden flex items-center h-12 sm:h-20 rounded-2xl transition-all duration-500 border ${theme === "dark"
+          ? "glass-fintech border-cyan-500/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
           : "bg-white border-cyan-50 shadow-sm"
           } ${animatingPrice || animatingDigit ? "border-cyan-400/40" : ""}`}
       >
         {/* Market Selector area */}
-        <div className="flex items-center px-4 border-r border-cyan-500/20 h-full bg-white/5">
-          {children ? (
-            <div className="scale-110 sm:scale-125 origin-left transition-transform hover:scale-[1.3] duration-300">{children}</div>
-          ) : (
-            <span className={`text-xs sm:text-sm font-bold whitespace-nowrap ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-              {symbol}
-            </span>
-          )}
+        <div className="flex items-center px-4 sm:px-6 border-r border-cyan-500/20 h-full bg-white/5 group-hover:bg-white/10 transition-colors">
+          <div className="flex-1">
+            {children}
+          </div>
         </div>
 
         {/* Price display area */}
-        <div className="flex items-center px-4 sm:px-8 h-full gap-4 sm:gap-10 flex-1">
+        <div className="flex items-center px-4 sm:px-10 h-full gap-6 sm:gap-14 flex-1">
           <div className="flex flex-col">
-            <span className={`text-[7px] sm:text-[9px] uppercase tracking-widest opacity-70 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-              Market Spot
+            <span className={`text-[7px] sm:text-[10px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+              Spot Stream
             </span>
             <div
-              className={`text-sm sm:text-xl font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-1 sm:gap-2 ${animatingPrice
+              className={`text-sm sm:text-2xl font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-2 sm:gap-3 ${animatingPrice
                 ? priceUp
-                  ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]"
+                  ? "text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]"
                   : priceDown
-                    ? "text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,113,0.4)]"
+                    ? "text-rose-400 drop-shadow-[0_0_12px_rgba(251,113,113,0.5)]"
                     : "text-white"
                 : theme === "dark"
                   ? "text-white"
@@ -84,25 +80,25 @@ export function LiveTicker({
                 }`}
             >
               {price?.toFixed(5) || "-----.--"}
-              <span className="text-xs hidden sm:inline transition-transform duration-300">
-                {priceUp && "▲"}
-                {priceDown && "▼"}
-              </span>
+              <div className="flex flex-col text-[10px] sm:text-xs leading-none">
+                {priceUp && <span className="text-emerald-400 animate-bounce">▲</span>}
+                {priceDown && <span className="text-rose-400 animate-bounce">▼</span>}
+              </div>
             </div>
           </div>
 
-          <div className="h-6 sm:h-8 w-px bg-cyan-500/20" />
+          <div className="h-8 sm:h-12 w-px bg-cyan-500/10 hidden md:block" />
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-6">
             <div className="flex flex-col text-right hidden sm:flex">
-              <span className={`text-[9px] uppercase tracking-widest opacity-70 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+              <span className={`text-[10px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
                 Live
               </span>
-              <span className="text-[10px] text-gray-400 font-bold leading-none">Digit</span>
+              <span className="text-[11px] text-gray-400 font-bold leading-none">Tick</span>
             </div>
             <div
-              className={`text-base sm:text-2xl font-black w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl transition-all duration-300 ${animatingDigit
-                ? "bg-orange-500/40 text-orange-400 scale-110 shadow-[0_0_15px_rgba(249,115,22,0.4)]"
+              className={`text-lg sm:text-4xl font-black w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all duration-500 ${animatingDigit
+                ? "bg-orange-500/40 text-orange-400 scale-110 shadow-[0_0_20px_rgba(249,115,22,0.4)] border border-orange-500/40"
                 : theme === "dark"
                   ? "bg-slate-900/80 text-orange-500 border border-orange-500/20"
                   : "bg-slate-50 text-orange-600 border border-orange-200"
