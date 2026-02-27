@@ -20,9 +20,11 @@ interface SignalsTabProps {
   currentPrice?: number | null
   currentDigit?: number | null
   tickCount?: number
+  maxTicks?: number
+  onMaxTicksChange?: (ticks: number) => void
 }
 
-export function SignalsTab({ signals, proSignals, analysis, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount }: SignalsTabProps) {
+export function SignalsTab({ signals, proSignals, analysis, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount, maxTicks, onMaxTicksChange }: SignalsTabProps) {
   const [signalValidity, setSignalValidity] = useState<Map<number, number>>(new Map())
 
   useEffect(() => {
@@ -82,6 +84,8 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark", symb
         currentDigit={currentDigit}
         tickCount={tickCount}
         theme={theme}
+        maxTicks={maxTicks}
+        onMaxTicksChange={onMaxTicksChange}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {sortedSignals.map((signal, index) => {

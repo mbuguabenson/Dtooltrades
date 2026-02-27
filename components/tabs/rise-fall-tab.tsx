@@ -18,9 +18,11 @@ interface RiseFallTabProps {
   onSymbolChange?: (symbol: string) => void
   currentDigit?: number | null
   tickCount?: number
+  maxTicks?: number
+  onMaxTicksChange?: (ticks: number) => void
 }
 
-export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentDigit, tickCount }: RiseFallTabProps) {
+export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentDigit, tickCount, maxTicks, onMaxTicksChange }: RiseFallTabProps) {
   const riseFallSignal = signals?.find((s) => s.type === "rise_fall")
 
   if (!analysis) {
@@ -51,6 +53,8 @@ export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, the
         currentDigit={currentDigit}
         tickCount={tickCount}
         theme={theme}
+        maxTicks={maxTicks}
+        onMaxTicksChange={onMaxTicksChange}
       />
       <div
         className={`rounded-xl p-4 sm:p-6 md:p-8 border ${theme === "dark"

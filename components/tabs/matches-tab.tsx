@@ -18,9 +18,11 @@ interface MatchesTabProps {
   currentPrice?: number | null
   currentDigit?: number | null
   tickCount?: number
+  maxTicks?: number
+  onMaxTicksChange?: (ticks: number) => void
 }
 
-export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount }: MatchesTabProps) {
+export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount, maxTicks, onMaxTicksChange }: MatchesTabProps) {
   const [isScanning, setIsScanning] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [scanResult, setScanResult] = useState<{ digit: number; accuracy: "high" | "medium" } | null>(null)
@@ -76,6 +78,8 @@ export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", sy
         currentDigit={currentDigit}
         tickCount={tickCount}
         theme={theme}
+        maxTicks={maxTicks}
+        onMaxTicksChange={onMaxTicksChange}
       />
       <div
         className={`rounded-xl p-8 border ${theme === "dark"

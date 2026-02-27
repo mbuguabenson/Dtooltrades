@@ -66,7 +66,7 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
           {accounts.length > 0 ? (
             <Select value={activeLoginId || ""} onValueChange={switchAccount}>
               <SelectTrigger
-                className={`flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-transparent shadow-none focus:ring-0 transition-all min-w-[120px] ${theme === "dark"
+                className={`flex items-center h-8 sm:h-9 px-2 sm:px-4 rounded-full border border-transparent shadow-none focus:ring-0 transition-all min-w-[140px] ${theme === "dark"
                   ? "bg-white/5 hover:bg-white/10 text-white"
                   : "bg-black/5 hover:bg-black/10 text-slate-900"
                   }`}
@@ -86,7 +86,7 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
                     </div>
                   )}
                   {balance ? (
-                    <span className="min-w-[60px] text-left">
+                    <span className="min-w-[80px] text-left">
                       {Number(balance.amount).toFixed(2)} {balance.currency}
                     </span>
                   ) : (

@@ -18,6 +18,8 @@ interface ProSignalsTabProps {
   currentPrice?: number | null
   currentDigit?: number | null
   tickCount?: number
+  maxTicks?: number
+  onMaxTicksChange?: (ticks: number) => void
 }
 
 export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount }: ProSignalsTabProps) {

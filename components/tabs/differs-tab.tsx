@@ -17,9 +17,11 @@ interface DiffersTabProps {
   currentPrice?: number | null
   currentDigit?: number | null
   tickCount?: number
+  maxTicks?: number
+  onMaxTicksChange?: (ticks: number) => void
 }
 
-export function DiffersTab({ analysis, signals, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount }: DiffersTabProps) {
+export function DiffersTab({ analysis, signals, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount, maxTicks, onMaxTicksChange }: DiffersTabProps) {
   const differsSignal = signals?.find((s) => s.type === "differs")
 
   if (!analysis) {
@@ -43,6 +45,8 @@ export function DiffersTab({ analysis, signals, recentDigits, theme = "dark", sy
         currentDigit={currentDigit}
         tickCount={tickCount}
         theme={theme}
+        maxTicks={maxTicks}
+        onMaxTicksChange={onMaxTicksChange}
       />
       <div
         className={`rounded-xl p-8 border ${theme === "dark"

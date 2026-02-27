@@ -180,21 +180,6 @@ export default function DerivAnalysisApp() {
 
               {/* Ticker (flex-1) */}
               <div className="flex-1 flex justify-center sm:justify-end items-center min-w-0 max-w-2xl px-1 sm:px-0">
-                <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md bg-transparent group/depth">
-                  <span className={`text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                    Ticks
-                  </span>
-                  <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
-                    <SelectTrigger className="w-[40px] sm:w-[50px] h-4 sm:h-7 text-[9px] sm:text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none p-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-white/5" : "bg-white"}>
-                      {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tv) => (
-                        <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               {/* Auth & Theme */}
@@ -463,11 +448,11 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="signals" className="mt-0">
-                {analysis && <SignalsTab signals={signals} proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />}
+                {analysis && <SignalsTab signals={signals} proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />}
               </TabsContent>
 
               <TabsContent value="pro-signals" className="mt-0">
-                {analysis && <ProSignalsTab proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />}
+                {analysis && <ProSignalsTab proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />}
               </TabsContent>
 
               <TabsContent value="super-signals" className="mt-0">
@@ -514,13 +499,13 @@ export default function DerivAnalysisApp() {
 
               <TabsContent value="matches" className="mt-0">
                 {analysis && (
-                  <MatchesTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />
+                  <MatchesTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />
                 )}
               </TabsContent>
 
               <TabsContent value="differs" className="mt-0">
                 {analysis && (
-                  <DiffersTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />
+                  <DiffersTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />
                 )}
               </TabsContent>
 
@@ -537,6 +522,8 @@ export default function DerivAnalysisApp() {
                     onSymbolChange={changeSymbol}
                     currentDigit={currentDigit}
                     tickCount={tickCount}
+                    maxTicks={maxTicks}
+                    onMaxTicksChange={changeMaxTicks}
                   />
                 )}
               </TabsContent>
