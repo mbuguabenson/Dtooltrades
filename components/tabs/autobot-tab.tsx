@@ -14,11 +14,14 @@ import { AutoBot, type BotStrategy, type AutoBotState, type AutoBotConfig } from
 import { AnalysisEngine, type Signal } from "@/lib/analysis-engine"
 import { TickHistoryManager } from "@/lib/tick-history-manager"
 import { derivWebSocket } from "@/lib/deriv-websocket-manager"
+import { MarketSelector } from "@/components/market-selector"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface AutoBotTabProps {
   theme?: "light" | "dark"
   symbol: string
   onSymbolChange?: (symbol: string) => void
+  availableSymbols?: DerivSymbol[]
 }
 
 interface BotConfig {
@@ -125,7 +128,7 @@ const calculateSuggestedMartingale = (strategy: BotStrategy, stake: number): num
   return Math.max(1.1, Math.round(suggestedMultiplier * 100) / 100)
 }
 
-export function AutoBotTab({ theme = "dark", symbol, onSymbolChange }: AutoBotTabProps) {
+export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSymbols = [] }: AutoBotTabProps) {
   const {
     apiClient,
     isConnected,

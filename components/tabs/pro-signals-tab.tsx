@@ -4,14 +4,19 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
+import { MarketSelector } from "@/components/market-selector"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface ProSignalsTabProps {
   proSignals: Signal[]
   analysis: AnalysisResult | null
   theme?: "light" | "dark"
+  symbol?: string
+  availableSymbols?: DerivSymbol[]
+  onSymbolChange?: (symbol: string) => void
 }
 
-export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSignalsTabProps) {
+export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, availableSymbols = [], onSymbolChange }: ProSignalsTabProps) {
   const [showStrategies, setShowStrategies] = useState(false)
 
   const strategies = [
@@ -30,6 +35,12 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSigna
   if (!proSignals || proSignals.length === 0) {
     return (
       <div className="space-y-6">
+        {availableSymbols.length > 0 && onSymbolChange && symbol && (
+          <div className="flex items-center gap-3">
+            <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
+            <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
+          </div>
+        )}
         <div className="text-center py-16">
           <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
             No pro signals available yet. Pro signals require specific market conditions.
@@ -37,11 +48,10 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSigna
         </div>
 
         <div
-          className={`rounded-xl p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
               : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between mb-4">
             <h3
@@ -76,11 +86,10 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSigna
               {strategies.map((strategy, index) => (
                 <div
                   key={index}
-                  className={`p-4 rounded-lg border ${
-                    theme === "dark"
+                  className={`p-4 rounded-lg border ${theme === "dark"
                       ? "bg-gradient-to-br from-amber-500/10 to-purple-500/10 border-amber-500/40 hover:border-amber-400/60 hover:shadow-[0_0_20px_rgba(217,119,6,0.4)]"
                       : "bg-gradient-to-br from-amber-50 to-purple-50 border-amber-300 hover:border-amber-400 hover:shadow-lg"
-                  } transition-all`}
+                    } transition-all`}
                 >
                   <h4 className={`font-bold mb-2 ${theme === "dark" ? "text-amber-400" : "text-amber-700"}`}>
                     {strategy.name}
@@ -99,14 +108,19 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSigna
 
   return (
     <div className="space-y-6">
+      {availableSymbols.length > 0 && onSymbolChange && symbol && (
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
+          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
+        </div>
+      )}
       {proSignals.map((signal, index) => (
         <div
           key={index}
-          className={`rounded-xl p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
               : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between mb-4">
             <h3
@@ -116,13 +130,12 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSigna
             </h3>
             <Button
               size="lg"
-              className={`px-8 py-6 text-lg font-bold ${
-                signal.status === "TRADE NOW"
+              className={`px-8 py-6 text-lg font-bold ${signal.status === "TRADE NOW"
                   ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-[0_0_25px_rgba(34,197,94,0.6)] animate-pulse"
                   : signal.status === "WAIT"
                     ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-[0_0_25px_rgba(234,179,8,0.6)]"
                     : "bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
-              }`}
+                }`}
             >
               {signal.status}
             </Button>
@@ -172,11 +185,10 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSigna
       ))}
 
       <div
-        className={`rounded-xl p-6 border ${
-          theme === "dark"
+        className={`rounded-xl p-6 border ${theme === "dark"
             ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
             : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
-        }`}
+          }`}
       >
         <div className="flex items-center justify-between mb-4">
           <h3
@@ -209,11 +221,10 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark" }: ProSigna
             {strategies.map((strategy, index) => (
               <div
                 key={index}
-                className={`p-4 rounded-lg border ${
-                  theme === "dark"
+                className={`p-4 rounded-lg border ${theme === "dark"
                     ? "bg-gradient-to-br from-amber-500/10 to-purple-500/10 border-amber-500/40 hover:border-amber-400/60 hover:shadow-[0_0_20px_rgba(217,119,6,0.4)]"
                     : "bg-gradient-to-br from-amber-50 to-purple-50 border-amber-300 hover:border-amber-400 hover:shadow-lg"
-                } transition-all`}
+                  } transition-all`}
               >
                 <h4 className={`font-bold mb-2 ${theme === "dark" ? "text-amber-400" : "text-amber-700"}`}>
                   {strategy.name}

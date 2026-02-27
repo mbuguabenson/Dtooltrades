@@ -52,9 +52,12 @@ const MARKETS = [
 
 interface SuperSignalsTabProps {
   theme?: "light" | "dark"
+  symbol?: string
+  availableSymbols?: any[]
+  onSymbolChange?: (symbol: string) => void
 }
 
-export function SuperSignalsTab({ theme = "dark" }: SuperSignalsTabProps) {
+export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSymbolChange }: SuperSignalsTabProps) {
   const [marketsData, setMarketsData] = useState<Map<string, MarketData>>(new Map())
   const [tradeSignals, setTradeSignals] = useState<TradeSignal[]>([])
   const [showSignalPopup, setShowSignalPopup] = useState(false)

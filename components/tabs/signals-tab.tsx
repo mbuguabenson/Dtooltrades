@@ -5,15 +5,20 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
+import { MarketSelector } from "@/components/market-selector"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface SignalsTabProps {
   signals: Signal[]
   proSignals: Signal[]
   analysis: AnalysisResult | null
   theme?: "light" | "dark"
+  symbol?: string
+  availableSymbols?: DerivSymbol[]
+  onSymbolChange?: (symbol: string) => void
 }
 
-export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: SignalsTabProps) {
+export function SignalsTab({ signals, proSignals, analysis, theme = "dark", symbol, availableSymbols = [], onSymbolChange }: SignalsTabProps) {
   const [signalValidity, setSignalValidity] = useState<Map<number, number>>(new Map())
 
   useEffect(() => {
@@ -65,6 +70,12 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
 
   return (
     <div className="space-y-6">
+      {availableSymbols.length > 0 && onSymbolChange && symbol && (
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
+          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {sortedSignals.map((signal, index) => {
           const isTradeNow = signal.status === "TRADE NOW"
@@ -76,8 +87,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
           return (
             <div
               key={index}
-              className={`rounded-xl p-4 sm:p-6 border-2 relative overflow-hidden ${
-                isTradeNow
+              className={`rounded-xl p-4 sm:p-6 border-2 relative overflow-hidden ${isTradeNow
                   ? theme === "dark"
                     ? "border-emerald-500/50 bg-gradient-to-br from-emerald-900/10 to-green-900/10 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
                     : "border-emerald-300 bg-emerald-50/50 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
@@ -88,12 +98,11 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                     : theme === "dark"
                       ? "border-slate-500/50 bg-gradient-to-br from-slate-900/10 to-gray-900/10"
                       : "border-slate-300 bg-slate-50/50"
-              }`}
+                }`}
             >
               <div
-                className={`absolute -inset-1 rounded-xl pointer-events-none blur-md ${
-                  isTradeNow ? "animate-edge-glow-green" : isWait ? "animate-edge-glow-blue" : ""
-                }`}
+                className={`absolute -inset-1 rounded-xl pointer-events-none blur-md ${isTradeNow ? "animate-edge-glow-green" : isWait ? "animate-edge-glow-blue" : ""
+                  }`}
               />
 
               <div className="relative z-10">
@@ -105,8 +114,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                       </Badge>
                     )}
                     <span
-                      className={`text-lg sm:text-xl font-bold ${
-                        isTradeNow
+                      className={`text-lg sm:text-xl font-bold ${isTradeNow
                           ? theme === "dark"
                             ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]"
                             : "text-emerald-600"
@@ -117,7 +125,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                             : theme === "dark"
                               ? "text-slate-400"
                               : "text-slate-600"
-                      }`}
+                        }`}
                     >
                       {signal.type === "over_under"
                         ? "Over/Under 4.5"
@@ -141,8 +149,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                   </div>
                   <Button
                     size="sm"
-                    className={`px-4 py-2 text-sm font-bold ${
-                      isTradeNow
+                    className={`px-4 py-2 text-sm font-bold ${isTradeNow
                         ? "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)] animate-pulse"
                         : isWait
                           ? theme === "dark"
@@ -151,7 +158,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                           : theme === "dark"
                             ? "bg-slate-600 hover:bg-slate-700 text-slate-200"
                             : "bg-slate-400 hover:bg-slate-500 text-white"
-                    }`}
+                      }`}
                   >
                     {isTradeNow ? "TRADE NOW" : isWait ? "WAIT" : "NEUTRAL"}
                   </Button>
@@ -161,8 +168,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                   <div className="flex justify-between items-center mb-1">
                     <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Power</span>
                     <span
-                      className={`text-lg font-bold ${
-                        isTradeNow
+                      className={`text-lg font-bold ${isTradeNow
                           ? theme === "dark"
                             ? "text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]"
                             : "text-emerald-600"
@@ -173,7 +179,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                             : theme === "dark"
                               ? "text-slate-400"
                               : "text-slate-600"
-                      }`}
+                        }`}
                     >
                       {signal.probability.toFixed(1)}%
                     </span>
@@ -187,8 +193,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                       Confidence
                     </span>
                     <span
-                      className={`text-lg font-bold ${
-                        isTradeNow
+                      className={`text-lg font-bold ${isTradeNow
                           ? theme === "dark"
                             ? "text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]"
                             : "text-emerald-600"
@@ -199,7 +204,7 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
                             : theme === "dark"
                               ? "text-slate-400"
                               : "text-slate-600"
-                      }`}
+                        }`}
                     >
                       {confidence.toFixed(0)}%
                     </span>
@@ -242,11 +247,10 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark" }: Si
 
       {analysis && (
         <div
-          className={`rounded-xl p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
               : "bg-white border-gray-200"
-          }`}
+            }`}
         >
           <h3 className={`text-xl font-bold mb-6 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
             Analysis Summary

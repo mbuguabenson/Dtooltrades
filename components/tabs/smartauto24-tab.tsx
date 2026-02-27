@@ -44,9 +44,10 @@ interface SmartAuto24TabProps {
   theme: "light" | "dark"
   symbol: string
   onSymbolChange: (symbol: string) => void
+  availableSymbols?: any[]
 }
 
-export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24TabProps) {
+export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols }: SmartAuto24TabProps) {
   const {
     apiClient,
     isConnected,

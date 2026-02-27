@@ -2,15 +2,20 @@
 
 import { Badge } from "@/components/ui/badge"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
+import { MarketSelector } from "@/components/market-selector"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface DiffersTabProps {
   analysis: AnalysisResult | null
   signals: Signal[]
   recentDigits: number[]
   theme?: "light" | "dark"
+  symbol?: string
+  availableSymbols?: DerivSymbol[]
+  onSymbolChange?: (symbol: string) => void
 }
 
-export function DiffersTab({ analysis, signals, recentDigits, theme = "dark" }: DiffersTabProps) {
+export function DiffersTab({ analysis, signals, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange }: DiffersTabProps) {
   const differsSignal = signals?.find((s) => s.type === "differs")
 
   if (!analysis) {
@@ -26,12 +31,17 @@ export function DiffersTab({ analysis, signals, recentDigits, theme = "dark" }: 
 
   return (
     <div className="space-y-6">
+      {availableSymbols.length > 0 && onSymbolChange && symbol && (
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
+          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
+        </div>
+      )}
       <div
-        className={`rounded-xl p-8 border ${
-          theme === "dark"
+        className={`rounded-xl p-8 border ${theme === "dark"
             ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
             : "bg-white border-gray-200 shadow-lg"
-        }`}
+          }`}
       >
         <h2 className={`text-3xl font-bold mb-6 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
           Differs Analysis
@@ -42,8 +52,7 @@ export function DiffersTab({ analysis, signals, recentDigits, theme = "dark" }: 
           {least3.map((freq, index) => (
             <div
               key={freq.digit}
-              className={`text-center rounded-lg p-6 border ${
-                index === 0
+              className={`text-center rounded-lg p-6 border ${index === 0
                   ? theme === "dark"
                     ? "bg-red-500/10 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                     : "bg-red-50 border-red-200"
@@ -54,14 +63,13 @@ export function DiffersTab({ analysis, signals, recentDigits, theme = "dark" }: 
                     : theme === "dark"
                       ? "bg-yellow-500/10 border-yellow-500/30"
                       : "bg-yellow-50 border-yellow-200"
-              }`}
+                }`}
             >
               <div className={`text-sm mb-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                 {index === 0 ? "Least Appearing" : index === 1 ? "2nd Least" : "3rd Least"}
               </div>
               <div
-                className={`text-6xl font-bold mb-2 ${
-                  index === 0
+                className={`text-6xl font-bold mb-2 ${index === 0
                     ? theme === "dark"
                       ? "text-red-400"
                       : "text-red-600"
@@ -72,13 +80,12 @@ export function DiffersTab({ analysis, signals, recentDigits, theme = "dark" }: 
                       : theme === "dark"
                         ? "text-yellow-400"
                         : "text-yellow-600"
-                }`}
+                  }`}
               >
                 {freq.digit}
               </div>
               <div
-                className={`text-xl font-bold ${
-                  index === 0
+                className={`text-xl font-bold ${index === 0
                     ? theme === "dark"
                       ? "text-red-400"
                       : "text-red-600"
@@ -89,7 +96,7 @@ export function DiffersTab({ analysis, signals, recentDigits, theme = "dark" }: 
                       : theme === "dark"
                         ? "text-yellow-400"
                         : "text-yellow-600"
-                }`}
+                  }`}
               >
                 {freq.percentage.toFixed(1)}%
               </div>
@@ -102,22 +109,20 @@ export function DiffersTab({ analysis, signals, recentDigits, theme = "dark" }: 
 
         {differsSignal && (
           <div
-            className={`rounded-xl p-6 border ${
-              theme === "dark"
+            className={`rounded-xl p-6 border ${theme === "dark"
                 ? "bg-blue-500/10 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
                 : "bg-blue-50 border-blue-200"
-            }`}
+              }`}
           >
             <Badge
-              className={`text-lg px-4 py-2 mb-4 ${
-                differsSignal.status === "TRADE NOW"
+              className={`text-lg px-4 py-2 mb-4 ${differsSignal.status === "TRADE NOW"
                   ? theme === "dark"
                     ? "bg-green-500/20 text-green-400 border-green-500/30"
                     : "bg-green-100 text-green-700 border-green-300"
                   : theme === "dark"
                     ? "bg-gray-500/20 text-gray-400 border-gray-500/30"
                     : "bg-gray-100 text-gray-600 border-gray-300"
-              }`}
+                }`}
             >
               {differsSignal.status}
             </Badge>

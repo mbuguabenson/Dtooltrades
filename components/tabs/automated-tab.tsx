@@ -12,11 +12,14 @@ import { Play, Square, TrendingUp, TrendingDown, AlertCircle, Loader, AlertTrian
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { AutoBot, type BotStrategy, type AutoBotState, type AutoBotConfig } from "@/lib/autobots"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
+import { MarketSelector } from "@/components/market-selector"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface AutoBotTabProps {
   theme?: "light" | "dark"
   symbol: string
   onSymbolChange?: (symbol: string) => void
+  availableSymbols?: DerivSymbol[]
 }
 
 const BOT_STRATEGIES: { id: BotStrategy; name: string; description: string }[] = [
@@ -70,7 +73,7 @@ const BOT_STRATEGIES: { id: BotStrategy; name: string; description: string }[] =
   },
 ]
 
-export function AutoBotTab({ theme = "dark", symbol, onSymbolChange }: AutoBotTabProps) {
+export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSymbols = [] }: AutoBotTabProps) {
   const { apiClient, isConnected, isAuthorized, error: apiError, balance, isLoggedIn } = useDerivAPI()
   const [marketPrice, setMarketPrice] = useState<number>(0)
   const [selectedStrategy, setSelectedStrategy] = useState<BotStrategy>("EVEN_ODD")

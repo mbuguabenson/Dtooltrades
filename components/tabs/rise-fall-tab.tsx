@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { Last40Digits } from "@/components/last-40-digits"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
+import { MarketSelector } from "@/components/market-selector"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface RiseFallTabProps {
   analysis: AnalysisResult | null
@@ -10,9 +12,12 @@ interface RiseFallTabProps {
   currentPrice: number | null
   recentDigits: number[]
   theme?: "light" | "dark"
+  symbol?: string
+  availableSymbols?: DerivSymbol[]
+  onSymbolChange?: (symbol: string) => void
 }
 
-export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, theme = "dark" }: RiseFallTabProps) {
+export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange }: RiseFallTabProps) {
   const riseFallSignal = signals?.find((s) => s.type === "rise_fall")
 
   if (!analysis) {
@@ -35,12 +40,17 @@ export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, the
 
   return (
     <div className="space-y-6">
+      {availableSymbols.length > 0 && onSymbolChange && symbol && (
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
+          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
+        </div>
+      )}
       <div
-        className={`rounded-xl p-4 sm:p-6 md:p-8 border ${
-          theme === "dark"
+        className={`rounded-xl p-4 sm:p-6 md:p-8 border ${theme === "dark"
             ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
             : "bg-white border-gray-200 shadow-lg"
-        }`}
+          }`}
       >
         <h2
           className={`text-2xl sm:text-3xl font-bold mb-6 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -51,9 +61,8 @@ export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, the
         <div className="mb-8 text-center">
           <div className="text-sm text-gray-400 mb-2">Market Direction</div>
           <div
-            className={`text-4xl sm:text-5xl font-bold mb-2 ${
-              marketDirection === "RISE" ? "text-green-400" : "text-red-400"
-            }`}
+            className={`text-4xl sm:text-5xl font-bold mb-2 ${marketDirection === "RISE" ? "text-green-400" : "text-red-400"
+              }`}
           >
             {marketDirection}
           </div>
@@ -113,11 +122,10 @@ export function RiseFallTab({ analysis, signals, currentPrice, recentDigits, the
 
       {recentDigits.length > 0 && (
         <div
-          className={`rounded-xl p-4 sm:p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-4 sm:p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
               : "bg-white border-gray-200 shadow-lg"
-          }`}
+            }`}
         >
           <h3 className={`text-base sm:text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
             Last 40 Digits

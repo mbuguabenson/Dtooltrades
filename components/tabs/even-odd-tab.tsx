@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { LastDigitsDisplay } from "@/components/last-digits-display"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
+import { MarketSelector } from "@/components/market-selector"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface EvenOddTabProps {
   analysis: AnalysisResult | null
@@ -13,6 +15,9 @@ interface EvenOddTabProps {
   currentPrice: number | null
   recentDigits: number[]
   theme?: "light" | "dark"
+  symbol?: string
+  availableSymbols?: DerivSymbol[]
+  onSymbolChange?: (symbol: string) => void
 }
 
 export function EvenOddTab({
@@ -22,6 +27,9 @@ export function EvenOddTab({
   currentPrice,
   recentDigits,
   theme = "dark",
+  symbol,
+  availableSymbols = [],
+  onSymbolChange,
 }: EvenOddTabProps) {
   const [tradeTimer, setTradeTimer] = useState<number>(0)
   const [marketChanged, setMarketChanged] = useState(false)
@@ -139,10 +147,16 @@ export function EvenOddTab({
 
   return (
     <div className="space-y-6">
+      {availableSymbols.length > 0 && onSymbolChange && symbol && (
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
+          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
+        </div>
+      )}
       <div
         className={`rounded-xl p-2 px-4 border flex items-center justify-between gap-4 ${theme === "dark"
-            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-            : "bg-white border-gray-200 shadow-md"
+          ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+          : "bg-white border-gray-200 shadow-md"
           }`}
       >
         <div className="flex items-center gap-2">
@@ -152,8 +166,8 @@ export function EvenOddTab({
           {currentDigit !== null ? (
             <span
               className={`text-2xl font-bold animate-pulse ${theme === "dark"
-                  ? "bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent"
-                  : "text-orange-600"
+                ? "bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent"
+                : "text-orange-600"
                 }`}
             >
               {currentDigit}
@@ -169,8 +183,8 @@ export function EvenOddTab({
 
       <div
         className={`rounded-xl p-8 border ${theme === "dark"
-            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-            : "bg-white border-gray-200 shadow-lg"
+          ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+          : "bg-white border-gray-200 shadow-lg"
           }`}
       >
         <div className="text-center mb-6">
@@ -179,16 +193,16 @@ export function EvenOddTab({
           </h2>
           <Badge
             className={`text-lg px-4 py-2 ${signalStatus === "TRADE NOW"
+              ? theme === "dark"
+                ? "bg-green-500/20 text-green-400 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                : "bg-green-100 text-green-700 border-green-300"
+              : signalStatus === "WAIT"
                 ? theme === "dark"
-                  ? "bg-green-500/20 text-green-400 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                  : "bg-green-100 text-green-700 border-green-300"
-                : signalStatus === "WAIT"
-                  ? theme === "dark"
-                    ? "bg-blue-500/20 text-blue-300 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                    : "bg-blue-100 text-blue-700 border-blue-300"
-                  : theme === "dark"
-                    ? "bg-gray-500/20 text-gray-400 border-gray-500/30"
-                    : "bg-gray-100 text-gray-600 border-gray-300"
+                  ? "bg-blue-500/20 text-blue-300 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                  : "bg-blue-100 text-blue-700 border-blue-300"
+                : theme === "dark"
+                  ? "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                  : "bg-gray-100 text-gray-600 border-gray-300"
               }`}
           >
             {signalStatus} {tradeTimer > 0 && `(${tradeTimer}s)`}
@@ -197,16 +211,16 @@ export function EvenOddTab({
 
         <div
           className={`rounded-lg p-4 mb-6 ${signalStatus === "TRADE NOW"
+            ? theme === "dark"
+              ? "bg-green-500/10 border border-green-500/30"
+              : "bg-green-50 border border-green-200"
+            : signalStatus === "WAIT"
               ? theme === "dark"
-                ? "bg-green-500/10 border border-green-500/30"
-                : "bg-green-50 border border-green-200"
-              : signalStatus === "WAIT"
-                ? theme === "dark"
-                  ? "bg-blue-500/10 border border-blue-500/30"
-                  : "bg-blue-50 border border-blue-200"
-                : theme === "dark"
-                  ? "bg-gray-500/10 border border-gray-500/30"
-                  : "bg-gray-50 border border-gray-200"
+                ? "bg-blue-500/10 border border-blue-500/30"
+                : "bg-blue-50 border border-blue-200"
+              : theme === "dark"
+                ? "bg-gray-500/10 border border-gray-500/30"
+                : "bg-gray-50 border border-gray-200"
             }`}
         >
           <h3 className={`text-lg font-bold mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
@@ -221,8 +235,8 @@ export function EvenOddTab({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div
             className={`rounded-lg p-6 border ${theme === "dark"
-                ? "bg-blue-500/10 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
-                : "bg-blue-50 border-blue-200"
+              ? "bg-blue-500/10 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+              : "bg-blue-50 border-blue-200"
               }`}
           >
             <div className={`flex items-center justify-between mb-3`}>
@@ -280,8 +294,8 @@ export function EvenOddTab({
 
           <div
             className={`rounded-lg p-6 border ${theme === "dark"
-                ? "bg-pink-500/10 border-pink-500/30 shadow-[0_0_15px_rgba(236,72,153,0.2)]"
-                : "bg-pink-50 border-pink-200"
+              ? "bg-pink-500/10 border-pink-500/30 shadow-[0_0_15px_rgba(236,72,153,0.2)]"
+              : "bg-pink-50 border-pink-200"
               }`}
           >
             <div className={`flex items-center justify-between mb-3`}>
@@ -341,8 +355,8 @@ export function EvenOddTab({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div
             className={`p-4 rounded-lg text-center ${theme === "dark"
-                ? "bg-purple-500/10 border border-purple-500/30"
-                : "bg-purple-50 border border-purple-200"
+              ? "bg-purple-500/10 border border-purple-500/30"
+              : "bg-purple-50 border border-purple-200"
               }`}
           >
             <div className={`text-sm mb-1 font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-700"}`}>
@@ -386,8 +400,8 @@ export function EvenOddTab({
 
           <div
             className={`p-4 rounded-lg text-center ${theme === "dark"
-                ? "bg-orange-500/10 border border-orange-500/30"
-                : "bg-orange-50 border border-orange-200"
+              ? "bg-orange-500/10 border border-orange-500/30"
+              : "bg-orange-50 border border-orange-200"
               }`}
           >
             <div className={`text-sm mb-1 font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-700"}`}>
@@ -413,8 +427,8 @@ export function EvenOddTab({
       {recentDigits.length > 0 && (
         <div
           className={`rounded-xl p-6 border ${theme === "dark"
-              ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-              : "bg-white border-gray-200 shadow-lg"
+            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+            : "bg-white border-gray-200 shadow-lg"
             }`}
         >
           <h3 className={`text-lg font-bold mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>

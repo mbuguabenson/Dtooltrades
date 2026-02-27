@@ -203,14 +203,7 @@ export default function DerivAnalysisApp() {
                     </div>
                   }
                 >
-                  {availableSymbols.length > 0 && (
-                    <MarketSelector
-                      symbols={availableSymbols}
-                      currentSymbol={symbol}
-                      onSymbolChange={changeSymbol}
-                      theme={theme}
-                    />
-                  )}
+
                 </LiveTicker>
               </div>
 
@@ -294,6 +287,12 @@ export default function DerivAnalysisApp() {
           ) : (
             <>
               <TabsContent value="smart-analysis" className="mt-0 space-y-2 sm:space-y-3 md:space-y-4">
+                {availableSymbols.length > 0 && (
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
+                    <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={changeSymbol} theme={theme} />
+                  </div>
+                )}
                 <div
                   className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border glow-card-active flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                 >
@@ -471,15 +470,15 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="signals" className="mt-0">
-                {analysis && <SignalsTab signals={signals} proSignals={proSignals} analysis={analysis} theme={theme} />}
+                {analysis && <SignalsTab signals={signals} proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />}
               </TabsContent>
 
               <TabsContent value="pro-signals" className="mt-0">
-                {analysis && <ProSignalsTab proSignals={proSignals} analysis={analysis} theme={theme} />}
+                {analysis && <ProSignalsTab proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />}
               </TabsContent>
 
               <TabsContent value="super-signals" className="mt-0">
-                <SuperSignalsTab theme={theme} />
+                <SuperSignalsTab theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />
               </TabsContent>
 
               <TabsContent value="even-odd" className="mt-0">
@@ -491,6 +490,9 @@ export default function DerivAnalysisApp() {
                     currentPrice={currentPrice}
                     recentDigits={recent40Digits}
                     theme={theme}
+                    symbol={symbol}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
                   />
                 )}
               </TabsContent>
@@ -504,23 +506,26 @@ export default function DerivAnalysisApp() {
                     currentPrice={currentPrice}
                     recentDigits={recent50Digits}
                     theme={theme}
+                    symbol={symbol}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
                   />
                 )}
               </TabsContent>
 
               <TabsContent value="advanced-over-under" className="mt-0">
-                {analysis && <MoneyMakerTab theme={theme} recentDigits={recent50Digits} />}
+                {analysis && <MoneyMakerTab theme={theme} recentDigits={recent50Digits} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />}
               </TabsContent>
 
               <TabsContent value="matches" className="mt-0">
                 {analysis && (
-                  <MatchesTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} />
+                  <MatchesTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />
                 )}
               </TabsContent>
 
               <TabsContent value="differs" className="mt-0">
                 {analysis && (
-                  <DiffersTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} />
+                  <DiffersTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />
                 )}
               </TabsContent>
 
@@ -532,6 +537,9 @@ export default function DerivAnalysisApp() {
                     currentPrice={currentPrice}
                     recentDigits={recent40Digits}
                     theme={theme}
+                    symbol={symbol}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
                   />
                 )}
               </TabsContent>
@@ -544,25 +552,27 @@ export default function DerivAnalysisApp() {
                     currentPrice={currentPrice}
                     symbol={symbol}
                     theme={theme}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
                   />
                 )}
               </TabsContent>
 
 
               <TabsContent value="autobot" className="mt-0">
-                <AutoBotTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />
+                <AutoBotTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} availableSymbols={availableSymbols} />
               </TabsContent>
 
               <TabsContent value="automated" className="mt-0">
-                <AutomatedTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />
+                <AutomatedTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} availableSymbols={availableSymbols} />
               </TabsContent>
 
               <TabsContent value="smartauto24" className="mt-0">
-                <SmartAuto24Tab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} />
+                <SmartAuto24Tab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} availableSymbols={availableSymbols} />
               </TabsContent>
 
               <TabsContent value="smart-adaptive" className="mt-0">
-                {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} symbol={symbol} />}
+                {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} theme={theme} />}
               </TabsContent>
 
               <TabsContent value="tools-info" className="mt-0">

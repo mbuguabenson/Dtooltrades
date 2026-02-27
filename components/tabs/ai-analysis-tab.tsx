@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { TradingSliderPanel } from "@/components/trading-slider-panel"
 import { useGlobalTradingContext } from "@/hooks/use-global-trading-context"
 import type { AnalysisResult } from "@/lib/analysis-engine"
+import type { DerivSymbol } from "@/hooks/use-deriv"
 
 interface AIAnalysisTabProps {
   analysis: AnalysisResult | null
@@ -17,6 +18,8 @@ interface AIAnalysisTabProps {
   currentPrice: number | null
   symbol: string
   theme?: "light" | "dark"
+  availableSymbols?: DerivSymbol[]
+  onSymbolChange?: (symbol: string) => void
 }
 
 interface AISignalResult {
@@ -29,7 +32,7 @@ interface AISignalResult {
   reasoning: string
 }
 
-export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, theme = "dark" }: AIAnalysisTabProps) {
+export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, theme = "dark", availableSymbols, onSymbolChange }: AIAnalysisTabProps) {
   const [selectedMarket, setSelectedMarket] = useState<string>(symbol)
   const [selectedTradeType, setSelectedTradeType] = useState<string>("all")
   const [autoAnalysisMode, setAutoAnalysisMode] = useState(false)
@@ -183,11 +186,10 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
   return (
     <div className="space-y-6 pb-[200px]">
       <div
-        className={`rounded-xl p-4 sm:p-6 border ${
-          theme === "dark"
+        className={`rounded-xl p-4 sm:p-6 border ${theme === "dark"
             ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
             : "bg-white border-gray-200 shadow-lg"
-        }`}
+          }`}
       >
         <h2
           className={`text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 text-center ${theme === "dark" ? "bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent" : "text-gray-900"}`}
@@ -330,11 +332,10 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
           <Button
             onClick={handleAnalyze}
             disabled={isAnalyzing}
-            className={`w-full py-4 sm:py-6 text-base sm:text-lg font-bold ${
-              isAnalyzing
+            className={`w-full py-4 sm:py-6 text-base sm:text-lg font-bold ${isAnalyzing
                 ? "bg-gray-500"
                 : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-[0_0_20px_rgba(34,211,238,0.5)]"
-            }`}
+              }`}
           >
             {isAnalyzing ? "Analyzing..." : "Scan All Strategies"}
           </Button>
@@ -351,11 +352,10 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
 
       {aiSignalResult && (
         <div
-          className={`rounded-xl p-4 sm:p-6 border ${
-            theme === "dark"
+          className={`rounded-xl p-4 sm:p-6 border ${theme === "dark"
               ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
               : "bg-white border-gray-200 shadow-lg"
-          }`}
+            }`}
         >
           <h3
             className={`text-lg sm:text-xl font-bold mb-4 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -366,13 +366,12 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
           <div className="space-y-4">
             <div className="text-center">
               <Badge
-                className={`text-base sm:text-lg px-4 sm:px-6 py-2 ${
-                  aiSignalResult.signal === "TRADE NOW"
+                className={`text-base sm:text-lg px-4 sm:px-6 py-2 ${aiSignalResult.signal === "TRADE NOW"
                     ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)] animate-pulse"
                     : aiSignalResult.signal === "WAIT"
                       ? "bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.6)]"
                       : "bg-slate-500 text-white"
-                }`}
+                  }`}
               >
                 {aiSignalResult.signal}
               </Badge>

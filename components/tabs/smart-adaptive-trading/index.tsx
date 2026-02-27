@@ -49,11 +49,17 @@ const itemVariants = {
 export default function SmartAdaptiveTradingTab({
     signals: engineSignals = [],
     analysis: engineAnalysis,
-    symbol = "R_100"
+    symbol = "R_100",
+    availableSymbols,
+    onSymbolChange,
+    theme = "dark"
 }: {
     signals?: Signal[],
     analysis?: AnalysisResult,
-    symbol?: string
+    symbol?: string,
+    availableSymbols?: any[],
+    onSymbolChange?: (symbol: string) => void,
+    theme?: "light" | "dark"
 }) {
     const {
         marketScores,
