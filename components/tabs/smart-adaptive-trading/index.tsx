@@ -52,14 +52,20 @@ export default function SmartAdaptiveTradingTab({
     symbol = "R_100",
     availableSymbols,
     onSymbolChange,
-    theme = "dark"
+    theme = "dark",
+    currentPrice,
+    currentDigit,
+    tickCount
 }: {
     signals?: Signal[],
     analysis?: AnalysisResult,
     symbol?: string,
     availableSymbols?: any[],
     onSymbolChange?: (symbol: string) => void,
-    theme?: "light" | "dark"
+    theme?: "light" | "dark",
+    currentPrice?: number | null,
+    currentDigit?: number | null,
+    tickCount?: number
 }) {
     const {
         marketScores,

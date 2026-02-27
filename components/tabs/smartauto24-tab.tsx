@@ -45,9 +45,12 @@ interface SmartAuto24TabProps {
   symbol: string
   onSymbolChange: (symbol: string) => void
   availableSymbols?: any[]
+  currentPrice?: number | null
+  currentDigit?: number | null
+  tickCount?: number
 }
 
-export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols }: SmartAuto24TabProps) {
+export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols, currentPrice, currentDigit, tickCount }: SmartAuto24TabProps) {
   const {
     apiClient,
     isConnected,
@@ -615,6 +618,15 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
   return (
     <div className="space-y-4">
+      <TabMarketBar
+        symbol={symbol}
+        availableSymbols={availableSymbols}
+        onSymbolChange={onSymbolChange}
+        currentPrice={currentPrice}
+        currentDigit={currentDigit}
+        tickCount={tickCount}
+        theme={theme}
+      />
       {!isAuthorized ? (
         <Card
           className={`p-6 sm:p-12 border text-center ${theme === "dark" ? "bg-[#0a0e27]/80 border-red-500/30" : "bg-white border-gray-200"}`}

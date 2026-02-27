@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
+import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface ProSignalsTabProps {
   proSignals: Signal[]
@@ -14,9 +15,12 @@ interface ProSignalsTabProps {
   symbol?: string
   availableSymbols?: DerivSymbol[]
   onSymbolChange?: (symbol: string) => void
+  currentPrice?: number | null
+  currentDigit?: number | null
+  tickCount?: number
 }
 
-export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, availableSymbols = [], onSymbolChange }: ProSignalsTabProps) {
+export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount }: ProSignalsTabProps) {
   const [showStrategies, setShowStrategies] = useState(false)
 
   const strategies = [
@@ -35,12 +39,15 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
   if (!proSignals || proSignals.length === 0) {
     return (
       <div className="space-y-6">
-        {availableSymbols.length > 0 && onSymbolChange && symbol && (
-          <div className="flex items-center gap-3">
-            <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
-            <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
-          </div>
-        )}
+        <TabMarketBar
+          symbol={symbol}
+          availableSymbols={availableSymbols}
+          onSymbolChange={onSymbolChange}
+          currentPrice={currentPrice}
+          currentDigit={currentDigit}
+          tickCount={tickCount}
+          theme={theme}
+        />
         <div className="text-center py-16">
           <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
             No pro signals available yet. Pro signals require specific market conditions.
@@ -49,8 +56,8 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
 
         <div
           className={`rounded-xl p-6 border ${theme === "dark"
-              ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
-              : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
+            ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
+            : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
             }`}
         >
           <div className="flex items-center justify-between mb-4">
@@ -87,8 +94,8 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
                 <div
                   key={index}
                   className={`p-4 rounded-lg border ${theme === "dark"
-                      ? "bg-gradient-to-br from-amber-500/10 to-purple-500/10 border-amber-500/40 hover:border-amber-400/60 hover:shadow-[0_0_20px_rgba(217,119,6,0.4)]"
-                      : "bg-gradient-to-br from-amber-50 to-purple-50 border-amber-300 hover:border-amber-400 hover:shadow-lg"
+                    ? "bg-gradient-to-br from-amber-500/10 to-purple-500/10 border-amber-500/40 hover:border-amber-400/60 hover:shadow-[0_0_20px_rgba(217,119,6,0.4)]"
+                    : "bg-gradient-to-br from-amber-50 to-purple-50 border-amber-300 hover:border-amber-400 hover:shadow-lg"
                     } transition-all`}
                 >
                   <h4 className={`font-bold mb-2 ${theme === "dark" ? "text-amber-400" : "text-amber-700"}`}>
@@ -118,8 +125,8 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
         <div
           key={index}
           className={`rounded-xl p-6 border ${theme === "dark"
-              ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
-              : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
+            ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
+            : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
             }`}
         >
           <div className="flex items-center justify-between mb-4">
@@ -131,10 +138,10 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
             <Button
               size="lg"
               className={`px-8 py-6 text-lg font-bold ${signal.status === "TRADE NOW"
-                  ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-[0_0_25px_rgba(34,197,94,0.6)] animate-pulse"
-                  : signal.status === "WAIT"
-                    ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-[0_0_25px_rgba(234,179,8,0.6)]"
-                    : "bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
+                ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-[0_0_25px_rgba(34,197,94,0.6)] animate-pulse"
+                : signal.status === "WAIT"
+                  ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-[0_0_25px_rgba(234,179,8,0.6)]"
+                  : "bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
                 }`}
             >
               {signal.status}
@@ -186,8 +193,8 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
 
       <div
         className={`rounded-xl p-6 border ${theme === "dark"
-            ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
-            : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
+          ? "bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-amber-900/40 border-amber-500/30 shadow-[0_0_40px_rgba(217,119,6,0.3)]"
+          : "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-amber-300 shadow-xl"
           }`}
       >
         <div className="flex items-center justify-between mb-4">
@@ -222,8 +229,8 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
               <div
                 key={index}
                 className={`p-4 rounded-lg border ${theme === "dark"
-                    ? "bg-gradient-to-br from-amber-500/10 to-purple-500/10 border-amber-500/40 hover:border-amber-400/60 hover:shadow-[0_0_20px_rgba(217,119,6,0.4)]"
-                    : "bg-gradient-to-br from-amber-50 to-purple-50 border-amber-300 hover:border-amber-400 hover:shadow-lg"
+                  ? "bg-gradient-to-br from-amber-500/10 to-purple-500/10 border-amber-500/40 hover:border-amber-400/60 hover:shadow-[0_0_20px_rgba(217,119,6,0.4)]"
+                  : "bg-gradient-to-br from-amber-50 to-purple-50 border-amber-300 hover:border-amber-400 hover:shadow-lg"
                   } transition-all`}
               >
                 <h4 className={`font-bold mb-2 ${theme === "dark" ? "text-amber-400" : "text-amber-700"}`}>

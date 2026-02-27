@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
+import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface MatchesTabProps {
   analysis: AnalysisResult | null
@@ -14,9 +15,12 @@ interface MatchesTabProps {
   symbol?: string
   availableSymbols?: DerivSymbol[]
   onSymbolChange?: (symbol: string) => void
+  currentPrice?: number | null
+  currentDigit?: number | null
+  tickCount?: number
 }
 
-export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange }: MatchesTabProps) {
+export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", symbol, availableSymbols = [], onSymbolChange, currentPrice, currentDigit, tickCount }: MatchesTabProps) {
   const [isScanning, setIsScanning] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [scanResult, setScanResult] = useState<{ digit: number; accuracy: "high" | "medium" } | null>(null)
@@ -64,16 +68,19 @@ export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", sy
 
   return (
     <div className="space-y-6">
-      {availableSymbols.length > 0 && onSymbolChange && symbol && (
-        <div className="flex items-center gap-3">
-          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
-          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
-        </div>
-      )}
+      <TabMarketBar
+        symbol={symbol}
+        availableSymbols={availableSymbols}
+        onSymbolChange={onSymbolChange}
+        currentPrice={currentPrice}
+        currentDigit={currentDigit}
+        tickCount={tickCount}
+        theme={theme}
+      />
       <div
         className={`rounded-xl p-8 border ${theme === "dark"
-            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-            : "bg-white border-gray-200 shadow-lg"
+          ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+          : "bg-white border-gray-200 shadow-lg"
           }`}
       >
         <h2 className={`text-3xl font-bold mb-6 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
@@ -85,16 +92,16 @@ export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", sy
             <div
               key={freq.digit}
               className={`text-center rounded-lg p-6 border ${index === 0
+                ? theme === "dark"
+                  ? "bg-green-500/10 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                  : "bg-green-50 border-green-200"
+                : index === 1
                   ? theme === "dark"
-                    ? "bg-green-500/10 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                    : "bg-green-50 border-green-200"
-                  : index === 1
-                    ? theme === "dark"
-                      ? "bg-yellow-500/10 border-yellow-500/30"
-                      : "bg-yellow-50 border-yellow-200"
-                    : theme === "dark"
-                      ? "bg-orange-500/10 border-orange-500/30"
-                      : "bg-orange-50 border-orange-200"
+                    ? "bg-yellow-500/10 border-yellow-500/30"
+                    : "bg-yellow-50 border-yellow-200"
+                  : theme === "dark"
+                    ? "bg-orange-500/10 border-orange-500/30"
+                    : "bg-orange-50 border-orange-200"
                 }`}
             >
               <div className={`text-sm mb-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
@@ -102,32 +109,32 @@ export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", sy
               </div>
               <div
                 className={`text-6xl font-bold mb-2 ${index === 0
+                  ? theme === "dark"
+                    ? "text-green-400"
+                    : "text-green-600"
+                  : index === 1
                     ? theme === "dark"
-                      ? "text-green-400"
-                      : "text-green-600"
-                    : index === 1
-                      ? theme === "dark"
-                        ? "text-yellow-400"
-                        : "text-yellow-600"
-                      : theme === "dark"
-                        ? "text-orange-400"
-                        : "text-orange-600"
+                      ? "text-yellow-400"
+                      : "text-yellow-600"
+                    : theme === "dark"
+                      ? "text-orange-400"
+                      : "text-orange-600"
                   }`}
               >
                 {freq.digit}
               </div>
               <div
                 className={`text-xl font-bold ${index === 0
+                  ? theme === "dark"
+                    ? "text-green-400"
+                    : "text-green-600"
+                  : index === 1
                     ? theme === "dark"
-                      ? "text-green-400"
-                      : "text-green-600"
-                    : index === 1
-                      ? theme === "dark"
-                        ? "text-yellow-400"
-                        : "text-yellow-600"
-                      : theme === "dark"
-                        ? "text-orange-400"
-                        : "text-orange-600"
+                      ? "text-yellow-400"
+                      : "text-yellow-600"
+                    : theme === "dark"
+                      ? "text-orange-400"
+                      : "text-orange-600"
                   }`}
               >
                 {freq.percentage.toFixed(1)}%
@@ -141,8 +148,8 @@ export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", sy
 
         <div
           className={`rounded-xl p-6 border ${theme === "dark"
-              ? "bg-blue-500/10 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
-              : "bg-blue-50 border-blue-200"
+            ? "bg-blue-500/10 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+            : "bg-blue-50 border-blue-200"
             }`}
         >
           <h3 className={`text-lg font-bold mb-4 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
@@ -169,22 +176,22 @@ export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", sy
           {scanResult && (
             <div
               className={`mt-6 p-6 rounded-lg text-center ${scanResult.accuracy === "high"
-                  ? theme === "dark"
-                    ? "bg-green-500/20 border border-green-500/30"
-                    : "bg-green-100 border border-green-300"
-                  : theme === "dark"
-                    ? "bg-yellow-500/20 border border-yellow-500/30"
-                    : "bg-yellow-100 border border-yellow-300"
+                ? theme === "dark"
+                  ? "bg-green-500/20 border border-green-500/30"
+                  : "bg-green-100 border border-green-300"
+                : theme === "dark"
+                  ? "bg-yellow-500/20 border border-yellow-500/30"
+                  : "bg-yellow-100 border border-yellow-300"
                 }`}
             >
               <div
                 className={`text-2xl font-bold mb-2 ${scanResult.accuracy === "high"
-                    ? theme === "dark"
-                      ? "text-green-400"
-                      : "text-green-600"
-                    : theme === "dark"
-                      ? "text-yellow-400"
-                      : "text-yellow-600"
+                  ? theme === "dark"
+                    ? "text-green-400"
+                    : "text-green-600"
+                  : theme === "dark"
+                    ? "text-yellow-400"
+                    : "text-yellow-600"
                   }`}
               >
                 {scanResult.accuracy === "high" ? "HIGH ACCURACY SIGNAL" : "MEDIUM SIGNAL"}

@@ -9,6 +9,7 @@ import { OverUnderAnalyzer } from "@/components/over-under-analyzer"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
+import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface OverUnderTabProps {
   analysis: AnalysisResult | null
@@ -20,6 +21,7 @@ interface OverUnderTabProps {
   symbol?: string
   availableSymbols?: DerivSymbol[]
   onSymbolChange?: (symbol: string) => void
+  tickCount?: number
 }
 
 export function OverUnderTab({
@@ -182,12 +184,15 @@ export function OverUnderTab({
 
   return (
     <div className="space-y-6">
-      {availableSymbols.length > 0 && onSymbolChange && symbol && (
-        <div className="flex items-center gap-3">
-          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
-          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
-        </div>
-      )}
+      <TabMarketBar
+        symbol={symbol}
+        availableSymbols={availableSymbols}
+        onSymbolChange={onSymbolChange}
+        currentPrice={currentPrice}
+        currentDigit={currentDigit}
+        tickCount={tickCount}
+        theme={theme}
+      />
       <OverUnderAnalyzer ticks={analysisDigits} currentPrice={currentPrice} theme={theme} />
 
       <div

@@ -7,6 +7,7 @@ import { LastDigitsDisplay } from "@/components/last-digits-display"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
+import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface EvenOddTabProps {
   analysis: AnalysisResult | null
@@ -18,6 +19,7 @@ interface EvenOddTabProps {
   symbol?: string
   availableSymbols?: DerivSymbol[]
   onSymbolChange?: (symbol: string) => void
+  tickCount?: number
 }
 
 export function EvenOddTab({
@@ -30,6 +32,7 @@ export function EvenOddTab({
   symbol,
   availableSymbols = [],
   onSymbolChange,
+  tickCount,
 }: EvenOddTabProps) {
   const [tradeTimer, setTradeTimer] = useState<number>(0)
   const [marketChanged, setMarketChanged] = useState(false)
@@ -147,12 +150,15 @@ export function EvenOddTab({
 
   return (
     <div className="space-y-6">
-      {availableSymbols.length > 0 && onSymbolChange && symbol && (
-        <div className="flex items-center gap-3">
-          <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
-          <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={onSymbolChange} theme={theme} />
-        </div>
-      )}
+      <TabMarketBar
+        symbol={symbol}
+        availableSymbols={availableSymbols}
+        onSymbolChange={onSymbolChange}
+        currentPrice={currentPrice}
+        currentDigit={currentDigit}
+        tickCount={tickCount}
+        theme={theme}
+      />
       <div
         className={`rounded-xl p-2 px-4 border flex items-center justify-between gap-4 ${theme === "dark"
           ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]"

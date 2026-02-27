@@ -13,6 +13,7 @@ import { SignalsTab } from "@/components/tabs/signals-tab"
 import { ProSignalsTab } from "@/components/tabs/pro-signals-tab"
 import { EvenOddTab } from "@/components/tabs/even-odd-tab"
 import { OverUnderTab } from "@/components/tabs/over-under-tab"
+import { TabMarketBar } from "@/components/tab-market-bar"
 import { MatchesTab } from "@/components/tabs/matches-tab"
 import { DiffersTab } from "@/components/tabs/differs-tab"
 import { RiseFallTab } from "@/components/tabs/rise-fall-tab"
@@ -179,32 +180,21 @@ export default function DerivAnalysisApp() {
 
               {/* Ticker (flex-1) */}
               <div className="flex-1 flex justify-center sm:justify-end items-center min-w-0 max-w-2xl px-1 sm:px-0">
-                <LiveTicker
-                  price={currentPrice ?? undefined}
-                  digit={currentDigit}
-                  theme={theme}
-                  symbol={symbol}
-                  compact={true}
-                  depthSelector={
-                    <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md bg-transparent group/depth">
-                      <span className={`text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                        D
-                      </span>
-                      <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
-                        <SelectTrigger className="w-[40px] sm:w-[50px] h-4 sm:h-7 text-[9px] sm:text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none p-0">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-white/5" : "bg-white"}>
-                          {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tv) => (
-                            <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  }
-                >
-
-                </LiveTicker>
+                <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md bg-transparent group/depth">
+                  <span className={`text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                    Ticks
+                  </span>
+                  <Select value={maxTicks.toString()} onValueChange={(value) => changeMaxTicks(parseInt(value))}>
+                    <SelectTrigger className="w-[40px] sm:w-[50px] h-4 sm:h-7 text-[9px] sm:text-[10px] font-bold bg-transparent border-0 ring-0 focus:ring-0 shadow-none p-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className={theme === "dark" ? "bg-[#1a1f3a] border-white/5" : "bg-white"}>
+                      {[10, 25, 60, 120, 250, 500, 1000, 5000].map((tv) => (
+                        <SelectItem key={tv} value={tv.toString()} className="text-[10px]">{tv}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Auth & Theme */}
@@ -287,12 +277,15 @@ export default function DerivAnalysisApp() {
           ) : (
             <>
               <TabsContent value="smart-analysis" className="mt-0 space-y-2 sm:space-y-3 md:space-y-4">
-                {availableSymbols.length > 0 && (
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`text-xs font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>Market</span>
-                    <MarketSelector symbols={availableSymbols} currentSymbol={symbol} onSymbolChange={changeSymbol} theme={theme} />
-                  </div>
-                )}
+                <TabMarketBar
+                  symbol={symbol}
+                  availableSymbols={availableSymbols}
+                  onSymbolChange={changeSymbol}
+                  currentPrice={currentPrice}
+                  currentDigit={currentDigit}
+                  tickCount={tickCount}
+                  theme={theme}
+                />
                 <div
                   className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border glow-card-active flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                 >
@@ -470,11 +463,11 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="signals" className="mt-0">
-                {analysis && <SignalsTab signals={signals} proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />}
+                {analysis && <SignalsTab signals={signals} proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />}
               </TabsContent>
 
               <TabsContent value="pro-signals" className="mt-0">
-                {analysis && <ProSignalsTab proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />}
+                {analysis && <ProSignalsTab proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />}
               </TabsContent>
 
               <TabsContent value="super-signals" className="mt-0">
@@ -493,6 +486,7 @@ export default function DerivAnalysisApp() {
                     symbol={symbol}
                     availableSymbols={availableSymbols}
                     onSymbolChange={changeSymbol}
+                    tickCount={tickCount}
                   />
                 )}
               </TabsContent>
@@ -509,6 +503,7 @@ export default function DerivAnalysisApp() {
                     symbol={symbol}
                     availableSymbols={availableSymbols}
                     onSymbolChange={changeSymbol}
+                    tickCount={tickCount}
                   />
                 )}
               </TabsContent>
@@ -519,13 +514,13 @@ export default function DerivAnalysisApp() {
 
               <TabsContent value="matches" className="mt-0">
                 {analysis && (
-                  <MatchesTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />
+                  <MatchesTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />
                 )}
               </TabsContent>
 
               <TabsContent value="differs" className="mt-0">
                 {analysis && (
-                  <DiffersTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />
+                  <DiffersTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />
                 )}
               </TabsContent>
 
@@ -540,6 +535,8 @@ export default function DerivAnalysisApp() {
                     symbol={symbol}
                     availableSymbols={availableSymbols}
                     onSymbolChange={changeSymbol}
+                    currentDigit={currentDigit}
+                    tickCount={tickCount}
                   />
                 )}
               </TabsContent>

@@ -17,6 +17,8 @@ import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
 
+import { TabMarketBar } from "@/components/tab-market-bar"
+
 interface AutoBotTabProps {
   theme?: "light" | "dark"
   symbol: string
@@ -128,7 +130,7 @@ const calculateSuggestedMartingale = (strategy: BotStrategy, stake: number): num
   return Math.max(1.1, Math.round(suggestedMultiplier * 100) / 100)
 }
 
-export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSymbols = [] }: AutoBotTabProps) {
+export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSymbols = [], currentPrice, currentDigit, tickCount }: AutoBotTabProps) {
   const {
     apiClient,
     isConnected,

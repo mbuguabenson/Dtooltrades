@@ -15,6 +15,8 @@ import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
 
+import { TabMarketBar } from "@/components/tab-market-bar"
+
 interface AutoBotTabProps {
   theme?: "light" | "dark"
   symbol: string
@@ -73,7 +75,7 @@ const BOT_STRATEGIES: { id: BotStrategy; name: string; description: string }[] =
   },
 ]
 
-export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSymbols = [] }: AutoBotTabProps) {
+export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSymbols = [], currentPrice, currentDigit, tickCount }: AutoBotTabProps) {
   const { apiClient, isConnected, isAuthorized, error: apiError, balance, isLoggedIn } = useDerivAPI()
   const [marketPrice, setMarketPrice] = useState<number>(0)
   const [selectedStrategy, setSelectedStrategy] = useState<BotStrategy>("EVEN_ODD")
@@ -240,6 +242,15 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
 
   return (
     <div className="space-y-3 sm:space-y-6">
+      <TabMarketBar
+        symbol={symbol}
+        availableSymbols={availableSymbols}
+        onSymbolChange={onSymbolChange}
+        currentPrice={currentPrice}
+        currentDigit={currentDigit}
+        tickCount={tickCount}
+        theme={theme}
+      />
       {/* Connection Status Alert */}
       {(apiError || localError || !isConnected) && (
         <Card className={theme === "dark" ? "bg-red-500/10 border-red-500/30" : "bg-red-50 border-red-200"}>
