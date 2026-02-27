@@ -16,6 +16,7 @@ import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
 interface AutoBotTabProps {
   theme?: "light" | "dark"
   symbol: string
+  onSymbolChange?: (symbol: string) => void
 }
 
 const BOT_STRATEGIES: { id: BotStrategy; name: string; description: string }[] = [
@@ -69,7 +70,7 @@ const BOT_STRATEGIES: { id: BotStrategy; name: string; description: string }[] =
   },
 ]
 
-export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
+export function AutoBotTab({ theme = "dark", symbol, onSymbolChange }: AutoBotTabProps) {
   const { apiClient, isConnected, isAuthorized, error: apiError, balance, isLoggedIn } = useDerivAPI()
   const [marketPrice, setMarketPrice] = useState<number>(0)
   const [selectedStrategy, setSelectedStrategy] = useState<BotStrategy>("EVEN_ODD")
@@ -235,15 +236,15 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
   const canStart = !isRunning && isConnected && isAuthorized && !isLoading
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Connection Status Alert */}
       {(apiError || localError || !isConnected) && (
         <Card className={theme === "dark" ? "bg-red-500/10 border-red-500/30" : "bg-red-50 border-red-200"}>
-          <CardContent className="pt-6 flex items-start gap-3">
-            <AlertCircle className={`w-5 h-5 shrink-0 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
+          <CardContent className="p-3 sm:pt-6 flex items-start gap-2 sm:gap-3">
+            <AlertCircle className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
             <div>
-              <p className={`font-semibold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>Connection Issue</p>
-              <p className={`text-sm mt-1 ${theme === "dark" ? "text-red-300" : "text-red-600"}`}>
+              <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>Connection Issue</p>
+              <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-red-300" : "text-red-600"}`}>
                 {localError || apiError || "Connecting to API..."}
               </p>
             </div>
@@ -254,25 +255,25 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
       {/* Emergency Stop Alert */}
       {isRunning && (
         <Card className={theme === "dark" ? "bg-orange-500/10 border-orange-500/30" : "bg-orange-50 border-orange-200"}>
-          <CardContent className="pt-6 flex items-center justify-between">
-            <div className="flex items-start gap-3">
+          <CardContent className="p-3 sm:pt-6 flex items-center justify-between">
+            <div className="flex items-start gap-2 sm:gap-3">
               <AlertTriangle
-                className={`w-5 h-5 shrink-0 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}
+                className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}
               />
               <div>
-                <p className={`font-semibold ${theme === "dark" ? "text-orange-400" : "text-orange-700"}`}>
+                <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-orange-400" : "text-orange-700"}`}>
                   Bot Running
                 </p>
-                <p className={`text-sm mt-1 ${theme === "dark" ? "text-orange-300" : "text-orange-600"}`}>
+                <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-orange-300" : "text-orange-600"}`}>
                   Click Emergency Stop to halt immediately
                 </p>
               </div>
             </div>
             <Button
               onClick={() => setEmergencyStop(true)}
-              className="bg-red-600 hover:bg-red-700 text-white ml-4 shrink-0"
+              className="bg-red-600 hover:bg-red-700 text-white ml-2 sm:ml-4 shrink-0 text-[10px] sm:text-xs h-8 sm:h-10"
             >
-              🚨 Emergency Stop
+              🚨 Stop Bot
             </Button>
           </CardContent>
         </Card>
@@ -286,20 +287,17 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
             : "bg-white border-gray-200"
         }
       >
-        <CardHeader>
-          <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Trading Market</CardTitle>
-          <CardDescription className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
-            Using market from analysis tool
+        <CardHeader className="p-3 sm:p-6 pb-2">
+          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Trading Market</CardTitle>
+          <CardDescription className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+            Market detected from engine
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-            <p className={`text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
-            <p className={`text-2xl font-bold mt-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+          <div className="p-2 sm:p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+            <p className={`text-[10px] sm:text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
+            <p className={`text-sm sm:text-2xl font-bold mt-1 sm:mt-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
               Price: {marketPrice > 0 ? marketPrice.toFixed(5) : "0.00000"}
-            </p>
-            <p className={`text-sm mt-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-              All bots will trade on this market
             </p>
           </div>
         </CardContent>
@@ -313,19 +311,16 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
             : "bg-white border-gray-200"
         }
       >
-        <CardHeader>
-          <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Select AutoBot Strategy</CardTitle>
-          <CardDescription className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
-            Choose a trading bot strategy to automate your trades
-          </CardDescription>
+        <CardHeader className="p-3 sm:p-6 pb-2">
+          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Select Strategy</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {BOT_STRATEGIES.map((strategy) => (
               <div
                 key={strategy.id}
                 onClick={() => !isRunning && setSelectedStrategy(strategy.id)}
-                className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedStrategy === strategy.id
+                className={`p-2.5 sm:p-4 rounded-lg border cursor-pointer transition-all ${selectedStrategy === strategy.id
                   ? theme === "dark"
                     ? "bg-blue-500/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                     : "bg-blue-100 border-blue-500"
@@ -334,10 +329,10 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                     : "bg-gray-50 border-gray-200 hover:bg-gray-100"
                   } ${isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <h3 className={`font-bold mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                <h3 className={`text-xs sm:text-base font-bold mb-1 sm:mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                   {strategy.name}
                 </h3>
-                <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                <p className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                   {strategy.description}
                 </p>
               </div>
@@ -354,22 +349,19 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
             : "bg-white border-gray-200"
         }
       >
-        <CardHeader>
-          <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Bot Configuration</CardTitle>
-          <CardDescription className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
-            Configure your bot parameters
-          </CardDescription>
+        <CardHeader className="p-3 sm:p-6 pb-2">
+          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Bot Configuration</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className={theme === "dark" ? "text-white" : "text-gray-900"}>Initial Stake ($)</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Stake ($)</Label>
               <Input
                 type="number"
                 value={config.initialStake}
                 onChange={(e) => setConfig({ ...config, initialStake: Number.parseFloat(e.target.value) })}
                 disabled={isRunning}
-                className={theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}
+                className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
               />
             </div>
 
@@ -417,15 +409,15 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className={theme === "dark" ? "text-white" : "text-gray-900"}>Martingale Multiplier</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>M. Multiplier</Label>
               <Input
                 type="number"
                 step="0.1"
                 value={config.martingaleMultiplier}
                 onChange={(e) => setConfig({ ...config, martingaleMultiplier: Number.parseFloat(e.target.value) })}
                 disabled={isRunning || !config.useMartingale}
-                className={theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}
+                className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
               />
             </div>
           </div>
@@ -571,16 +563,16 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                   : "bg-blue-50 border-blue-200"
               }
             >
-              <CardHeader className="pb-2">
-                <CardTitle className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                   Total Runs
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+              <CardContent className="px-3 pb-3">
+                <div className={`text-xl sm:text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                   {botState.totalRuns}
                 </div>
-                <div className={`text-sm mt-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                <div className={`text-[10px] sm:text-sm mt-0.5 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                   {botState.wins}W / {botState.losses}L
                 </div>
               </CardContent>
@@ -597,14 +589,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                     : "bg-red-50 border-red-200"
               }
             >
-              <CardHeader className="pb-2">
-                <CardTitle className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                  Profit/Loss
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                  Net Profit/Loss
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3 pb-3">
                 <div
-                  className={`text-3xl font-bold flex items-center gap-2 ${botState.profitLoss >= 0
+                  className={`text-xl sm:text-3xl font-bold ${botState.profitLoss >= 0
                     ? theme === "dark"
                       ? "text-green-400"
                       : "text-green-600"
@@ -613,11 +605,10 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                       : "text-red-600"
                     }`}
                 >
-                  {botState.profitLoss >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-                  ${Math.abs(botState.profitLoss).toFixed(2)}
+                  ${botState.profitLoss.toFixed(2)}
                 </div>
-                <div className={`text-sm mt-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                  {botState.profitLossPercent.toFixed(2)}% of balance
+                <div className={`text-[10px] sm:text-sm mt-0.5 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                  Target: ${((config.balance * config.tpPercent) / 100).toFixed(2)}
                 </div>
               </CardContent>
             </Card>

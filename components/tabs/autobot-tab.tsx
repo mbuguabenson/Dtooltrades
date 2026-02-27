@@ -18,6 +18,7 @@ import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 interface AutoBotTabProps {
   theme?: "light" | "dark"
   symbol: string
+  onSymbolChange?: (symbol: string) => void
 }
 
 interface BotConfig {
@@ -124,7 +125,7 @@ const calculateSuggestedMartingale = (strategy: BotStrategy, stake: number): num
   return Math.max(1.1, Math.round(suggestedMultiplier * 100) / 100)
 }
 
-export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
+export function AutoBotTab({ theme = "dark", symbol, onSymbolChange }: AutoBotTabProps) {
   const {
     apiClient,
     isConnected,
@@ -446,14 +447,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 sm:space-y-6">
       {(apiError || !isConnected) && (
         <Card className={theme === "dark" ? "bg-red-500/10 border-red-500/30" : "bg-red-50 border-red-200"}>
-          <CardContent className="pt-6 flex items-start gap-3">
-            <AlertCircle className={`w-5 h-5 shrink-0 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
+          <CardContent className="p-3 sm:pt-6 flex items-start gap-2 sm:gap-3">
+            <AlertCircle className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
             <div>
-              <p className={`font-semibold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>Connection Issue</p>
-              <p className={`text-sm mt-1 ${theme === "dark" ? "text-red-300" : "text-red-600"}`}>
+              <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>Connection Issue</p>
+              <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-red-300" : "text-red-600"}`}>
                 {apiError || "Connecting to API..."}
               </p>
             </div>
@@ -468,40 +469,40 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
             : "bg-white border-gray-200"
         }
       >
-        <CardHeader>
-          <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Trading Market</CardTitle>
-          <CardDescription className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
+        <CardHeader className="p-3 sm:p-6 pb-2">
+          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Trading Market</CardTitle>
+          <CardDescription className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
             All bots will trade on this market
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-            <p className={`text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
+        <CardContent className="px-3 sm:px-6 pb-3">
+          <div className="p-2 sm:p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+            <p className={`text-sm sm:text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
           </div>
         </CardContent>
       </Card>
 
       {activeBots.size > 0 && (
         <Card className={theme === "dark" ? "bg-orange-500/10 border-orange-500/30" : "bg-orange-50 border-orange-200"}>
-          <CardContent className="pt-6 flex items-center justify-between">
-            <div className="flex items-start gap-3">
+          <CardContent className="p-3 sm:pt-6 flex items-center justify-between">
+            <div className="flex items-start gap-2 sm:gap-3">
               <AlertTriangle
-                className={`w-5 h-5 shrink-0 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}
+                className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}
               />
               <div>
-                <p className={`font-semibold ${theme === "dark" ? "text-orange-400" : "text-orange-700"}`}>
+                <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-orange-400" : "text-orange-700"}`}>
                   Active Bots Detected
                 </p>
-                <p className={`text-sm mt-1 ${theme === "dark" ? "text-orange-300" : "text-orange-600"}`}>
+                <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-orange-300" : "text-orange-600"}`}>
                   Click "EMERGENCY STOP ALL" to halt all running bots immediately.
                 </p>
               </div>
             </div>
             <Button
               onClick={handleEmergencyStopAll}
-              className="bg-red-600 hover:bg-red-700 text-white ml-4 shrink-0"
+              className="bg-red-600 hover:bg-red-700 text-white ml-2 sm:ml-4 shrink-0 text-[10px] sm:text-xs h-8 sm:h-10"
             >
-              🚨 EMERGENCY STOP ALL
+              🚨 STOP ALL
             </Button>
           </CardContent>
         </Card>
@@ -514,24 +515,24 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
             : "bg-white border-gray-200"
         }
       >
-        <CardHeader>
-          <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Market Information</CardTitle>
+        <CardHeader className="p-3 sm:p-6 pb-2">
+          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Market Information</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market</p>
-              <p className={`text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="p-2 sm:p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market</p>
+              <p className={`text-[10px] sm:text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
             </div>
-            <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-              <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market Price</p>
-              <p className={`text-lg font-bold ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+            <div className="p-2 sm:p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+              <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Price</p>
+              <p className={`text-[10px] sm:text-lg font-bold tabular-nums ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
                 {currentMarketPrice.toFixed(5)}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
-              <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Last Digit</p>
-              <p className={`text-2xl font-bold ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+            <div className="p-2 sm:p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
+              <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Digit</p>
+              <p className={`text-sm sm:text-2xl font-bold ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
                 {currentLastDigit}
               </p>
             </div>
@@ -580,14 +581,14 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                     <CardDescription className={`text-xs mt-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                       {strategy.description}
                     </CardDescription>
-                    <div className={`text-xs mt-1 ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-                      Data: {tickData.length} ticks
+                    <div className={`text-[8px] sm:text-xs mt-0.5 sm:mt-1 ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                      Ticks: {tickData.length}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1 sm:gap-2">
                     {status && (
                       <Badge
-                        className={`${status === "In Progress"
+                        className={`text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0 sm:py-0.5 ${status === "In Progress"
                           ? "bg-blue-500 text-white"
                           : status.includes("Signal Found")
                             ? "bg-yellow-500 text-white animate-pulse"
@@ -610,375 +611,279 @@ export function AutoBotTab({ theme = "dark", symbol }: AutoBotTabProps) {
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-3">
+              <CardContent className="p-3 sm:p-6 sm:pt-0 space-y-2 sm:space-y-4">
                 {analysis && (
                   <>
-                    <div
-                      className={`p-3 rounded-lg ${theme === "dark" ? "bg-blue-500/10 border border-blue-500/30" : "bg-blue-50 border border-blue-200"}`}
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                          Market Power
-                        </span>
-                        <span className={`text-sm font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                          {analysis.marketPower.toFixed(1)}%
-                        </span>
+                    <div className={`p-2 sm:p-3 rounded-lg ${theme === "dark" ? "bg-blue-500/10 border border-blue-500/30" : "bg-blue-50 border border-blue-200"}`}>
+                      <div className="flex justify-between items-center mb-1 sm:mb-2">
+                        <span className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market Power</span>
+                        <span className={`text-xs sm:text-sm font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>{analysis.marketPower.toFixed(1)}%</span>
                       </div>
-                      <Progress
-                        value={analysis.marketPower}
-                        className={`h-2 ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`}
-                      />
+                      <Progress value={analysis.marketPower} className={`h-1 sm:h-2 ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`} />
                     </div>
 
                     {analysis.powerDistribution && (
-                      <div
-                        className={`p-3 rounded-lg ${theme === "dark" ? "bg-purple-500/10 border border-purple-500/30" : "bg-purple-50 border border-purple-200"}`}
-                      >
-                        <div
-                          className={`text-xs font-semibold mb-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                          Digit Distribution
-                        </div>
+                      <div className={`p-2 sm:p-3 rounded-lg ${theme === "dark" ? "bg-purple-500/10 border border-purple-500/30" : "bg-purple-50 border border-purple-200"}`}>
+                        <div className={`text-[10px] sm:text-xs font-semibold mb-1 sm:mb-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Digit Distribution</div>
                         <div className="grid grid-cols-5 gap-1">
-                          {(() => {
-                            const entries = Object.entries(analysis.powerDistribution).map(([digit, count]) => ({
-                              digit: Number(digit),
-                              count: count as number,
-                            }))
-                            const sortedByCount = [...entries].sort((a, b) => b.count - a.count)
-                            const mostAppearing = sortedByCount[0]?.digit
-                            const secondMost = sortedByCount[1]?.digit
-                            const leastAppearing = sortedByCount[sortedByCount.length - 1]?.digit
+                          {Object.entries(analysis.powerDistribution).map(([digit, count]) => {
+                            const d = Number(digit)
+                            const c = count as number
+                            const sortedByCount = Object.entries(analysis.powerDistribution).sort((a, b) => (b[1] as number) - (a[1] as number))
+                            const mostAppearing = Number(sortedByCount[0]?.[0])
+                            const secondMost = Number(sortedByCount[1]?.[0])
+                            const leastAppearing = Number(sortedByCount[sortedByCount.length - 1]?.[0])
 
-                            return entries.map(({ digit, count }) => {
-                              let colorClass = theme === "dark" ? "text-white" : "text-gray-900"
-                              let bgClass = ""
+                            let colorClass = theme === "dark" ? "text-white" : "text-gray-900"
+                            let bgClass = ""
+                            if (d === currentLastDigit) { colorClass = "text-yellow-500 font-extrabold"; bgClass = "bg-yellow-500/20" }
+                            else if (d === mostAppearing) { colorClass = "text-green-400 font-bold"; bgClass = "bg-green-500/10" }
+                            else if (d === secondMost) { colorClass = "text-blue-400 font-bold"; bgClass = "bg-blue-500/10" }
+                            else if (d === leastAppearing) { colorClass = "text-red-400 font-bold"; bgClass = "bg-red-500/10" }
 
-                              if (digit === currentLastDigit) {
-                                colorClass = "text-yellow-500 font-extrabold"
-                                bgClass = "bg-yellow-500/20"
-                              } else if (digit === mostAppearing) {
-                                colorClass = "text-green-400 font-bold"
-                                bgClass = "bg-green-500/10"
-                              } else if (digit === secondMost) {
-                                colorClass = "text-blue-400 font-bold"
-                                bgClass = "bg-blue-500/10"
-                              } else if (digit === leastAppearing) {
-                                colorClass = "text-red-400 font-bold"
-                                bgClass = "bg-red-500/10"
-                              }
-
-                              return (
-                                <div key={digit} className={`text-center p-1 rounded ${bgClass}`}>
-                                  <div className={`text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-600"}`}>
-                                    {digit}
-                                  </div>
-                                  <div className={`text-xs ${colorClass}`}>{count}</div>
-                                </div>
-                              )
-                            })
-                          })()}
+                            return (
+                              <div key={d} className={`text-center p-0.5 sm:p-1 rounded ${bgClass}`}>
+                                <div className={`text-[8px] sm:text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-600"}`}>{d}</div>
+                                <div className={`text-[8px] sm:text-xs ${colorClass}`}>{c}</div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
 
-                    <div
-                      className={`p-3 rounded-lg text-xs ${theme === "dark" ? "bg-gray-800 border border-gray-700" : "bg-gray-50 border border-gray-200"}`}
-                    >
-                      <div className={`font-semibold mb-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                        Signal:{" "}
-                        <span
-                          className={`
-                          ${analysis.signal === "TRADE NOW" ? "text-green-400" : ""}
-                          ${analysis.signal === "WAIT" ? "text-blue-400" : ""}
-                          ${analysis.signal === "NEUTRAL" ? "text-gray-400" : ""}
-                        `}
-                        >
-                          {analysis.signal}
-                        </span>
+                    <div className={`p-2 sm:p-3 rounded-lg text-[10px] sm:text-xs ${theme === "dark" ? "bg-gray-800 border border-gray-700" : "bg-gray-50 border border-gray-200"}`}>
+                      <div className={`font-semibold mb-0.5 sm:mb-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                        Signal: <span className={analysis.signal === "TRADE NOW" ? "text-green-400" : analysis.signal === "WAIT" ? "text-blue-400" : "text-gray-400"}>{analysis.signal}</span>
                       </div>
-                      <div className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
-                        Entry: {analysis.entryPoint || "N/A"}
-                      </div>
-                      <div className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
-                        Exit: {analysis.exitPoint || "N/A"}
-                      </div>
+                      <div className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Entry: {analysis.entryPoint || "N/A"}</div>
+                      <div className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Exit: {analysis.exitPoint || "N/A"}</div>
                     </div>
                   </>
                 )}
 
                 {!isRunning && (
-                  <div className="space-y-2 pt-2 border-t border-gray-700">
+                  <div className="space-y-1.5 sm:space-y-2 pt-1.5 sm:pt-2 border-t border-gray-700">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                          Stake ($)
-                        </Label>
+                        <Label className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Stake ($)</Label>
                         <Input
                           type="number"
                           value={botConfig.initialStake}
                           onChange={(e) => {
                             const val = Number.parseFloat(e.target.value)
-                            if (!isNaN(val)) {
-                              // Force 2 decimal places maximum
-                              const rounded = Math.round(val * 100) / 100
-                              updateBotConfig(strategy.id, { initialStake: rounded })
-                            }
+                            if (!isNaN(val)) updateBotConfig(strategy.id, { initialStake: Math.round(val * 100) / 100 })
                           }}
-                          onBlur={(e) => {
-                            const val = Number.parseFloat(e.target.value)
-                            if (!isNaN(val)) {
-                              updateBotConfig(strategy.id, { initialStake: Math.round(val * 100) / 100 })
-                            }
-                          }}
-                          className={`h-8 text-xs ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
+                          className={`h-7 sm:h-8 text-[10px] sm:text-xs ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
                           step="0.01"
                           min="0.01"
                         />
                       </div>
                       <div>
-                        <Label className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                          Ticks
-                        </Label>
+                        <Label className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Ticks</Label>
                         <Input
                           type="number"
                           value={botConfig.duration}
                           onChange={(e) => updateBotConfig(strategy.id, { duration: Number.parseInt(e.target.value) })}
-                          className={`h-8 text-xs ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
+                          className={`h-7 sm:h-8 text-[10px] sm:text-xs ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
                           min="1"
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={botConfig.useMartingale}
-                            onCheckedChange={(checked) => {
-                              updateBotConfig(strategy.id, { useMartingale: checked })
-                              setShowMartingaleConfig((prev) => new Map(prev).set(strategy.id, checked))
-                            }}
-                            className="scale-75"
-                          />
-                          <Label className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                            Martingale
-                          </Label>
-                        </div>
-                        {botConfig.useMartingale && (
-                          <Input
-                            type="number"
-                            value={botConfig.martingaleMultiplier}
-                            onChange={(e) =>
-                              updateBotConfig(strategy.id, { martingaleMultiplier: Number.parseFloat(e.target.value) })
-                            }
-                            className={`h-8 text-xs w-20 ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
-                            step="0.1"
-                            min="1.1"
-                            placeholder="x2"
-                          />
-                        )}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={botConfig.useMartingale}
+                          onCheckedChange={(checked) => {
+                            updateBotConfig(strategy.id, { useMartingale: checked })
+                            setShowMartingaleConfig((prev) => new Map(prev).set(strategy.id, checked))
+                          }}
+                          className="scale-75"
+                        />
+                        <Label className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>M. Multiplier</Label>
                       </div>
-                      {botConfig.useMartingale && (
-                        <div
-                          className={`text-xs p-2 rounded-lg ${theme === "dark" ? "bg-blue-500/10 border border-blue-500/30 text-blue-400" : "bg-blue-50 border border-blue-200 text-blue-600"}`}
-                        >
-                          💡 Suggested: x{suggestedMartingale} (recovers loss + profit)
-                        </div>
-                      )}
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={botConfig.martingaleMultiplier}
+                        onChange={(e) => updateBotConfig(strategy.id, { martingaleMultiplier: Number.parseFloat(e.target.value) })}
+                        disabled={!botConfig.useMartingale}
+                        className={`h-7 sm:h-8 text-[10px] sm:text-xs w-20 ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
+                        min="1.1"
+                      />
                     </div>
                   </div>
                 )}
 
                 {botState && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div
-                      className={`p-2 rounded-lg text-center ${theme === "dark" ? "bg-green-500/10" : "bg-green-50"}`}
-                    >
-                      <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Wins</div>
-                      <div className={`text-lg font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
-                        {botState.wins}
-                      </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className={`p-1.5 sm:p-2 rounded-lg text-center ${theme === "dark" ? "bg-green-500/10" : "bg-green-50"}`}>
+                      <div className={`text-[8px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Wins</div>
+                      <div className={`text-base sm:text-lg font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>{botState.wins}</div>
                     </div>
-                    <div className={`p-2 rounded-lg text-center ${theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}>
-                      <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Losses</div>
-                      <div className={`text-lg font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
-                        {botState.losses}
-                      </div>
+                    <div className={`p-1.5 sm:p-2 rounded-lg text-center ${theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}>
+                      <div className={`text-[8px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Losses</div>
+                      <div className={`text-base sm:text-lg font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{botState.losses}</div>
                     </div>
-                    <div
-                      className={`col-span-2 p-2 rounded-lg text-center ${botState.profitLoss >= 0 ? (theme === "dark" ? "bg-green-500/10" : "bg-green-50") : theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}
-                    >
-                      <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>P/L</div>
-                      <div
-                        className={`text-lg font-bold ${botState.profitLoss >= 0 ? (theme === "dark" ? "text-green-400" : "text-green-600") : theme === "dark" ? "text-red-400" : "text-red-600"}`}
-                      >
-                        ${botState.profitLoss.toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="col-span-2 text-center">
-                      <Badge className="bg-blue-500/20 text-blue-400 text-xs">
-                        {botState.isAnalyzing ? "Analyzing..." : botState.isTrading ? "Placing Trade..." : "Monitoring"}
-                      </Badge>
+                    <div className={`col-span-2 p-1.5 sm:p-2 rounded-lg text-center ${botState.profitLoss >= 0 ? (theme === "dark" ? "bg-green-500/10" : "bg-green-50") : theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}>
+                      <div className={`text-[8px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>P/L</div>
+                      <div className={`text-base sm:text-lg font-bold ${botState.profitLoss >= 0 ? (theme === "dark" ? "text-green-400" : "text-green-600") : theme === "dark" ? "text-red-400" : "text-red-600"}`}>${botState.profitLoss.toFixed(2)}</div>
                     </div>
                   </div>
                 )}
 
-                {isRunning ? (
-                  <Button
-                    onClick={() => handleStopBot(strategy.id)}
-                    variant="destructive"
-                    className="w-full gap-2"
-                    size="sm"
-                  >
-                    <Square className="w-4 h-4" />
-                    Stop
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => {
-                      console.log(`[v0] Start button clicked for ${strategy.id}`)
-                      handleStartBot(strategy.id)
-                    }}
-                    className={`w-full gap-2 ${isReady ? "bg-green-500 hover:bg-green-600 animate-pulse" : "bg-blue-500 hover:bg-blue-600"
-                      }`}
-                    disabled={!isConnected || !isAuthorized || tickData.length < 25}
-                    size="sm"
-                  >
-                    <Play className="w-4 h-4" />
-                    {tickData.length < 25 ? `Loading... (${tickData.length}/25)` : isReady ? "Start Trading" : "Start"}
-                  </Button>
-                )}
+                <div className="pt-2">
+                  {isRunning ? (
+                    <Button onClick={() => handleStopBot(strategy.id)} variant="destructive" className="w-full gap-2 h-8 sm:h-10 text-[10px] sm:text-xs" size="sm">
+                      <Square className="w-3 h-3 sm:w-4 sm:h-4" /> Stop
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleStartBot(strategy.id)}
+                      className={`w-full gap-2 h-8 sm:h-10 text-[10px] sm:text-xs ${isReady ? "bg-green-500 hover:bg-green-600 animate-pulse" : "bg-blue-500 hover:bg-blue-600"}`}
+                      disabled={!isConnected || !isAuthorized || tickData.length < 25}
+                      size="sm"
+                    >
+                      <Play className="w-3 h-3 sm:w-4 sm:h-4" />
+                      {tickData.length < 25 ? `Loading... (${tickData.length}/25)` : isReady ? "Start Trading" : "Start"}
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      {tradeLogs.length > 0 && (
-        <Card
-          className={`border ${theme === "dark"
-            ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
-            : "bg-white border-gray-200"
-            }`}
-        >
-          <CardHeader>
-            <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Trade Log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr
-                    className={`border-b ${theme === "dark" ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"}`}
-                  >
-                    <th className="text-left py-3 px-2 text-xs font-medium">Time</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium">Strategy</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium">Contract</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium">Predicted</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium">Entry</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium">Exit</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium">Stake</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium">Result</th>
-                    <th className="text-right py-3 px-2 text-xs font-medium">P/L</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tradeLogs.map((trade) => (
+      {
+        tradeLogs.length > 0 && (
+          <Card
+            className={`border ${theme === "dark"
+              ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-purple-500/20"
+              : "bg-white border-gray-200"
+              }`}
+          >
+            <CardHeader>
+              <CardTitle className={theme === "dark" ? "text-white" : "text-gray-900"}>Trade Log</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
                     <tr
-                      key={trade.id}
-                      className={`border-b ${theme === "dark" ? "border-gray-800 hover:bg-gray-800/30" : "border-gray-100 hover:bg-gray-50"}`}
+                      className={`border-b ${theme === "dark" ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"}`}
                     >
-                      <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                        {trade.time.toLocaleTimeString()}
-                      </td>
-                      <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                        {trade.strategy}
-                      </td>
-                      <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                        {trade.contract}
-                      </td>
-                      <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
-                        {trade.predicted}
-                      </td>
-                      <td
-                        className={`py-3 px-2 text-xs font-mono ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
+                      <th className="text-left py-3 px-2 text-xs font-medium">Time</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium">Strategy</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium">Contract</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium">Predicted</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium">Entry</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium">Exit</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium">Stake</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium">Result</th>
+                      <th className="text-right py-3 px-2 text-xs font-medium">P/L</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tradeLogs.map((trade) => (
+                      <tr
+                        key={trade.id}
+                        className={`border-b ${theme === "dark" ? "border-gray-800 hover:bg-gray-800/30" : "border-gray-100 hover:bg-gray-50"}`}
                       >
-                        {trade.entry}
-                      </td>
-                      <td
-                        className={`py-3 px-2 text-xs font-mono ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-                      >
-                        {trade.exit}
-                      </td>
-                      <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                        ${trade.stake.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-2">
-                        <Badge
-                          className={`text-xs ${trade.result === "win"
+                        <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                          {trade.time.toLocaleTimeString()}
+                        </td>
+                        <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                          {trade.strategy}
+                        </td>
+                        <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                          {trade.contract}
+                        </td>
+                        <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+                          {trade.predicted}
+                        </td>
+                        <td
+                          className={`py-3 px-2 text-xs font-mono ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
+                        >
+                          {trade.entry}
+                        </td>
+                        <td
+                          className={`py-3 px-2 text-xs font-mono ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
+                        >
+                          {trade.exit}
+                        </td>
+                        <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                          ${trade.stake.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-2">
+                          <Badge
+                            className={`text-xs ${trade.result === "win"
+                              ? theme === "dark"
+                                ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                : "bg-green-100 text-green-700 border-green-200"
+                              : theme === "dark"
+                                ? "bg-red-500/20 text-red-400 border-red-500/30"
+                                : "bg-red-100 text-red-700 border-red-200"
+                              }`}
+                          >
+                            {trade.result.toUpperCase()}
+                          </Badge>
+                        </td>
+                        <td
+                          className={`py-3 px-2 text-xs font-bold text-right ${trade.profitLoss >= 0
                             ? theme === "dark"
-                              ? "bg-green-500/20 text-green-400 border-green-500/30"
-                              : "bg-green-100 text-green-700 border-green-200"
+                              ? "text-green-400"
+                              : "text-green-600"
                             : theme === "dark"
-                              ? "bg-red-500/20 text-red-400 border-red-500/30"
-                              : "bg-red-100 text-red-700 border-red-200"
+                              ? "text-red-400"
+                              : "text-red-600"
                             }`}
                         >
-                          {trade.result.toUpperCase()}
-                        </Badge>
-                      </td>
-                      <td
-                        className={`py-3 px-2 text-xs font-bold text-right ${trade.profitLoss >= 0
-                          ? theme === "dark"
-                            ? "text-green-400"
-                            : "text-green-600"
-                          : theme === "dark"
-                            ? "text-red-400"
-                            : "text-red-600"
-                          }`}
-                      >
-                        {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {showTPPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="max-w-md w-full bg-linear-to-br from-green-900/95 to-emerald-900/95 rounded-2xl border-2 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.5)] p-8">
-            <div className="text-center space-y-4">
-              <div className="text-6xl animate-bounce">🎉</div>
-              <h2 className="text-3xl font-bold text-white">Congratulations!</h2>
-              <p className="text-green-300 text-lg">Target Profit Achieved!</p>
-
-              <div className="bg-white/10 rounded-lg p-6 space-y-3">
-                <div className="flex items-center justify-center gap-2">
-                  <DollarSign className="h-6 w-6 text-green-400" />
-                  <span className="text-4xl font-bold text-white">${tpAmount.toFixed(2)}</span>
-                </div>
-                <div className="text-sm text-gray-300">USD</div>
-
-                <div className="border-t border-white/20 pt-3">
-                  <div className="text-2xl font-bold text-green-400">KES {(tpAmount * USD_TO_KES_RATE).toFixed(2)}</div>
-                  <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = {USD_TO_KES_RATE} KES)</div>
-                </div>
+                          {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+            </CardContent>
+          </Card>
+        )
+      }
 
-              <Button
-                onClick={() => setShowTPPopup(false)}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3"
-              >
-                Continue Trading
-              </Button>
+      {
+        showTPPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="max-w-md w-full bg-linear-to-br from-green-900/95 to-emerald-900/95 rounded-2xl border-2 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.5)] p-8">
+              <div className="text-center space-y-4">
+                <div className="text-6xl animate-bounce">🎉</div>
+                <h2 className="text-3xl font-bold text-white">Congratulations!</h2>
+                <p className="text-green-300 text-lg">Target Profit Achieved!</p>
+
+                <div className="bg-white/10 rounded-lg p-6 space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <DollarSign className="h-6 w-6 text-green-400" />
+                    <span className="text-4xl font-bold text-white">${tpAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="text-sm text-gray-300">USD</div>
+
+                  <div className="border-t border-white/20 pt-3">
+                    <div className="text-2xl font-bold text-green-400">KES {(tpAmount * USD_TO_KES_RATE).toFixed(2)}</div>
+                    <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = {USD_TO_KES_RATE} KES)</div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setShowTPPopup(false)}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3"
+                >
+                  Continue Trading
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   )
 }

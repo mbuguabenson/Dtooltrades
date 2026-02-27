@@ -519,41 +519,20 @@ export class DerivWebSocketManager {
         if (error.code === 'AlreadySubscribed') {
           console.log(`[v0] Handling AlreadySubscribed for ${symbol}. Syncing state...`);
 
-          // If we got here, it's likely a previous attempt succeeded but we didn't get the message or timed out
-          // Let's wait a bit longer for a tick to arrive which might give us the ID
-          for (let i = 0; i < 10; i++) {
-            const recoveredId = this.symbolToSubscriptionMap.get(symbol);
-            if (recoveredId) {
-              console.log(`[v0] Recovered ID for ${symbol}: ${recoveredId}`);
-              const currentRef = this.subscriptionRefCount.get(recoveredId) || 0;
-              this.subscriptionRefCount.set(recoveredId, currentRef + 1);
-              this.activeSubscriptions.delete(symbol);
-              return recoveredId;
-            }
-            await new Promise(r => setTimeout(r, 500));
+          await new Promise(r => setTimeout(r, 1000));
+          const recoveredId = this.symbolToSubscriptionMap.get(symbol);
+
+          if (recoveredId) {
+            console.log(`[v0] Recovered ID for ${symbol}: ${recoveredId}`);
+            const currentRef = this.subscriptionRefCount.get(recoveredId) || 0;
+            this.subscriptionRefCount.set(recoveredId, currentRef + 1);
+            this.activeSubscriptions.delete(symbol);
+            return recoveredId;
           }
 
-          // If still no ID, we MUST force a reset for this symbol specifically if possible, 
-          // but Deriv doesn't easily let us find an ID by symbol.
-          // So we force a forget_all and clear our entire state to ensure synchronization.
-          console.warn(`[v0] Could not recover ID for ${symbol} after AlreadySubscribed. Resetting connection state.`);
-          try {
-            // Use forget_all to clear everything on server
-            await this.sendAndWait({ forget_all: ["ticks"], req_id: this.getNextReqId() }, 10000);
-
-            // Clear all local subscription state to stay in sync
-            this.subscriptions.clear();
-            this.symbolToSubscriptionMap.clear();
-            this.subscriptionRefCount.clear();
-            this.activeSubscriptions.clear();
-
-            console.log(`[v0] Successfully reset all tick subscriptions on server and local.`);
-
-            // Re-throw to trigger next attempt or fail gracefully
-            throw new Error("State reset after AlreadySubscribed");
-          } catch (resetError) {
-            console.error(`[v0] Critical: Failed to reset state:`, resetError);
-          }
+          console.warn(`[v0] Could not recover ID for ${symbol} after AlreadySubscribed. Attempting local sync...`);
+          // Note: using forget_all here repeatedly is dangerous as it kills ALL streams
+          // Just retry the subscription on next attempt instead of forcing server resets
         }
 
         console.warn(`[v0] Subscription attempt ${attempt}/${maxRetries} failed for ${symbol}:`, error)
@@ -652,7 +631,7 @@ export class DerivWebSocketManager {
           const response = await this.sendAndWait({
             active_symbols: "brief",
             product_type: "basic"
-          }, 30000); // 30s timeout for symbols
+          }, 15000); // reduced timeout for symbols to prevent connection blockage
 
           if (response && response.active_symbols) {
             this.symbolsCache = response.active_symbols.map((s: any) => {

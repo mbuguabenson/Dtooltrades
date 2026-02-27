@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Play, Pause, Zap, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { DerivRealTrader } from "@/lib/deriv-real-trader"
 import { EvenOddStrategy } from "@/lib/even-odd-strategy"
@@ -615,28 +616,25 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
     <div className="space-y-4">
       {!isAuthorized ? (
         <Card
-          className={`p-12 border text-center ${theme === "dark"
-            ? "bg-[#0a0e27]/80 border-red-500/30"
-            : "bg-white border-gray-200"
-            }`}
+          className={`p-6 sm:p-12 border text-center ${theme === "dark" ? "bg-[#0a0e27]/80 border-red-500/30" : "bg-white border-gray-200"}`}
         >
-          <div className="flex flex-col items-center gap-4">
-            <AlertCircle className={`w-12 h-12 ${theme === "dark" ? "text-red-400" : "text-red-500"}`} />
+          <CardContent className="p-3 sm:pt-6 flex flex-col items-center gap-4">
+            <AlertCircle className={`w-8 h-8 sm:w-12 sm:h-12 ${theme === "dark" ? "text-red-400" : "text-red-500"}`} />
             <div>
-              <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+              <h3 className={`text-sm sm:text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                 Authentication Required
               </h3>
-              <p className={`text-gray-400 mt-2`}>
-                Please log in with your Deriv account to use SmartAuto24
+              <p className={`text-[10px] sm:text-sm text-gray-400 mt-1 sm:mt-2`}>
+                Please log in to use SmartAuto24
               </p>
             </div>
             <Button
               onClick={() => (window as any).location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${process.env.NEXT_PUBLIC_DERIV_APP_ID || "65416"}&l=en&brand=deriv`}
-              className="mt-4 bg-red-500 hover:bg-red-600 text-white"
+              className="bg-red-500 hover:bg-red-600 text-white h-8 sm:h-10 text-[10px] sm:text-sm"
             >
               Login to Deriv
             </Button>
-          </div>
+          </CardContent>
         </Card>
       ) : (
         <>
@@ -783,41 +781,24 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
                 </Select>
               </div>
 
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}
-                >
-                  Analysis Time (Minutes)
-                </label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Analysis (Min)</Label>
                 <Input
                   type="number"
                   value={analysisTimeMinutes}
                   onChange={(e) => setAnalysisTimeMinutes(e.target.value)}
-                  className={`${theme === "dark"
-                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                  min="1"
-                  max="120"
+                  disabled={isRunning}
+                  className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
                 />
               </div>
-
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}
-                >
-                  Ticks for Entry
-                </label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>History Ticks</Label>
                 <Input
                   type="number"
                   value={ticksForEntry}
                   onChange={(e) => setTicksForEntry(e.target.value)}
-                  className={`${theme === "dark"
-                    ? "bg-[#0a0e27]/50 border-yellow-500/30 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                  min="100"
-                  step="100"
+                  disabled={isRunning}
+                  className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
                 />
               </div>
 
@@ -1297,85 +1278,90 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange }: SmartAuto24Tab
             </Card>
           </div>
         </>
-      )}
+      )
+      }
 
       {/* Stop Loss Popup */}
-      {showSLPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="max-w-md w-full bg-linear-to-br from-red-900/95 to-red-800/95 rounded-2xl border-2 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.5)] p-8">
-            <div className="text-center space-y-4">
-              <div className="text-6xl">😢</div>
-              <h2 className="text-3xl font-bold text-white">Oops!</h2>
-              <p className="text-red-300 text-lg">Stop loss hit. Please try again later.</p>
+      {
+        showSLPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="max-w-md w-full bg-linear-to-br from-red-900/95 to-red-800/95 rounded-2xl border-2 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.5)] p-8">
+              <div className="text-center space-y-4">
+                <div className="text-6xl">😢</div>
+                <h2 className="text-3xl font-bold text-white">Oops!</h2>
+                <p className="text-red-300 text-lg">Stop loss hit. Please try again later.</p>
 
-              <div className="bg-white/10 rounded-lg p-6 space-y-3">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-4xl font-bold text-red-400">-${slAmount.toFixed(2)}</span>
-                </div>
-                <div className="text-sm text-gray-300">Total Loss (USD)</div>
-
-                <div className="border-t border-white/20 pt-3">
-                  <div className="text-2xl font-bold text-red-400">-KES {(slAmount * 129.5).toFixed(2)}</div>
-                  <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = 129.5 KES)</div>
-                </div>
-
-                {marketPrice && (
-                  <div className="border-t border-white/20 pt-3">
-                    <div className="text-xs text-gray-400">Market Price at Loss</div>
-                    <div className="text-lg font-bold text-white">{marketPrice.toFixed(5)}</div>
+                <div className="bg-white/10 rounded-lg p-6 space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-4xl font-bold text-red-400">-${slAmount.toFixed(2)}</span>
                   </div>
-                )}
-              </div>
+                  <div className="text-sm text-gray-300">Total Loss (USD)</div>
 
-              <Button
-                onClick={() => setShowSLPopup(false)}
-                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3"
-              >
-                Close
-              </Button>
+                  <div className="border-t border-white/20 pt-3">
+                    <div className="text-2xl font-bold text-red-400">-KES {(slAmount * 129.5).toFixed(2)}</div>
+                    <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = 129.5 KES)</div>
+                  </div>
+
+                  {marketPrice && (
+                    <div className="border-t border-white/20 pt-3">
+                      <div className="text-xs text-gray-400">Market Price at Loss</div>
+                      <div className="text-lg font-bold text-white">{marketPrice.toFixed(5)}</div>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={() => setShowSLPopup(false)}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Take Profit Popup */}
-      {showTPPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="max-w-md w-full bg-linear-to-br from-green-900/95 to-green-800/95 rounded-2xl border-2 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.5)] p-8">
-            <div className="text-center space-y-4">
-              <div className="text-6xl">🎉</div>
-              <h2 className="text-3xl font-bold text-white">Congratulations!</h2>
-              <p className="text-green-300 text-lg">Take profit hit. Well done!</p>
+      {
+        showTPPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="max-w-md w-full bg-linear-to-br from-green-900/95 to-green-800/95 rounded-2xl border-2 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.5)] p-8">
+              <div className="text-center space-y-4">
+                <div className="text-6xl">🎉</div>
+                <h2 className="text-3xl font-bold text-white">Congratulations!</h2>
+                <p className="text-green-300 text-lg">Take profit hit. Well done!</p>
 
-              <div className="bg-white/10 rounded-lg p-6 space-y-3">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-4xl font-bold text-green-400">+${tpAmount.toFixed(2)}</span>
-                </div>
-                <div className="text-sm text-gray-300">Total Profit (USD)</div>
-
-                <div className="border-t border-white/20 pt-3">
-                  <div className="text-2xl font-bold text-green-400">+KES {(tpAmount * 129.5).toFixed(2)}</div>
-                  <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = 129.5 KES)</div>
-                </div>
-
-                {marketPrice && (
-                  <div className="border-t border-white/20 pt-3">
-                    <div className="text-xs text-gray-400">Market Price at Profit</div>
-                    <div className="text-lg font-bold text-white">{marketPrice.toFixed(5)}</div>
+                <div className="bg-white/10 rounded-lg p-6 space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-4xl font-bold text-green-400">+${tpAmount.toFixed(2)}</span>
                   </div>
-                )}
-              </div>
+                  <div className="text-sm text-gray-300">Total Profit (USD)</div>
 
-              <Button
-                onClick={() => setShowTPPopup(false)}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3"
-              >
-                Close
-              </Button>
+                  <div className="border-t border-white/20 pt-3">
+                    <div className="text-2xl font-bold text-green-400">+KES {(tpAmount * 129.5).toFixed(2)}</div>
+                    <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = 129.5 KES)</div>
+                  </div>
+
+                  {marketPrice && (
+                    <div className="border-t border-white/20 pt-3">
+                      <div className="text-xs text-gray-400">Market Price at Profit</div>
+                      <div className="text-lg font-bold text-white">{marketPrice.toFixed(5)}</div>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={() => setShowTPPopup(false)}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <TradeResultModal
         isOpen={showResultModal}

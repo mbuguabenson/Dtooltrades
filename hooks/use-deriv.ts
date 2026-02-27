@@ -19,7 +19,7 @@ export interface ConnectionLog {
   type: "info" | "error" | "warning"
 }
 
-export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
+export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 1000) {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">(
     "reconnecting",
   )
@@ -40,8 +40,10 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
   const predictorRef = useRef<AIPredictor | null>(null)
   const subscriptionIdRef = useRef<string | null>(null)
   const tickCallbackRef = useRef<((tick: any) => void) | null>(null)
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
+    let isMounted = true
     if (typeof window === "undefined") return
 
     wsRef.current = DerivWebSocketManager.getInstance()
@@ -217,21 +219,29 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 100) {
         addLog(`Subscribed to ${symbol} ticks`, "info")
         console.log("[v0] Successfully subscribed with ID:", subscriptionId)
       } catch (error) {
-        console.error("[v0] Failed to connect:", error)
-        setConnectionStatus("disconnected")
-        addLog(`Connection failed: ${error}`, "error")
+        if (isMounted) {
+          console.error("[v0] Failed to connect:", error)
+          setConnectionStatus("disconnected")
+          addLog(`Connection failed: ${error}`, "error")
 
-        setTimeout(() => {
-          console.log("[v0] Attempting to reconnect...")
-          setConnectionStatus("reconnecting")
-          connectAndSubscribe()
-        }, 10000)
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isMounted) {
+              console.log("[v0] Attempting to reconnect...")
+              setConnectionStatus("reconnecting")
+              connectAndSubscribe()
+            }
+          }, 10000)
+        }
       }
     }
 
     connectAndSubscribe()
 
     return () => {
+      isMounted = false
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
       if (subscriptionIdRef.current && wsRef.current) {
         wsRef.current.unsubscribe(subscriptionIdRef.current, tickCallbackRef.current || undefined).catch((error) => {
           console.error("[v0] Cleanup unsubscribe error:", error)

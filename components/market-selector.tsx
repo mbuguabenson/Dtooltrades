@@ -80,12 +80,12 @@ export function MarketSelector({ symbols, currentSymbol, onSymbolChange, theme =
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={`w-full min-w-[120px] sm:min-w-[220px] h-8 sm:h-10 py-1 sm:py-2 px-2 sm:px-4 rounded-lg sm:rounded-xl justify-between transition-all duration-300 ${theme === "dark"
+          className={`w-full min-w-[120px] sm:min-w-[220px] h-8 sm:h-10 py-1 sm:py-2 px-2 sm:px-4 rounded-lg sm:rounded-xl flex items-center justify-between transition-all duration-300 overflow-hidden ${theme === "dark"
             ? "bg-blue-500/5 border-blue-500/20 text-white hover:bg-blue-500/10 hover:border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
             : "bg-blue-50 border-blue-200 text-slate-900 hover:bg-blue-100"
             }`}
         >
-          <div className="flex flex-col items-start min-w-0 flex-1">
+          <div className="flex flex-col items-start min-w-0 flex-1 overflow-hidden">
             <span className={`text-[6px] sm:text-[9px] font-black uppercase tracking-[0.2em] mb-0 hidden xs:block ${theme === "dark" ? "text-blue-400/80" : "text-blue-600"}`}>
               Market
             </span>

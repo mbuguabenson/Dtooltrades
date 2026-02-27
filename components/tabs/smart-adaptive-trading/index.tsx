@@ -118,19 +118,19 @@ export default function SmartAdaptiveTradingTab({
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-12 gap-4 p-4 lg:p-6 bg-[#030712] min-h-screen text-slate-200 font-sans selection:bg-sky-500/30"
+            className="grid grid-cols-12 gap-2 sm:gap-4 p-2 sm:p-4 lg:p-6 bg-[#030712] min-h-screen text-slate-200 font-sans selection:bg-sky-500/30"
         >
             {/* --- TOP STATUS HUD --- */}
             <motion.div variants={itemVariants} className="col-span-12 flex flex-col xl:flex-row items-stretch gap-4">
-                <div className="flex-1 flex items-center gap-6 p-6 rounded-[2rem] bg-slate-900/40 border border-slate-800/50 backdrop-blur-2xl shadow-2xl relative overflow-hidden group">
+                <div className="flex-1 flex items-center gap-3 sm:gap-6 p-3 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-900/40 border border-slate-800/50 backdrop-blur-2xl shadow-2xl relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-r from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
                     <div className="relative">
-                        <div className={`w-24 h-24 rounded-3xl flex flex-col items-center justify-center border-2 transition-all duration-700 ${currentMarketInfo?.state === 'Structured' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.2)]' :
+                        <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center border-2 transition-all duration-700 ${currentMarketInfo?.state === 'Structured' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.2)]' :
                             currentMarketInfo?.state === 'Transitional' ? 'bg-amber-500/10 border-amber-500 text-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.2)]' :
                                 'bg-rose-500/10 border-rose-500 text-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.2)]'
                             }`}>
-                            <span className="text-4xl font-black mb-1">{currentMarketInfo?.lastDigit ?? '-'}</span>
+                            <span className="text-2xl sm:text-4xl font-black mb-0.5 sm:mb-1">{currentMarketInfo?.lastDigit ?? '-'}</span>
                             <span className="text-[10px] uppercase font-bold tracking-tighter opacity-70">LAST DIGIT</span>
                         </div>
                         <motion.div
@@ -141,12 +141,12 @@ export default function SmartAdaptiveTradingTab({
                     </div>
 
                     <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                            <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                            <h2 className="text-xl sm:text-3xl font-black tracking-tighter text-white uppercase italic">
                                 {selectedMarket.replace('_', ' ')}
-                                <span className="text-sky-500 ml-1">.IDX</span>
+                                <span className="text-sky-500 ml-0.5 sm:ml-1">.IDX</span>
                             </h2>
-                            <Badge className={`px-4 py-1 rounded-full text-[10px] font-black border-none shadow-lg ${currentMarketInfo?.state === 'Structured' ? 'bg-emerald-500 text-white' :
+                            <Badge className={`px-2 sm:px-4 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-black border-none shadow-lg ${currentMarketInfo?.state === 'Structured' ? 'bg-emerald-500 text-white' :
                                 currentMarketInfo?.state === 'Transitional' ? 'bg-amber-500 text-black' :
                                     'bg-rose-500 text-white'
                                 }`}>
@@ -155,9 +155,9 @@ export default function SmartAdaptiveTradingTab({
                         </div>
                         <div className="flex items-center gap-6">
                             <div className="flex items-center gap-2">
-                                <Activity className="w-4 h-4 text-sky-400" />
-                                <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">Confidence:</span>
-                                <span className="text-xl font-mono font-bold text-white leading-none">{currentMarketInfo?.score ?? 0}%</span>
+                                <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-sky-400" />
+                                <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest">Conf:</span>
+                                <span className="text-lg sm:text-xl font-mono font-bold text-white leading-none">{currentMarketInfo?.score ?? 0}%</span>
                             </div>
                             <div className="h-6 w-[1px] bg-slate-800" />
                             <div className="flex items-center gap-2">
@@ -169,10 +169,10 @@ export default function SmartAdaptiveTradingTab({
                     </div>
                 </div>
 
-                <div className="xl:w-80 p-6 rounded-[2rem] bg-slate-900/40 border border-slate-800/50 backdrop-blur-2xl flex flex-col justify-center">
+                <div className="xl:w-80 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-900/40 border border-slate-800/50 backdrop-blur-2xl flex flex-col justify-center">
                     <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-black mb-2">Quant Balance</p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-mono font-black text-white hover:text-sky-400 transition-colors cursor-default">
+                        <span className="text-2xl sm:text-3xl font-mono font-black text-white hover:text-sky-400 transition-colors cursor-default">
                             {balance ? (balance.amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "---.--"}
                         </span>
                         <span className="text-sky-500 font-black italic">{balance?.currency || ""}</span>
@@ -191,7 +191,7 @@ export default function SmartAdaptiveTradingTab({
 
             {/* --- ADAPTIVE GRID --- */}
             <div className="col-span-12 xl:col-span-3 space-y-4">
-                <Card className="bg-slate-900/40 border-slate-800/50 p-6 rounded-[2rem] backdrop-blur-xl h-full shadow-2xl overflow-hidden relative group">
+                <Card className="bg-slate-900/40 border-slate-800/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] backdrop-blur-xl h-full shadow-2xl overflow-hidden relative group">
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
                             <Search className="w-4 h-4 text-sky-400" /> Market Intelligence
@@ -234,7 +234,7 @@ export default function SmartAdaptiveTradingTab({
 
             <div className="col-span-12 xl:col-span-6 space-y-4">
                 {/* ACTIVE COMMAND PANEL */}
-                <Card className={`relative p-8 rounded-[3rem] border transition-all duration-700 overflow-hidden ${topSignal?.entryStatus === 'Confirmed'
+                <Card className={`relative p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] border transition-all duration-700 overflow-hidden ${topSignal?.entryStatus === 'Confirmed'
                     ? 'bg-emerald-500/5 border-emerald-500 shadow-[0_0_60px_rgba(16,185,129,0.15)]'
                     : 'bg-slate-900/40 border-slate-800/50'
                     }`}>
@@ -275,7 +275,7 @@ export default function SmartAdaptiveTradingTab({
                                         initial={{ x: -20, opacity: 0 }}
                                         animate={{ x: 0, opacity: 1 }}
                                         transition={{ delay: idx * 0.1 }}
-                                        className={`p-6 rounded-[2rem] border transition-all duration-500 ${signal.entryStatus === 'Confirmed'
+                                        className={`p-4 sm:p-6 rounded-xl sm:rounded-[2rem] border transition-all duration-500 ${signal.entryStatus === 'Confirmed'
                                             ? 'bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
                                             : 'bg-slate-950/40 border-slate-800'
                                             }`}
@@ -288,7 +288,7 @@ export default function SmartAdaptiveTradingTab({
                                                     </Badge>
                                                     <span className="text-[10px] font-black text-sky-500/70 uppercase tracking-widest">{signal.type}</span>
                                                 </div>
-                                                <div className="text-3xl font-black text-white italic tracking-tighter">
+                                                <div className="text-xl sm:text-3xl font-black text-white italic tracking-tighter">
                                                     TARGET BARRIER: <span className="text-sky-500 not-italic ml-2">{signal.barrier}</span>
                                                 </div>
                                                 <p className="text-xs text-slate-400 mt-2 font-medium">{signal.description}</p>
@@ -302,15 +302,15 @@ export default function SmartAdaptiveTradingTab({
                                                 <Button
                                                     onClick={() => tradeOnce(signal)}
                                                     disabled={signal.entryStatus !== 'Confirmed'}
-                                                    className={`h-16 px-8 rounded-2xl font-black italic shadow-xl transition-all ${signal.entryStatus === 'Confirmed'
+                                                    className={`h-12 sm:h-16 px-6 sm:px-8 rounded-xl sm:rounded-2xl font-black italic shadow-xl transition-all ${signal.entryStatus === 'Confirmed'
                                                         ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                                                         : 'bg-slate-800 text-slate-500 cursor-not-allowed border-none'
                                                         }`}
                                                 >
                                                     {signal.entryStatus === 'Confirmed' ? (
-                                                        <><Zap className="w-5 h-5 mr-3" /> MANUAL STRIKE</>
+                                                        <><Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" /> MANUAL STRIKE</>
                                                     ) : (
-                                                        <><Lock className="w-5 h-5 mr-3" /> LOCKED</>
+                                                        <><Lock className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" /> LOCKED</>
                                                     )}
                                                 </Button>
                                             </div>
@@ -334,7 +334,7 @@ export default function SmartAdaptiveTradingTab({
                 </Card>
 
                 {/* NEURAL PROTOCOL (AnalysisEngine) */}
-                <Card className="bg-slate-900/40 border-slate-800/50 p-8 rounded-[3rem] backdrop-blur-xl shadow-2xl mt-4">
+                <Card className="bg-slate-900/40 border-slate-800/50 p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] backdrop-blur-xl shadow-2xl mt-4">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-sky-400 mb-8 flex items-center gap-2">
                         <Globe className="w-4 h-4 text-sky-500" /> Global Neural Protocol
                     </h3>
@@ -362,7 +362,7 @@ export default function SmartAdaptiveTradingTab({
                 </Card>
 
                 {/* PATTERN HUD */}
-                <Card className="bg-slate-900/40 border-slate-800/50 p-8 rounded-[3rem] backdrop-blur-xl shadow-2xl">
+                <Card className="bg-slate-900/40 border-slate-800/50 p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] backdrop-blur-xl shadow-2xl">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 flex items-center gap-2">
                         <Brain className="w-4 h-4 text-purple-500" /> Neural Pattern Stream
                     </h3>
@@ -377,7 +377,7 @@ export default function SmartAdaptiveTradingTab({
                                         initial={{ scale: 0.9, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ delay: idx * 0.1 }}
-                                        className="p-6 rounded-[2rem] bg-slate-950/50 border border-slate-800/50 group relative hover:border-sky-500/30 transition-all"
+                                        className="p-4 sm:p-6 rounded-xl sm:rounded-[2rem] bg-slate-950/50 border border-slate-800/50 group relative hover:border-sky-500/30 transition-all"
                                     >
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-3">
@@ -402,7 +402,7 @@ export default function SmartAdaptiveTradingTab({
 
             <div className="col-span-12 xl:col-span-3 space-y-4">
                 {/* AUTO ENGINE RE-DESIGN */}
-                <Card className="bg-slate-900/40 border-slate-800/50 p-8 rounded-[2rem] backdrop-blur-xl h-full shadow-2xl flex flex-col">
+                <Card className="bg-slate-900/40 border-slate-800/50 p-4 sm:p-8 rounded-2xl sm:rounded-[2rem] backdrop-blur-xl h-full shadow-2xl flex flex-col">
                     <div className="flex items-center justify-between mb-8">
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2 italic">
                             Quant Engine
@@ -422,7 +422,7 @@ export default function SmartAdaptiveTradingTab({
                                     type="number"
                                     value={stake}
                                     onChange={(e) => setStake(parseFloat(e.target.value))}
-                                    className="bg-slate-950/80 border-slate-800 h-14 rounded-2xl font-mono font-black text-lg focus:ring-sky-500 border-none pl-10"
+                                    className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-mono font-black text-base sm:text-lg focus:ring-sky-500 border-none pl-10"
                                 />
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
                             </div>
@@ -435,7 +435,7 @@ export default function SmartAdaptiveTradingTab({
                                     type="number"
                                     value={tp}
                                     onChange={(e) => setTp(parseFloat(e.target.value))}
-                                    className="bg-slate-950/80 border-slate-800 h-14 rounded-2xl font-mono font-black border-none text-center"
+                                    className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-mono font-black border-none text-center text-sm sm:text-base"
                                 />
                             </div>
                             <div>
@@ -444,7 +444,7 @@ export default function SmartAdaptiveTradingTab({
                                     type="number"
                                     value={sl}
                                     onChange={(e) => setSl(parseFloat(e.target.value))}
-                                    className="bg-slate-950/80 border-slate-800 h-14 rounded-2xl font-mono font-black border-none text-center"
+                                    className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-mono font-black border-none text-center text-sm sm:text-base"
                                 />
                             </div>
                         </div>
@@ -452,7 +452,7 @@ export default function SmartAdaptiveTradingTab({
                         <div>
                             <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Active Strategy Cluster</span>
                             <Select value={selectedStrategy} onValueChange={setSelectedStrategy}>
-                                <SelectTrigger className="bg-slate-950/80 border-slate-800 h-14 rounded-2xl font-black text-xs italic">
+                                <SelectTrigger className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs italic">
                                     <SelectValue placeholder="Select Strategy" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-slate-900 border-slate-800">
@@ -484,7 +484,7 @@ export default function SmartAdaptiveTradingTab({
                     <div className="mt-auto">
                         <Button
                             onClick={tradingStatus?.isAutoTrading ? stopAutoTrade : startAutoTrade}
-                            className={`w-full h-24 rounded-[2rem] text-xl font-black italic tracking-widest shadow-2xl transition-all active:scale-95 group ${tradingStatus?.isAutoTrading
+                            className={`w-full h-16 sm:h-24 rounded-2xl sm:rounded-[2rem] text-lg sm:text-xl font-black italic tracking-widest shadow-2xl transition-all active:scale-95 group ${tradingStatus?.isAutoTrading
                                 ? 'bg-rose-500 hover:bg-rose-600 text-white'
                                 : 'bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-500 hover:from-indigo-600 hover:via-sky-600 hover:to-emerald-600 text-white'
                                 }`}
@@ -505,26 +505,26 @@ export default function SmartAdaptiveTradingTab({
 
             {/* --- BOTTOM HUD & LOGS --- */}
             <motion.div variants={itemVariants} className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <Card className="lg:col-span-4 bg-slate-900/40 border-slate-800/50 p-8 rounded-[3rem] backdrop-blur-xl shadow-2xl overflow-hidden relative group">
+                <Card className="lg:col-span-4 bg-slate-900/40 border-slate-800/50 p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] backdrop-blur-xl shadow-2xl overflow-hidden relative group">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-1000" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-emerald-400" /> Session Vault
                     </h3>
                     <div className="grid grid-cols-2 gap-4 relative z-10">
-                        <div className="p-6 rounded-[2rem] bg-slate-950/60 border border-slate-800 flex flex-col items-center">
+                        <div className="p-4 sm:p-6 rounded-xl sm:rounded-[2rem] bg-slate-950/60 border border-slate-800 flex flex-col items-center">
                             <div className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-2">Portfolio P/L</div>
-                            <div className={`text-4xl font-black tabular-nums italic ${stats?.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <div className={`text-2xl sm:text-4xl font-black tabular-nums italic ${stats?.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {stats?.profit >= 0 ? '+' : ''}${Math.abs(stats?.profit ?? 0).toFixed(2)}
                             </div>
                         </div>
-                        <div className="p-6 rounded-[2rem] bg-slate-950/60 border border-slate-800 flex flex-col items-center">
+                        <div className="p-4 sm:p-6 rounded-xl sm:rounded-[2rem] bg-slate-950/60 border border-slate-800 flex flex-col items-center">
                             <div className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-2">Strike Rate</div>
-                            <div className="text-4xl font-black text-white italic tabular-nums">
+                            <div className="text-2xl sm:text-4xl font-black text-white italic tabular-nums">
                                 {stats ? Math.round((stats.wins / (stats.trades || 1)) * 100) : 0}%
                             </div>
                         </div>
                     </div>
-                    <div className="mt-4 p-6 rounded-[2rem] bg-slate-950/60 border border-slate-800 flex items-center justify-between relative z-10 overflow-hidden">
+                    <div className="mt-4 p-4 sm:p-6 rounded-xl sm:rounded-[2rem] bg-slate-950/60 border border-slate-800 flex items-center justify-between relative z-10 overflow-hidden">
                         <div className="absolute right-0 top-0 p-4 rotate-12 opacity-5 pointer-events-none">
                             <History className="w-24 h-24" />
                         </div>
@@ -542,7 +542,7 @@ export default function SmartAdaptiveTradingTab({
                     </div>
                 </Card>
 
-                <Card className="lg:col-span-8 bg-slate-900/40 border-slate-800/50 p-8 rounded-[3rem] backdrop-blur-xl shadow-2xl flex flex-col min-h-[300px] group overflow-hidden">
+                <Card className="lg:col-span-8 bg-slate-900/40 border-slate-800/50 p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] backdrop-blur-xl shadow-2xl flex flex-col min-h-[300px] group overflow-hidden">
                     <div className="flex items-center justify-between mb-8">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 flex items-center gap-2">
                             <Terminal className="w-4 h-4 text-sky-400" /> Neural System Stream
@@ -553,7 +553,7 @@ export default function SmartAdaptiveTradingTab({
                             <div className="w-2 h-2 rounded-full bg-emerald-500/50" />
                         </div>
                     </div>
-                    <div className="flex-1 bg-black/60 rounded-[2rem] border border-slate-800/50 p-6 font-mono text-[10px] overflow-y-auto max-h-[220px] scrollbar-hide selection:bg-sky-500/50">
+                    <div className="flex-1 bg-black/60 rounded-xl sm:rounded-[2rem] border border-slate-800/50 p-3 sm:p-6 font-mono text-[9px] sm:text-[10px] overflow-y-auto max-h-[220px] scrollbar-hide selection:bg-sky-500/50">
                         <div className="flex flex-col gap-2">
                             {logs.map((log, i) => (
                                 <motion.div

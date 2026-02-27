@@ -9,6 +9,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  devIndicators: {
+    staticRouteIndicator: false,
+    buildActivity: false,
+  },
 }
 
 export default nextConfig

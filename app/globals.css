@@ -6,19 +6,23 @@
 
 :root {
   /* Revamped Premium Color Tokens */
-  --background: oklch(0.05 0.01 240); /* Deep Midnight Blue */
+  --background: oklch(0.05 0.01 240);
+  /* Deep Midnight Blue */
   --foreground: oklch(0.98 0 0);
   --card: oklch(0.1 0.02 240);
   --card-foreground: oklch(0.98 0 0);
   --popover: oklch(0.1 0.02 240);
   --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.6 0.2 250); /* Vivid Blue */
+  --primary: oklch(0.6 0.2 250);
+  /* Vivid Blue */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.7 0.15 70); /* Soft Gold */
+  --secondary: oklch(0.7 0.15 70);
+  /* Soft Gold */
   --secondary-foreground: oklch(0.2 0.05 70);
   --muted: oklch(0.2 0.03 240);
   --muted-foreground: oklch(0.7 0.02 240);
-  --accent: oklch(0.6 0.2 300); /* Deep Purple Accent */
+  --accent: oklch(0.6 0.2 300);
+  /* Deep Purple Accent */
   --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.6 0.25 25);
   --destructive-foreground: oklch(1 0 0);
@@ -111,6 +115,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -118,6 +123,7 @@
 
 /* Revamped UI Utilities */
 @layer utilities {
+
   /* Premium Glow Effects */
   .glow-soft-blue {
     box-shadow: 0 0 25px oklch(0.6 0.2 250 / 0.25), inset 0 0 15px oklch(0.6 0.2 250 / 0.1);
@@ -132,21 +138,17 @@
   }
 
   .soft-surface {
-    background: linear-gradient(
-      135deg,
-      rgba(15, 22, 41, 0.4),
-      rgba(26, 35, 53, 0.4)
-    );
+    background: linear-gradient(135deg,
+        rgba(15, 22, 41, 0.4),
+        rgba(26, 35, 53, 0.4));
     backdrop-filter: blur(12px);
     border: 1px solid rgba(59, 130, 246, 0.15);
   }
 
   .soft-card {
-    background: linear-gradient(
-      135deg,
-      rgba(15, 22, 41, 0.6),
-      rgba(26, 35, 53, 0.6)
-    );
+    background: linear-gradient(135deg,
+        rgba(15, 22, 41, 0.6),
+        rgba(26, 35, 53, 0.6));
     backdrop-filter: blur(16px);
     border: 1px solid rgba(59, 130, 246, 0.2);
     border-radius: 0.75rem;
@@ -161,79 +163,99 @@
   .digit-0 {
     @apply bg-linear-to-br from-pink-500 to-pink-600;
   }
+
   .digit-1 {
     @apply bg-linear-to-br from-blue-500 to-blue-600;
   }
+
   .digit-2 {
     @apply bg-linear-to-br from-cyan-500 to-cyan-600;
   }
+
   .digit-3 {
     @apply bg-linear-to-br from-pink-400 to-pink-500;
   }
+
   .digit-4 {
     @apply bg-linear-to-br from-cyan-400 to-cyan-500;
   }
+
   .digit-5 {
     @apply bg-linear-to-br from-blue-400 to-blue-500;
   }
+
   .digit-6 {
     @apply bg-linear-to-br from-red-500 to-red-600;
   }
+
   .digit-7 {
     @apply bg-linear-to-br from-pink-500 to-pink-600;
   }
+
   .digit-8 {
     @apply bg-linear-to-br from-orange-500 to-orange-600;
   }
+
   .digit-9 {
     @apply bg-linear-to-br from-blue-500 to-purple-600;
   }
 
-  /* Responsive text sizing */
+  /* Responsive text sizing - Tightened for Mobile */
   .text-responsive-sm {
+    @apply text-[10px] sm:text-xs md:text-sm;
+  }
+
+  .text-responsive-base {
     @apply text-xs sm:text-sm md:text-base;
   }
-  .text-responsive-base {
+
+  .text-responsive-lg {
     @apply text-sm sm:text-base md:text-lg;
   }
-  .text-responsive-lg {
+
+  .text-responsive-xl {
     @apply text-base sm:text-lg md:text-xl;
   }
-  .text-responsive-xl {
+
+  .text-responsive-2xl {
     @apply text-lg sm:text-xl md:text-2xl;
   }
-  .text-responsive-2xl {
-    @apply text-xl sm:text-2xl md:text-3xl;
-  }
 
-  /* Responsive padding */
+  /* Responsive padding - Tightened for Mobile */
   .p-responsive {
-    @apply p-2 sm:p-3 md:p-4;
-  }
-  .px-responsive {
-    @apply px-2 sm:px-3 md:px-4;
-  }
-  .py-responsive {
-    @apply py-2 sm:py-3 md:py-4;
+    @apply p-1.5 sm:p-2.5 md:p-4;
   }
 
-  /* Responsive gap */
-  .gap-responsive {
-    @apply gap-2 sm:gap-3 md:gap-4;
+  .px-responsive {
+    @apply px-1.5 sm:px-2.5 md:px-4;
   }
+
+  .py-responsive {
+    @apply py-1.5 sm:py-2.5 md:py-4;
+  }
+
+  /* Responsive gap - Tightened for Mobile */
+  .gap-responsive {
+    @apply gap-1.5 sm:gap-2.5 md:gap-4;
+  }
+
   /* Fintech Gradients */
   .gradient-red-crimson {
     @apply bg-linear-to-r from-red-500 to-rose-700;
   }
+
   .gradient-pink-orange {
     @apply bg-linear-to-r from-pink-500 to-orange-400;
   }
+
   .gradient-teal-green {
     @apply bg-linear-to-r from-teal-400 to-emerald-500;
   }
+
   .gradient-blue-indigo {
     @apply bg-linear-to-r from-blue-500 to-indigo-600;
   }
+
   .gradient-cyan-sky {
     @apply bg-linear-to-r from-cyan-400 to-sky-500;
   }
@@ -244,12 +266,14 @@
 }
 
 @keyframes edgeGlowPulse {
+
   0%,
   100% {
     box-shadow:
       0 0 30px rgba(59, 130, 246, 0.3),
       inset 0 0 30px rgba(59, 130, 246, 0.1);
   }
+
   50% {
     box-shadow:
       0 0 50px rgba(34, 211, 238, 0.4),
@@ -258,12 +282,14 @@
 }
 
 @keyframes glowBlue {
+
   0%,
   100% {
     box-shadow:
       0 0 20px rgba(59, 130, 246, 0.3),
       0 0 40px rgba(59, 130, 246, 0.15);
   }
+
   50% {
     box-shadow:
       0 0 30px rgba(59, 130, 246, 0.5),
@@ -275,9 +301,11 @@
   0% {
     transform: translateX(0);
   }
+
   50% {
     transform: translateX(10px);
   }
+
   100% {
     transform: translateX(0);
   }
@@ -287,6 +315,7 @@
   0% {
     height: 0%;
   }
+
   100% {
     height: 100%;
   }
@@ -294,12 +323,14 @@
 
 /* Add card-specific glowing animations */
 @keyframes cardGlowPulse {
+
   0%,
   100% {
     box-shadow:
       0 0 20px rgba(59, 130, 246, 0.2),
       inset 0 0 15px rgba(59, 130, 246, 0.05);
   }
+
   50% {
     box-shadow:
       0 0 40px rgba(34, 211, 238, 0.3),
@@ -308,10 +339,12 @@
 }
 
 @keyframes borderGlowPulse {
+
   0%,
   100% {
     border-color: rgba(59, 130, 246, 0.3);
   }
+
   50% {
     border-color: rgba(34, 211, 238, 0.6);
   }
@@ -338,11 +371,9 @@
   }
 
   .frost-light {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.8),
-      rgba(255, 255, 255, 0.6)
-    );
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.8),
+        rgba(255, 255, 255, 0.6));
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
@@ -358,11 +389,9 @@
 
   /* Fixed circular reference - replaced @apply with direct CSS properties */
   .glow-card {
-    background: linear-gradient(
-      135deg,
-      rgba(59, 130, 246, 0.1),
-      rgba(34, 211, 238, 0.1)
-    );
+    background: linear-gradient(135deg,
+        rgba(59, 130, 246, 0.1),
+        rgba(34, 211, 238, 0.1));
     border: 1px solid rgba(59, 130, 246, 0.2);
     border-radius: 0.75rem;
     box-shadow:

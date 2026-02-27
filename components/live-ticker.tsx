@@ -51,39 +51,39 @@ export function LiveTicker({
   if (compact) {
     return (
       <div
-        className={`relative group overflow-hidden flex flex-wrap items-center h-auto min-h-[40px] sm:min-h-[44px] rounded-xl sm:rounded-2xl transition-all duration-500 border p-0.5 sm:p-1 ${theme === "dark"
-          ? "glass-fintech border-cyan-500/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
-          : "bg-white border-cyan-50 shadow-sm"
+        className={`relative group overflow-hidden flex items-center w-full h-9 sm:h-11 rounded-lg sm:rounded-xl transition-all duration-500 border p-0.5 ${theme === "dark"
+          ? "glass-fintech border-cyan-500/10 bg-black/40 shadow-none"
+          : "bg-white border-cyan-50 shadow-none"
           } ${animatingPrice || animatingDigit ? "border-cyan-400/40" : ""}`}
       >
         {/* Market Selector area */}
-        <div className="flex items-center px-2 sm:px-4 h-8 sm:h-9 bg-white/5 rounded-lg sm:rounded-xl transition-colors overflow-hidden flex-1 sm:flex-none">
+        <div className="flex items-center px-1 sm:px-3 h-full bg-white/5 rounded-md sm:rounded-lg transition-colors overflow-hidden flex-shrink-0 w-[110px] sm:w-auto">
           <div className="w-full">
             {children}
           </div>
         </div>
 
-        {/* Data area - Wraps on mobile if needed */}
-        <div className="flex flex-1 items-center justify-between px-2 sm:px-4 h-8 sm:h-9 gap-2 sm:gap-6 min-w-0">
+        {/* Data area - Strict single row */}
+        <div className="flex flex-1 items-center justify-between px-1.5 sm:px-3 h-full gap-1 sm:gap-4 min-w-0">
 
           {/* Depth/Price Cluster */}
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-3 min-w-0">
             {depthSelector && (
-              <div className="hidden md:block">
+              <div>
                 {depthSelector}
               </div>
             )}
 
-            <div className="flex flex-col min-w-0">
-              <span className={`text-[6px] sm:text-[8px] uppercase tracking-[0.2em] opacity-80 font-black ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-                Spot
+            <div className="flex flex-col min-w-0 justify-center">
+              <span className={`text-[8px] sm:text-[9px] uppercase tracking-wider font-bold leading-none mb-[2px] ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                Market Price
               </span>
               <div
-                className={`text-[10px] sm:text-base md:text-lg font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-1 ${animatingPrice
+                className={`text-sm sm:text-base font-mono font-black tabular-nums leading-none transition-all duration-300 flex items-center gap-0.5 ${animatingPrice
                   ? priceUp
-                    ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                    ? "text-emerald-400"
                     : priceDown
-                      ? "text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,113,0.5)]"
+                      ? "text-rose-400"
                       : "text-white"
                   : theme === "dark"
                     ? "text-white"
@@ -91,7 +91,7 @@ export function LiveTicker({
                   }`}
               >
                 <span className="truncate">{price?.toFixed(5) || "-----.--"}</span>
-                <div className="flex flex-col text-[7px] sm:text-[10px] leading-none shrink-0">
+                <div className="flex flex-col text-[8px] leading-none shrink-0 ml-0.5">
                   {priceUp && <span className="text-emerald-400">▲</span>}
                   {priceDown && <span className="text-rose-400">▼</span>}
                 </div>
@@ -103,19 +103,19 @@ export function LiveTicker({
           <div className="h-5 sm:h-7 w-px bg-cyan-500/10 hidden lg:block" />
 
           {/* Digit Cluster */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <div className="flex flex-col text-right hidden lg:flex">
-              <span className={`text-[7px] sm:text-[8px] uppercase tracking-[0.2em] opacity-70 font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+          <div className="flex items-center gap-1 shrink-0">
+            <div className="flex flex-col text-right hidden lg:flex justify-center">
+              <span className={`text-[8px] uppercase tracking-wider font-bold leading-none mb-[2px] ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
                 Live
               </span>
-              <span className="text-[8px] sm:text-[9px] text-gray-500 font-bold leading-none">Digit</span>
+              <span className="text-[9px] text-gray-500 font-bold leading-none">Digit</span>
             </div>
             <div
-              className={`text-[10px] sm:text-lg font-black w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg sm:rounded-xl transition-all duration-500 ${animatingDigit
-                ? "bg-orange-500/40 text-orange-400 scale-110 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-500/40"
+              className={`text-sm sm:text-base font-black w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-md sm:rounded-lg transition-all duration-300 ${animatingDigit
+                ? "bg-orange-500/20 text-orange-400 scale-105 border border-orange-500/30"
                 : theme === "dark"
-                  ? "bg-slate-900/80 text-orange-500 border border-orange-500/20"
-                  : "bg-slate-50 text-orange-600 border border-orange-200"
+                  ? "bg-slate-900/50 text-orange-500 border border-white/5"
+                  : "bg-slate-50 text-orange-600 border border-gray-200"
                 }`}
             >
               {digit !== null ? digit : "-"}
@@ -123,12 +123,6 @@ export function LiveTicker({
           </div>
         </div>
 
-        {/* Mobile Depth Selector */}
-        {depthSelector && (
-          <div className="w-full md:hidden pt-0.5 pb-0.5 px-2 border-t border-white/5 flex justify-center">
-            {depthSelector}
-          </div>
-        )}
       </div>
     )
   }
@@ -169,7 +163,7 @@ export function LiveTicker({
       <div className="flex-[1.5] flex flex-col justify-center relative sm:px-8 group/price z-10 border-t border-b sm:border-0 border-cyan-500/10 py-2 sm:py-0">
         <div className="absolute inset-0 bg-cyan-500/0 group-hover/price:bg-cyan-500/2 transition-colors duration-300" />
         <h3 className={`text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-black mb-0.5 sm:mb-1 ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>
-          Spot Price Stream
+          Market Price Stream
         </h3>
         <div
           className={`text-xl sm:text-3xl font-mono font-black tabular-nums transition-all duration-300 flex items-center gap-2 ${animatingPrice

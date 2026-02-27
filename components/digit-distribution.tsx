@@ -38,7 +38,6 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
     // Calculate arc length for bottom-centered display (180 degrees max)
     const maxArcLength = circumference / 2 // Half circle
     const arcLength = (freq.percentage / 100) * maxArcLength
-    const arcOffset = circumference - arcLength
 
     const ringColor = getFrequencyColor(digit)
 
@@ -134,11 +133,10 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-8 py-4">
-      {/* 0-4 Row */}
-      <div className="grid grid-cols-5 gap-1 sm:gap-2 justify-items-center">{row1Digits.map(renderDigitCircle)}</div>
-      {/* 5-9 Row */}
-      <div className="grid grid-cols-5 gap-1 sm:gap-2 justify-items-center">{row2Digits.map(renderDigitCircle)}</div>
+    <div className="w-full max-w-4xl mx-auto py-2">
+      <div className="grid grid-cols-5 md:grid-cols-10 gap-2 sm:gap-3 justify-items-center">
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(renderDigitCircle)}
+      </div>
     </div>
   )
 }

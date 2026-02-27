@@ -86,58 +86,12 @@ export function ResponsiveTabs({ children, theme = "dark", value, onValueChange 
   }
 
   return (
-    <>
-      {/* Mobile Dropdown View */}
-      <div className="sm:hidden px-2 py-2">
-        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className={`w-full flex items-center justify-between text-xs font-medium h-9 ${theme === "dark"
-                ? "bg-[#0f1629]/80 border-green-500/30 text-white hover:bg-[#1a2235]"
-                : "bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
-                }`}
-            >
-              <span className="capitalize truncate">{getTabLabel(selectedTab)}</span>
-              <ChevronDown className="h-3 w-3 ml-2 flex-shrink-0" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="center"
-            className={`w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto ${theme === "dark" ? "bg-[#0a0e27] border-green-500/30" : "bg-white border-gray-300"}`}
-          >
-            {React.Children.map(children, (child) => {
-              if (React.isValidElement(child)) {
-                const tabValue = (child.props as any).value
-                const tabLabel = (child.props as any).children
-                return (
-                  <DropdownMenuItem
-                    key={tabValue}
-                    onClick={() => handleTabClick(tabValue)}
-                    className={`cursor-pointer py-2.5 text-xs ${selectedTab === tabValue
-                      ? theme === "dark"
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-green-100 text-green-700"
-                      : ""
-                      }`}
-                  >
-                    {tabLabel}
-                  </DropdownMenuItem>
-                )
-              }
-              return null
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <TabsList
-        ref={tabsListRef}
-        className={`hidden sm:flex w-full justify-start bg-transparent border-0 h-auto p-0 gap-0 overflow-x-auto flex-nowrap scrollbar-thin scrollbar-thumb-green-500/50 scrollbar-track-transparent ${theme === "dark" ? "border-green-500/20" : "border-gray-200"
-          }`}
-      >
-        {children}
-      </TabsList>
-    </>
+    <TabsList
+      ref={tabsListRef}
+      className={`flex w-full justify-start bg-transparent border-0 h-auto p-1 overflow-x-auto flex-nowrap scrollbar-none sm:scrollbar-thin scrollbar-thumb-emerald-500/50 hover:scrollbar-thumb-emerald-500/70 scrollbar-track-transparent ${theme === "dark" ? "" : ""
+        }`}
+    >
+      {children}
+    </TabsList>
   )
 }
