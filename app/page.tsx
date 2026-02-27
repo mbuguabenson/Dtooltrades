@@ -157,11 +157,11 @@ export default function DerivAnalysisApp() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col overflow-x-hidden ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
+      className={`min-h-screen flex flex-col ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col relative">
         <header
-          className={`sticky top-0 z-[60] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
+          className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
             ? "bg-[#050505]/90 border-white/5"
             : "bg-white/95 border-gray-100"
             } backdrop-blur-xl`}
@@ -272,7 +272,7 @@ export default function DerivAnalysisApp() {
           </div>
         </header>
 
-        <main className="flex-1 py-1 sm:py-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
+        <main className="flex-1 pt-[100px] sm:pt-[110px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
           {connectionStatus !== "connected" ? (
             <div className="text-center py-12 sm:py-20 md:py-32">
               <h2

@@ -62,93 +62,82 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
       )}
 
       {isLoggedIn && (
-        <div className="flex items-center space-x-1.5 sm:space-x-3">
-          <div
-            className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border transition-all ${theme === "dark"
-              ? "bg-slate-900/50 border-blue-500/10 shadow-[inner_0_0_10px_rgba(59,130,246,0.05)]"
-              : "bg-slate-50 border-slate-200"
-              }`}
-          >
-            {/* Account Info Badge */}
-            <div className="flex flex-col">
-              <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-slate-500" : "text-slate-400"}`}>
-                Identity
-              </span>
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <Badge className={`h-3.5 sm:h-4 px-0.5 sm:px-1 text-[8px] sm:text-[9px] font-bold ${accountType === "Real" ? "bg-emerald-500 text-black" : "bg-yellow-500 text-black"
-                  }`}>
-                  {accountType === "Real" ? "R" : "D"}
-                </Badge>
-                <span className={`text-[10px] sm:text-xs font-black tabular-nums ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                  {accountCode}
-                </span>
-              </div>
-            </div>
-
-            <div className={`w-px h-5 sm:h-6 ${theme === "dark" ? "bg-slate-800" : "bg-slate-200"}`} />
-
-            {/* Balance Badge */}
-            <div className="flex flex-col min-w-[80px]">
-              <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-wider ${theme === "dark" ? "text-slate-500" : "text-slate-400"}`}>
-                Capital
-              </span>
-              {balance ? (
-                <span className={`text-[10px] sm:text-xs font-black tabular-nums ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"}`}>
-                  {Number(balance.amount).toFixed(2)} <span className="hidden xs:inline">{balance.currency}</span>
-                </span>
-              ) : (
-                <span className={`text-[10px] sm:text-xs font-bold animate-pulse ${theme === "dark" ? "text-slate-600" : "text-slate-400"}`}>
-                  Syncing...
-                </span>
-              )}
-            </div>
-
-            {accounts.length > 1 && (
-              <Select value={activeLoginId || ""} onValueChange={switchAccount}>
-                <SelectTrigger
-                  className={`w-32 sm:w-40 h-7 sm:h-8 text-[9px] sm:text-[10px] font-bold rounded-lg ${theme === "dark" ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-900"}`}
-                >
-                  <SelectValue placeholder="Switch" />
-                </SelectTrigger>
-                <SelectContent className={theme === "dark" ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-200"}>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id} className="text-[9px] sm:text-[10px] font-bold">
-                      <div className="flex flex-col">
-                        <span className="flex items-center gap-1">
-                          {acc.id}
-                          <Badge className={`h-3 px-1 text-[8px] ${acc.type === "Real" ? "bg-emerald-500 text-black" : "bg-yellow-500 text-black"}`}>
-                            {acc.type}
-                          </Badge>
-                        </span>
-                        <span className={`text-[8px] sm:text-[9px] ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"}`}>
-                          {acc.balance.toFixed(2)} {acc.currency}
-                        </span>
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          {accounts.length > 0 ? (
+            <Select value={activeLoginId || ""} onValueChange={switchAccount}>
+              <SelectTrigger
+                className={`flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-transparent shadow-none focus:ring-0 transition-all min-w-[120px] ${theme === "dark"
+                  ? "bg-white/5 hover:bg-white/10 text-white"
+                  : "bg-black/5 hover:bg-black/10 text-slate-900"
+                  }`}
+              >
+                <div className="flex items-center gap-1.5 sm:gap-2 font-bold text-[10px] sm:text-xs">
+                  {accountType === "Demo" || accountCode?.startsWith('VRTC') ? (
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-[9px] sm:text-[10px] font-black shrink-0">
+                      D
+                    </div>
+                  ) : balance?.currency === "USD" ? (
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs overflow-hidden shrink-0 bg-blue-50/10">
+                      <span className="scale-[1.2] -mt-[1px]">🇺🇸</span>
+                    </div>
+                  ) : (
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] sm:text-[10px] font-black shrink-0">
+                      {balance?.currency?.charAt(0) || "R"}
+                    </div>
+                  )}
+                  {balance ? (
+                    <span className="min-w-[60px] text-left">
+                      {Number(balance.amount).toFixed(2)} {balance.currency}
+                    </span>
+                  ) : (
+                    <span className="animate-pulse opacity-50 min-w-[60px] text-left">Syncing...</span>
+                  )}
+                </div>
+              </SelectTrigger>
+              <SelectContent className={`min-w-[160px] ${theme === "dark" ? "bg-[#0a0e27] border-white/5 text-white" : "bg-white border-gray-200"}`}>
+                {accounts.map((acc) => {
+                  const isDemo = acc.type === "Demo" || acc.id.startsWith("VRTC")
+                  const isUSD = acc.currency === "USD"
+                  return (
+                    <SelectItem key={acc.id} value={acc.id} className="cursor-pointer py-2">
+                      <div className="flex items-center gap-2">
+                        {isDemo ? (
+                          <div className="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-black shrink-0">
+                            D
+                          </div>
+                        ) : isUSD ? (
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[12px] overflow-hidden shrink-0 bg-blue-50/10">
+                            <span className="scale-[1.2] -mt-[1px]">🇺🇸</span>
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">
+                            {acc.currency?.charAt(0) || "R"}
+                          </div>
+                        )}
+                        <div className="flex flex-col text-left">
+                          <span className={`text-[9px] leading-tight ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>{acc.id}</span>
+                          <span className="text-xs font-bold">{acc.balance.toFixed(2)} {acc.currency}</span>
+                        </div>
                       </div>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <Avatar
-            className="cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all w-8 h-8 sm:w-10 sm:h-10 border-2 border-slate-800"
-            onClick={openDerivAccount}
-            title="Deriv Account Settings"
-          >
-            <AvatarImage
-              src={`https://ui-avatars.com/api/?name=${activeLoginId || "User"}&background=3b82f6&color=fff&bold=true`}
-            />
-            <AvatarFallback className="bg-slate-800">
-              <User className="text-blue-400" size={14} />
-            </AvatarFallback>
-          </Avatar>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className={`px-4 h-8 sm:h-9 flex items-center rounded-full text-xs font-bold animate-pulse ${theme === "dark" ? "bg-white/5 text-white" : "bg-black/5 text-slate-900"}`}>
+              Fetching...
+            </div>
+          )}
 
           <Button
             onClick={logout}
             variant="ghost"
             size="icon"
-            className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+            className={`h-8 w-8 sm:h-9 sm:w-9 rounded-full transition-all ${theme === "dark"
+              ? "text-rose-500 hover:text-white hover:bg-rose-500"
+              : "text-rose-600 hover:text-white hover:bg-rose-500"
+              }`}
             title="Secure Logout"
           >
             <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
