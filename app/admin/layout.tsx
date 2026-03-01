@@ -3,24 +3,29 @@
 import React, { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { Bell, Search, User, LogOut } from "lucide-react"
+import { Bell, Search, User, LogOut, LayoutDashboard, Users, BarChart3, Receipt, Settings, Terminal, Zap } from "lucide-react"
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from "@/components/ui/command"
 
 export default function AdminLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const [open, setOpen] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const router = useRouter()
     const pathname = usePathname()
 
     useEffect(() => {
-        // Simple client-side session check
-        const hasSession = document.cookie.includes("admin_session=true")
-        if (!hasSession && pathname !== "/admin/login") {
-            router.push("/admin/login")
+        const down = (e: KeyboardEvent) => {
+            if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                setOpen((open) => !open)
+            }
         }
-    }, [pathname, router])
+        document.addEventListener("keydown", down)
+        return () => document.removeEventListener("keydown", down)
+    }, [])
 
     if (pathname === "/admin/login") {
         return <>{children}</>
@@ -46,11 +51,15 @@ export default function AdminLayout({
                     <div className="flex items-center gap-6">
                         <div className="relative group hidden md:block">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-                            <input
-                                type="text"
-                                placeholder="Quick Search... (Ctrl+K)"
-                                className="bg-white/5 border border-white/10 rounded-lg py-1.5 pl-10 pr-4 text-sm w-64 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                            />
+                            <button
+                                onClick={() => setOpen(true)}
+                                className="bg-white/5 border border-white/10 rounded-lg py-1.5 pl-10 pr-4 text-sm w-64 text-left text-gray-400 hover:border-blue-500/50 hover:bg-white/10 transition-all flex items-center justify-between"
+                            >
+                                <span>Quick Search...</span>
+                                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-white/10 px-1.5 font-mono text-[10px] font-medium text-gray-500 opacity-100">
+                                    <span className="text-xs">Ctrl</span>K
+                                </kbd>
+                            </button>
                         </div>
 
                         <button className="relative group p-2 hover:bg-white/5 rounded-lg transition-colors">
@@ -85,6 +94,76 @@ export default function AdminLayout({
                     {children}
                 </main>
             </div>
+
+            {/* Global Command Menu */}
+            <CommandDialog open={open} onOpenChange={setOpen}>
+                <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                    <CommandInput placeholder="Type a command or search..." className="border-none focus:ring-0 text-white" />
+                    <CommandList className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <CommandEmpty className="py-6 text-center text-sm text-gray-500">No results found.</CommandEmpty>
+                        <CommandGroup heading="Navigation" className="text-gray-500 px-2 py-3">
+                            <CommandItem onSelect={() => { router.push("/admin"); setOpen(false) }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer group">
+                                <LayoutDashboard className="h-4 w-4 text-blue-500" />
+                                <span className="text-white font-bold">Dashboard</span>
+                                <CommandShortcut className="text-gray-600 font-mono">G D</CommandShortcut>
+                            </CommandItem>
+                            <CommandItem onSelect={() => { router.push("/admin/users"); setOpen(false) }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer group">
+                                <Users className="h-4 w-4 text-emerald-500" />
+                                <span className="text-white font-bold">Manage Users</span>
+                                <CommandShortcut className="text-gray-600 font-mono">G U</CommandShortcut>
+                            </CommandItem>
+                            <CommandItem onSelect={() => { router.push("/admin/analytics"); setOpen(false) }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer group">
+                                <BarChart3 className="h-4 w-4 text-purple-500" />
+                                <span className="text-white font-bold">Platform Analytics</span>
+                                <CommandShortcut className="text-gray-600 font-mono">G A</CommandShortcut>
+                            </CommandItem>
+                            <CommandItem onSelect={() => { router.push("/admin/transactions"); setOpen(false) }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer group">
+                                <Receipt className="h-4 w-4 text-orange-500" />
+                                <span className="text-white font-bold">Financial History</span>
+                                <CommandShortcut className="text-gray-600 font-mono">G T</CommandShortcut>
+                            </CommandItem>
+                        </CommandGroup>
+                        <CommandSeparator className="bg-white/5" />
+                        <CommandGroup heading="Settings" className="text-gray-500 px-2 py-3">
+                            <CommandItem onSelect={() => { router.push("/admin/settings"); setOpen(false) }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer group">
+                                <Settings className="h-4 w-4 text-gray-400" />
+                                <span className="text-white font-bold">Open Settings</span>
+                                <CommandShortcut className="text-gray-600 font-mono">G S</CommandShortcut>
+                            </CommandItem>
+                            <CommandItem onSelect={async () => {
+                                // Toggle Maintenance via API
+                                try {
+                                    const res = await fetch("/api/admin/site-config")
+                                    const config = await res.json()
+                                    await fetch("/api/admin/site-config", {
+                                        method: "PATCH",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ maintenanceMode: !config.maintenanceMode }),
+                                    })
+                                    router.refresh()
+                                    setOpen(false)
+                                } catch (e) {
+                                    console.error("Command toggle failed", e)
+                                }
+                            }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer group">
+                                <Terminal className="h-4 w-4 text-amber-500" />
+                                <span className="text-white font-bold">Toggle Maintenance Mode</span>
+                            </CommandItem>
+                        </CommandGroup>
+                        <CommandSeparator className="bg-white/5" />
+                        <CommandGroup heading="System" className="text-gray-500 px-2 py-3">
+                            <CommandItem onSelect={() => {
+                                document.cookie = "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+                                router.push("/admin/login")
+                                setOpen(false)
+                            }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-rose-500/10 cursor-pointer group">
+                                <LogOut className="h-4 w-4 text-rose-500" />
+                                <span className="text-rose-500 font-bold">Logout Session</span>
+                            </CommandItem>
+                        </CommandGroup>
+                    </CommandList>
+                </div>
+            </CommandDialog>
         </div>
     )
 }

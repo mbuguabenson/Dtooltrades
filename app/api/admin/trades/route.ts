@@ -1,11 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { tradeStore } from "@/lib/user-store"
 
 export async function GET() {
     try {
-        const trades = [
-            { id: 101, loginId: "VRTC1001", market: "R_100", contractType: "CALL", stake: 10.5, status: "closed", profitLoss: 8.4 },
-            { id: 102, loginId: "CR6662024", market: "R_50", contractType: "PUT", stake: 25.0, status: "open", profitLoss: 0 }
-        ]
+        const trades = tradeStore().slice(-50).reverse() // Last 50 trades
         return NextResponse.json({ trades })
     } catch (error) {
         console.error("[Admin API] Error fetching trades:", error)

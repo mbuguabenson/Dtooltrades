@@ -47,13 +47,13 @@ export default function AdminTransactionsPage() {
         fetchTransactions()
     }, [])
 
-    const totalDeposits = transactions.length * 100 // Mock aggregated for UI
-    const totalWithdrawals = transactions.length * 20 // Mock aggregated for UI
+    const totalDeposits = transactions.filter(tx => tx.type === "Deposit" || tx.type === "Trade Win").reduce((s, tx) => s + tx.amount, 0)
+    const totalWithdrawals = transactions.filter(tx => tx.type === "Withdrawal" || tx.type === "Trade Loss").reduce((s, tx) => s + tx.amount, 0)
 
     const stats = [
-        { label: "Total Platform Volume", value: `$${(transactions.length * 50).toLocaleString()}`, icon: Banknote, color: "blue" },
-        { label: "Recent Payouts", value: `$${totalWithdrawals.toLocaleString()}`, icon: CreditCard, color: "orange" },
-        { label: "Net Movement", value: `$${(totalDeposits - totalWithdrawals).toLocaleString()}`, icon: Wallet, color: "green" },
+        { label: "Total Platform Volume", value: `$${transactions.reduce((s, tx) => s + tx.amount, 0).toLocaleString()}`, icon: Banknote, color: "blue" },
+        { label: "Recent Movements", value: `$${totalWithdrawals.toLocaleString()}`, icon: CreditCard, color: "orange" },
+        { label: "Net P/L", value: `$${(totalDeposits - totalWithdrawals).toLocaleString()}`, icon: Wallet, color: "green" },
     ]
 
     return (

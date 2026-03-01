@@ -11,10 +11,12 @@ import {
   Activity,
   UserCheck,
   Zap,
-  DollarSign
+  DollarSign,
+  TrendingDown
 } from "lucide-react"
 import { AdminStatsCard } from "@/components/admin/admin-stats-card"
 import { AdminLiveFeed } from "@/components/admin/admin-live-feed"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null)
@@ -97,15 +99,48 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex-1 flex items-center justify-center border-2 border-dashed border-white/5 rounded-2xl bg-white/[0.01]">
-            {/* This would be the real Recharts/Chart.js container */}
-            <div className="text-center group cursor-pointer">
-              <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Activity className="h-8 w-8 text-blue-500" />
+          <div className="flex-1 min-h-[300px]">
+            {stats?.chartData && stats.chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="ts"
+                    hide
+                    domain={['dataMin', 'dataMax']}
+                  />
+                  <YAxis hide />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                  <Tooltip
+                    contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff", fontSize: "12px" }}
+                    labelFormatter={(t) => new Date(t * 1000).toLocaleTimeString()}
+                    formatter={(v: any, name: any) => [typeof v === "number" ? v.toFixed(2) : v || "0.00", name === "profit" ? "P/L" : name]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="profit"
+                    stroke="#3b82f6"
+                    fillOpacity={1}
+                    fill="url(#colorProfit)"
+                    strokeWidth={3}
+                    animationDuration={1500}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center group cursor-pointer">
+                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Activity className="h-8 w-8 text-blue-500" />
+                </div>
+                <p className="text-gray-400 font-bold tracking-tight">Waiting for platform activity...</p>
+                <p className="text-gray-600 text-xs mt-1 lowercase font-mono">real-time analytics engine active</p>
               </div>
-              <p className="text-gray-400 font-bold tracking-tight">Real-time Analytics Engine</p>
-              <p className="text-gray-600 text-xs mt-1 lowercase font-mono">connecting to websocket stream...</p>
-            </div>
+            )}
           </div>
 
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/5">
@@ -140,54 +175,35 @@ export default function AdminDashboard() {
 
       {/* Bottom Section: Top Traders & Wallet Snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-8">
-        <div className="bg-[#0a0a0a] rounded-3xl border border-white/5 p-6 backdrop-blur-xl">
-          <h3 className="text-lg font-bold text-white mb-6">Top Traders</h3>
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-900 border border-white/10 flex items-center justify-center font-bold">
-                    {["AW", "SJ", "MK"][i - 1]}
+        <div className="bg-[#0a0a0a] rounded-3xl border border-white/5 p-6 backdrop-blur-xl lg:col-span-3">
+          <h3 className="text-lg font-bold text-white mb-6">Top Performing Traders</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {stats?.topTraders && stats.topTraders.length > 0 ? (
+              stats.topTraders.map((trader: any, idx: number) => (
+                <div key={trader.loginId} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center font-bold text-blue-400">
+                      {trader.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[100px]">{trader.name}</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest">{trader.loginId}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">{["Alex_Wolf", "Sarah_Jones", "Mark_Knight"][i - 1]}</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Real Account • USD</p>
+                  <div className="text-right">
+                    <p className={`text-sm font-black ${trader.netPnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      {trader.netPnl >= 0 ? "+" : ""}${trader.netPnl.toFixed(2)}
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase">{trader.wins}/{trader.total} Wins</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-black text-emerald-400">+${[4200, 3100, 2800][i - 1]}</p>
-                  <p className="text-[10px] text-gray-500 font-medium uppercase">{[92, 88, 85][i - 1]}% Win Rate</p>
-                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 rounded-2xl bg-white/[0.01]">
+                <Users className="h-8 w-8 text-gray-700 mx-auto mb-2" />
+                <p className="text-gray-500 font-bold">No trading activity found yet</p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-[#0a0a0a] rounded-3xl border border-white/5 p-6 backdrop-blur-xl">
-          <h3 className="text-lg font-bold text-white mb-6">Asset Allocation</h3>
-          <div className="space-y-6">
-            {[
-              { label: "Equities", value: 42, color: "bg-blue-500", amount: "$44,590.16" },
-              { label: "USDT / Stable", value: 28, color: "bg-emerald-500", amount: "$12,131.11" },
-              { label: "Bitcoin / ETH", value: 15, color: "bg-orange-500", amount: "$9,836.07" },
-              { label: "Others", value: 15, color: "bg-purple-500", amount: "$8,750.00" },
-            ].map((asset, idx) => (
-              <div key={idx}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-bold text-gray-400 flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${asset.color}`} />
-                    {asset.label}
-                  </span>
-                  <span className="text-xs font-black text-white">{asset.amount} <span className="text-gray-500 font-medium font-mono text-[10px]">({asset.value}%)</span></span>
-                </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${asset.color} shadow-[0_0_10px_rgba(37,99,235,0.2)]`}
-                    style={{ width: `${asset.value}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

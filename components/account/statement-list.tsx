@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { RefreshCcw, ArrowUpRight, ArrowDownLeft, ReceiptText, Filter, Calendar, Calculator } from "lucide-react"
+import { RefreshCcw, ArrowUpRight, ArrowDownLeft, ReceiptText, Calendar } from "lucide-react"
 import { format, subDays, subMonths, subYears } from "date-fns"
 
 interface StatementTransaction {
@@ -33,32 +35,30 @@ const QUICK_PRESETS = [
     { label: "2 Years", getRange: () => ({ from: subYears(new Date(), 2), to: new Date() }) },
 ]
 
-const ACTION_COLORS: Record<string, string> = {
-    buy: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-    sell: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-    deposit: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-    withdrawal: "text-rose-400 bg-rose-500/10 border-rose-500/20",
-}
-
 export function StatementList({ theme = "dark" }: StatementListProps) {
     const { apiClient, isAuthorized, activeLoginId } = useDerivAPI()
     const [statement, setStatement] = useState<StatementTransaction[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [typeFilter, setTypeFilter] = useState<string>("all")
-    const [activePreset, setActivePreset] = useState<string>("30 Days")
+    const [activePreset, setActivePreset] = useState("30 Days")
     const [customFrom, setCustomFrom] = useState("")
     const [customTo, setCustomTo] = useState("")
     const [showCustom, setShowCustom] = useState(false)
 
     const fetchStatement = useCallback(async (dateFrom?: number, dateTo?: number) => {
         if (!apiClient || !isAuthorized) return
+
         setIsLoading(true)
         setError(null)
         try {
-            const response = await apiClient.getStatement(500, 0, dateFrom, dateTo)
-            setStatement(response?.transactions ?? [])
+            const response = await apiClient.getStatement(50, 0, dateFrom, dateTo)
+            if (response && response.transactions) {
+                setStatement(response.transactions)
+            } else {
+                setStatement([])
+            }
         } catch (err: any) {
+            console.error("[v0] Error fetching statement:", err)
             setError(err?.message || "Failed to fetch statement")
         } finally {
             setIsLoading(false)
@@ -83,190 +83,172 @@ export function StatementList({ theme = "dark" }: StatementListProps) {
     }
 
     useEffect(() => {
-        // Default: last 30 days
         const from = subDays(new Date(), 30)
         fetchStatement(Math.floor(from.getTime() / 1000))
     }, [fetchStatement, activeLoginId])
 
-    const filtered = useMemo(() => {
-        if (typeFilter === "all") return statement
-        return statement.filter(tx => (tx.action_type || "").toLowerCase() === typeFilter)
-    }, [statement, typeFilter])
+    const formatDate = (timestamp: number) => {
+        return new Date(timestamp * 1000).toLocaleString()
+    }
 
-    const totals = useMemo(() => {
-        const credit = filtered.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0)
-        const debit = filtered.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
-        return { credit, debit, net: credit - debit }
-    }, [filtered])
+    const getActionColor = (action: string) => {
+        switch (action.toLowerCase()) {
+            case "buy": return "text-blue-400"
+            case "sell": return "text-emerald-400"
+            case "deposit": return "text-emerald-500"
+            case "withdrawal": return "text-rose-400"
+            default: return "text-slate-300"
+        }
+    }
 
-    const formatDate = (ts: number) => ts ? new Date(ts * 1000).toLocaleString() : "N/A"
-    const actionColor = (a: string) => ACTION_COLORS[a?.toLowerCase()] || "text-gray-400 bg-white/5 border-white/10"
+    const getAmountColor = (amount: number) => {
+        if (amount > 0) return "text-emerald-400"
+        if (amount < 0) return "text-rose-400"
+        return "text-slate-300"
+    }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header */}
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                            <ReceiptText className="h-5 w-5 text-blue-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-black text-white">Transaction Statement</h3>
-                            <p className="text-[10px] text-gray-600 mt-0.5">{filtered.length} of {statement.length} records</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* Type filter */}
-                        <div className="flex items-center gap-1 bg-white/[0.03] border border-white/5 rounded-xl p-1">
-                            {["all", "buy", "sell", "deposit", "withdrawal"].map(t => (
-                                <button
-                                    key={t}
-                                    onClick={() => setTypeFilter(t)}
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === t ? "bg-blue-500 text-white" : "text-gray-500 hover:text-gray-300"}`}
-                                >
-                                    {t}
-                                </button>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => { const p = QUICK_PRESETS.find(p => p.label === activePreset); if (p) applyPreset(p) }}
-                            disabled={isLoading}
-                            className="w-9 h-9 flex items-center justify-center bg-white/5 border border-white/5 rounded-xl text-gray-500 hover:text-blue-400 transition-all"
-                        >
-                            <RefreshCcw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-                        </button>
-                    </div>
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+                <div className="flex items-center gap-2">
+                    <ReceiptText className="h-5 w-5 text-blue-500" />
+                    <h3 className="text-lg font-bold">Transaction Statement</h3>
                 </div>
-
-                {/* Date presets */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {QUICK_PRESETS.map(p => (
-                        <button
+                        <Button
                             key={p.label}
+                            variant={activePreset === p.label ? "default" : "outline"}
+                            size="sm"
                             onClick={() => applyPreset(p)}
-                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${activePreset === p.label
-                                ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
-                                : "bg-white/[0.02] border-white/5 text-gray-600 hover:text-gray-400 hover:border-white/10"
-                                }`}
+                            className={`h-8 text-[10px] uppercase font-bold tracking-wider ${activePreset === p.label ? "bg-blue-600 hover:bg-blue-700 font-bold" : "border-slate-700/50 hover:bg-slate-800"}`}
                         >
                             {p.label}
-                        </button>
+                        </Button>
                     ))}
-                    <button
+                    <Button
+                        variant={showCustom ? "default" : "outline"}
+                        size="sm"
                         onClick={() => setShowCustom(!showCustom)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${showCustom
-                            ? "bg-purple-500/15 border-purple-500/30 text-purple-400"
-                            : "bg-white/[0.02] border-white/5 text-gray-600 hover:text-gray-400"
-                            }`}
+                        className={`h-8 gap-2 text-[10px] uppercase font-bold tracking-wider ${showCustom ? "bg-blue-600 hover:bg-blue-700" : "border-slate-700/50 hover:bg-slate-800"}`}
                     >
-                        <Calendar className="h-3 w-3 inline mr-1" />
-                        Custom Range
-                    </button>
+                        <Calendar className="h-3 w-3" />
+                        Custom
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { const p = QUICK_PRESETS.find(p => p.label === activePreset); if (p) applyPreset(p) }}
+                        disabled={isLoading}
+                        className="h-8 gap-2 border-slate-700/50 hover:bg-slate-800"
+                    >
+                        <RefreshCcw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
+                        Refresh
+                    </Button>
                 </div>
-
-                {/* Custom date range */}
-                {showCustom && (
-                    <div className="mt-4 flex flex-wrap items-end gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                        <div>
-                            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mb-1">From</p>
-                            <input
-                                type="date"
-                                value={customFrom}
-                                onChange={e => setCustomFrom(e.target.value)}
-                                max={new Date().toISOString().split("T")[0]}
-                                min={format(subYears(new Date(), 2), "yyyy-MM-dd")}
-                                className="bg-[#0a0a0a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
-                            />
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mb-1">To</p>
-                            <input
-                                type="date"
-                                value={customTo}
-                                onChange={e => setCustomTo(e.target.value)}
-                                max={new Date().toISOString().split("T")[0]}
-                                min={customFrom || format(subYears(new Date(), 2), "yyyy-MM-dd")}
-                                className="bg-[#0a0a0a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
-                            />
-                        </div>
-                        <button
-                            onClick={applyCustom}
-                            disabled={!customFrom || !customTo}
-                            className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl disabled:opacity-40 transition-all"
-                        >
-                            Apply
-                        </button>
-                    </div>
-                )}
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-3 gap-4">
-                {[
-                    { label: "Total Credit", value: `+${totals.credit.toFixed(2)}`, color: "text-emerald-400", bg: "from-emerald-600/20 to-emerald-800/10", icon: <ArrowDownLeft className="h-5 w-5 text-emerald-400" /> },
-                    { label: "Total Debit", value: `-${totals.debit.toFixed(2)}`, color: "text-rose-400", bg: "from-rose-600/20 to-rose-800/10", icon: <ArrowUpRight className="h-5 w-5 text-rose-400" /> },
-                    { label: "Net Movement", value: `${totals.net >= 0 ? "+" : ""}${totals.net.toFixed(2)}`, color: totals.net >= 0 ? "text-blue-400" : "text-rose-400", bg: "from-blue-600/20 to-blue-800/10", icon: <Calculator className="h-5 w-5 text-blue-400" /> },
-                ].map((s, i) => (
-                    <div key={i} className={`relative overflow-hidden bg-gradient-to-br ${s.bg} border border-white/5 rounded-2xl p-5`}>
-                        <div className="flex items-center justify-between mb-2">{s.icon}</div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">{s.label}</p>
-                        <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+            {showCustom && (
+                <div className="flex flex-wrap items-end gap-3 p-4 bg-slate-900/50 border border-slate-800 rounded-xl mb-4">
+                    <div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">From</p>
+                        <input
+                            type="date"
+                            value={customFrom}
+                            onChange={e => setCustomFrom(e.target.value)}
+                            max={new Date().toISOString().split("T")[0]}
+                            min={format(subYears(new Date(), 2), "yyyy-MM-dd")}
+                            className="bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                        />
                     </div>
-                ))}
-            </div>
+                    <div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">To</p>
+                        <input
+                            type="date"
+                            value={customTo}
+                            onChange={e => setCustomTo(e.target.value)}
+                            max={new Date().toISOString().split("T")[0]}
+                            min={customFrom || format(subYears(new Date(), 2), "yyyy-MM-dd")}
+                            className="bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                        />
+                    </div>
+                    <Button
+                        size="sm"
+                        onClick={applyCustom}
+                        disabled={!customFrom || !customTo}
+                        className="bg-blue-600 hover:bg-blue-700 h-8 px-4"
+                    >
+                        Apply
+                    </Button>
+                </div>
+            )}
 
-            {error && <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">{error}</div>}
+            {error && (
+                <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+                    {error}
+                </div>
+            )}
 
-            {/* Table */}
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden">
+            <div className="rounded-xl border border-slate-800 overflow-hidden">
                 <Table>
-                    <TableHeader>
-                        <TableRow className="hover:bg-transparent border-white/5">
-                            {["Date & Time", "Reference", "Type", "Transaction ID", "Amount", "Balance After"].map(h => (
-                                <TableHead key={h} className="text-[10px] font-black uppercase tracking-widest text-gray-600 bg-white/[0.02] border-b border-white/5 py-4">
-                                    {h}
-                                </TableHead>
-                            ))}
+                    <TableHeader className="bg-slate-900/80">
+                        <TableRow className="hover:bg-transparent border-slate-800">
+                            <TableHead className="w-[180px]">Date</TableHead>
+                            <TableHead>Ref ID</TableHead>
+                            <TableHead>Action</TableHead>
+                            <TableHead className="text-right">Transaction ID</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">Balance</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            Array.from({ length: 8 }).map((_, i) => (
-                                <TableRow key={i} className="border-white/[0.03]">
-                                    {Array.from({ length: 6 }).map((_, j) => (
-                                        <TableCell key={j}><Skeleton className="h-4 w-24 bg-white/5 rounded-lg" /></TableCell>
-                                    ))}
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i} className="border-slate-800/50">
+                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : filtered.length > 0 ? (
-                            filtered.map(tx => (
-                                <TableRow key={tx.transaction_id} className="border-white/[0.03] hover:bg-white/[0.015] transition-colors">
-                                    <TableCell className="text-[11px] text-gray-500 font-mono whitespace-nowrap py-4">
+                        ) : statement.length > 0 ? (
+                            statement.map((tx) => (
+                                <TableRow key={tx.transaction_id} className="border-slate-800/50 hover:bg-slate-800/30">
+                                    <TableCell className="text-xs text-slate-400 font-mono">
                                         {formatDate(tx.transaction_time)}
                                     </TableCell>
-                                    <TableCell className="text-[11px] font-mono text-gray-600">{tx.reference_id}</TableCell>
+                                    <TableCell className="text-xs font-mono text-slate-500">
+                                        {tx.reference_id}
+                                    </TableCell>
                                     <TableCell>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${actionColor(tx.action_type)}`}>
-                                            {tx.action_type}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {tx.amount > 0 ? (
+                                                <ArrowDownLeft className="h-3 w-3 text-emerald-400" />
+                                            ) : (
+                                                <ArrowUpRight className="h-3 w-3 text-blue-400" />
+                                            )}
+                                            <span className={`text-xs font-bold uppercase tracking-wider ${getActionColor(tx.action_type)}`}>
+                                                {tx.action_type}
+                                            </span>
+                                        </div>
                                     </TableCell>
-                                    <TableCell className="text-[11px] font-mono text-gray-600">{tx.transaction_id}</TableCell>
-                                    <TableCell className={`font-black text-sm ${tx.amount > 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                        {tx.amount > 0 ? "+" : ""}{(tx.amount || 0).toFixed(2)}
+                                    <TableCell className="text-right text-xs font-mono text-slate-400">
+                                        {tx.transaction_id}
                                     </TableCell>
-                                    <TableCell className="font-bold text-white text-sm">
-                                        {(tx.balance_after || 0).toFixed(2)}
+                                    <TableCell className={`text-right font-bold ${getAmountColor(tx.amount)}`}>
+                                        {tx.amount > 0 ? "+" : ""}{tx.amount.toFixed(2)}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold text-slate-200">
+                                        {tx.balance_after.toFixed(2)}
                                     </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-48 text-center">
-                                    <div className="flex flex-col items-center justify-center gap-2 opacity-30">
-                                        <ReceiptText className="h-8 w-8 text-gray-500" />
-                                        <p className="text-sm font-bold">{isAuthorized ? "No transactions found for this range" : "Authorize your account to view statements"}</p>
-                                    </div>
+                                <TableCell colSpan={6} className="h-32 text-center text-slate-500">
+                                    {isAuthorized ? "No transactions found" : "Authorize your account to view statements"}
                                 </TableCell>
                             </TableRow>
                         )}

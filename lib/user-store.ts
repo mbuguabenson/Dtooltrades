@@ -79,22 +79,22 @@ const G = globalThis as typeof globalThis & {
     _dtoolNotifications?: Notification[]
 }
 
-function userStore(): Map<string, UserRecord> {
+export function userStore(): Map<string, UserRecord> {
     if (!G._dtoolUsers) G._dtoolUsers = new Map()
     return G._dtoolUsers
 }
 
-function chatStore(): Map<string, ChatMessage> {
+export function chatStore(): Map<string, ChatMessage> {
     if (!G._dtoolChats) G._dtoolChats = new Map()
     return G._dtoolChats
 }
 
-function tradeStore(): TradeResult[] {
+export function tradeStore(): TradeResult[] {
     if (!G._dtoolTrades) G._dtoolTrades = []
     return G._dtoolTrades
 }
 
-function notificationStore(): Notification[] {
+export function notificationStore(): Notification[] {
     if (!G._dtoolNotifications) G._dtoolNotifications = []
     return G._dtoolNotifications
 }
@@ -178,14 +178,51 @@ export function getPlatformStats() {
         if (u.status === "online" && now - u.lastSeen > 90) setUserOffline(id)
     })
     const users = getAllLiveUsers()
+    const trades = tradeStore()
+
+    // Calculate chart data for activity (last 20 trades)
+    const chartData = trades.slice(-20).map(t => ({
+        ts: t.ts,
+        profit: t.profit,
+        stake: t.stake,
+        market: t.market,
+        strategy: t.strategy
+    }))
+
+    // Calculate Top Traders
+    const traderMap: Record<string, { loginId: string; name: string; type: string; netPnl: number; wins: number; total: number }> = {}
+    trades.forEach(t => {
+        if (!traderMap[t.loginId]) {
+            const u = getUser(t.loginId)
+            traderMap[t.loginId] = {
+                loginId: t.loginId,
+                name: u?.name || "User",
+                type: u?.type || "Demo",
+                netPnl: 0,
+                wins: 0,
+                total: 0
+            }
+        }
+        const stats = traderMap[t.loginId]
+        stats.netPnl += t.profit
+        stats.total++
+        if (t.profit > 0) stats.wins++
+    })
+
+    const topTraders = Object.values(traderMap)
+        .sort((a, b) => b.netPnl - a.netPnl)
+        .slice(0, 5)
+
     return {
         totalUsers: users.length,
         onlineUsers: users.filter(u => u.status === "online").length,
         totalRealBalance: users.filter(u => u.type === "Real").reduce((s, u) => s + u.balance, 0),
         totalDemoBalance: users.filter(u => u.type === "Demo").reduce((s, u) => s + u.balance, 0),
-        totalTrades: tradeStore().length,
-        netPerformance: tradeStore().reduce((s, t) => s + t.profit, 0),
-        totalVolume: tradeStore().reduce((s, t) => s + t.stake, 0),
+        totalTrades: trades.length,
+        netPerformance: trades.reduce((s, t) => s + t.profit, 0),
+        totalVolume: trades.reduce((s, t) => s + t.stake, 0),
+        topTraders,
+        chartData
     }
 }
 
