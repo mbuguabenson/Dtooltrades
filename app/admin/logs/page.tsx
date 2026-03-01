@@ -27,23 +27,37 @@ interface LogEntry {
 export default function AdminLogsPage() {
     const [logs, setLogs] = useState<LogEntry[]>([])
     const [filter, setFilter] = useState("all")
+    const [loading, setLoading] = useState(true)
 
     const perfMetrics = [
-        { label: "API Latency", value: "84ms", icon: Wifi, status: "healthy" },
-        { label: "CPU Usage", value: "12%", icon: Cpu, status: "healthy" },
-        { label: "DB Connection", value: "Stable", icon: Database, status: "healthy" },
-        { label: "Error Rate", value: "0.02%", icon: Bug, status: "optimal" },
+        { label: "Active Streams", value: logs.length > 0 ? "Active" : "Idle", icon: Wifi, status: "healthy" },
+        { label: "Event Queue", value: "Optimal", icon: Cpu, status: "healthy" },
+        { label: "DB Health", value: "Stable", icon: Database, status: "healthy" },
+        { label: "Log Retention", value: "30 Days", icon: BarChart4, status: "optimal" },
     ]
 
     useEffect(() => {
-        const rawLogs: LogEntry[] = [
-            { id: "1", level: "info", category: "auth", message: "Admin 'Master Root' authorized a trade for CR100521", timestamp: new Date(Date.now() - 1000 * 60 * 5) },
-            { id: "2", level: "info", category: "api", message: "Deriv WebSocket connection re-established successfully", timestamp: new Date(Date.now() - 1000 * 60 * 12) },
-            { id: "3", level: "error", category: "trading", message: "Execution failed for user CR200843: Insufficient Funds", timestamp: new Date(Date.now() - 1000 * 60 * 25) },
-            { id: "4", level: "warn", category: "system", message: "High memory usage detected in analytics worker", timestamp: new Date(Date.now() - 1000 * 60 * 45) },
-            { id: "5", level: "critical", category: "auth", message: "Unauthorized login attempt from IP 192.168.1.104", timestamp: new Date(Date.now() - 1000 * 60 * 120) },
-        ]
-        setLogs(rawLogs)
+        async function fetchLogs() {
+            try {
+                const res = await fetch("/api/admin/trades")
+                const data = await res.json()
+                const formatted = (data.trades || []).map((t: any) => ({
+                    id: t.id.toString(),
+                    level: t.profitLoss >= 0 ? "info" : "warn",
+                    category: "trading",
+                    message: `Trade ${t.status}: ${t.loginId} on ${t.market} (${t.stake} USD)`,
+                    timestamp: new Date(t.createdAt * 1000)
+                }))
+                setLogs(formatted)
+            } catch (err) {
+                console.error("Failed to fetch logs:", err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchLogs()
+        const interval = setInterval(fetchLogs, 15000)
+        return () => clearInterval(interval)
     }, [])
 
     const getLevelColor = (level: string) => {

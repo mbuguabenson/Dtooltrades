@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { useTheme } from "@/lib/theme-provider-advanced"
-import { Bell, Search, User } from "lucide-react"
+import { Bell, Search, User, LogOut } from "lucide-react"
 
 export default function AdminLayout({
     children,
@@ -12,6 +13,20 @@ export default function AdminLayout({
 }) {
     const { currentTheme } = useTheme()
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const router = useRouter()
+    const pathname = usePathname()
+
+    useEffect(() => {
+        // Simple client-side session check
+        const hasSession = document.cookie.includes("admin_session=true")
+        if (!hasSession && pathname !== "/admin/login") {
+            router.push("/admin/login")
+        }
+    }, [pathname, router])
+
+    if (pathname === "/admin/login") {
+        return <>{children}</>
+    }
 
     return (
         <div className="flex h-screen bg-[#050505] text-white overflow-hidden font-sans">
@@ -45,14 +60,20 @@ export default function AdminLayout({
                             <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-[#050505]"></span>
                         </button>
 
-                        <div className="flex items-center gap-3 pl-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border border-white/10">
-                                <User className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="hidden sm:block">
+                        <div className="flex items-center gap-3 pl-2 group">
+                            <div className="flex flex-col items-end mr-2">
                                 <p className="text-xs font-bold leading-none">Admin Panel</p>
                                 <p className="text-[10px] text-gray-400 leading-tight">Master Root</p>
                             </div>
+                            <button
+                                onClick={() => {
+                                    document.cookie = "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+                                    router.push("/admin/login")
+                                }}
+                                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border border-white/10 hover:shadow-lg hover:shadow-blue-500/20 transition-all active:scale-95"
+                            >
+                                <LogOut className="h-4 w-4 text-white" />
+                            </button>
                         </div>
                     </div>
                 </header>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     Users,
     Search,
@@ -12,20 +12,35 @@ import {
     ArrowRightLeft,
     ChevronRight,
     ChevronDown,
-    Check
+    Check,
+    DollarSign
 } from "lucide-react"
 
 export default function AdminTradingPage() {
     const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState("")
+    const [users, setUsers] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
 
-    const users = [
-        { id: "CR100521", name: "Alex Wolf", type: "Real", balance: "4,200.50 USD" },
-        { id: "CR200843", name: "Sarah Jones", type: "Real", balance: "1,250.75 USDT" },
-        { id: "CR400511", name: "Elena Rodriguez", type: "Demo", balance: "10,000.00 USD" },
-    ]
+    useEffect(() => {
+        async function fetchUsers() {
+            try {
+                const res = await fetch("/api/admin/users")
+                const data = await res.json()
+                setUsers(data.users || [])
+            } catch (err) {
+                console.error("Failed to fetch users for trading:", err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchUsers()
+    }, [])
 
-    const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.id.toLowerCase().includes(searchTerm.toLowerCase()))
+    const filteredUsers = users.filter(u =>
+        (u.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        u.loginId.toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -60,21 +75,21 @@ export default function AdminTradingPage() {
                                     key={user.id}
                                     onClick={() => setSelectedAccount(user.id)}
                                     className={`w-full text-left p-4 rounded-2xl border transition-all duration-300 group ${selectedAccount === user.id
-                                            ? "bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-600/20"
-                                            : "bg-white/[0.02] border-white/5 text-gray-400 hover:bg-white/[0.05] hover:border-white/10"
+                                        ? "bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-600/20"
+                                        : "bg-white/[0.02] border-white/5 text-gray-400 hover:bg-white/[0.05] hover:border-white/10"
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <p className={`text-xs font-black uppercase tracking-widest ${selectedAccount === user.id ? "text-blue-100" : "text-gray-500"}`}>{user.id}</p>
+                                        <p className={`text-xs font-black uppercase tracking-widest ${selectedAccount === user.loginId ? "text-blue-100" : "text-gray-500"}`}>{user.loginId}</p>
                                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${user.type === "Real"
-                                                ? selectedAccount === user.id ? "bg-white/20 text-white font-black" : "bg-emerald-500/10 text-emerald-500"
-                                                : selectedAccount === user.id ? "bg-white/20 text-white font-black" : "bg-amber-500/10 text-amber-500"
+                                            ? selectedAccount === user.loginId ? "bg-white/20 text-white font-black" : "bg-emerald-500/10 text-emerald-500"
+                                            : selectedAccount === user.loginId ? "bg-white/20 text-white font-black" : "bg-amber-500/10 text-amber-500"
                                             }`}>
                                             {user.type}
                                         </span>
                                     </div>
-                                    <p className={`font-bold transition-colors ${selectedAccount === user.id ? "text-white" : "group-hover:text-blue-400"}`}>{user.name}</p>
-                                    <p className={`text-sm mt-1 font-mono font-bold ${selectedAccount === user.id ? "text-blue-100" : "text-gray-300"}`}>{user.balance}</p>
+                                    <p className={`font-bold transition-colors ${selectedAccount === user.loginId ? "text-white" : "group-hover:text-blue-400"}`}>{user.name || "Trader"}</p>
+                                    <p className={`text-sm mt-1 font-mono font-bold ${selectedAccount === user.loginId ? "text-blue-100" : "text-gray-300"}`}>{user.balance?.toLocaleString()} {user.currency || "USD"}</p>
                                 </button>
                             ))}
                         </div>
@@ -188,22 +203,3 @@ export default function AdminTradingPage() {
     )
 }
 
-function DollarSign(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <line x1="12" x2="12" y1="2" y2="22" />
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-    )
-}

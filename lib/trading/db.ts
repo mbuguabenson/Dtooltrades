@@ -85,6 +85,13 @@ export function initializeDatabase(dbPath: string): Database.Database {
       FOREIGN KEY(loginId) REFERENCES users(loginId)
     );
 
+    CREATE TABLE IF NOT EXISTS admins (
+      username TEXT PRIMARY KEY,
+      password TEXT NOT NULL, -- In a real app, use scrypt/bcrypt
+      role TEXT DEFAULT 'admin',
+      createdAt INTEGER DEFAULT (strftime('%s', 'now'))
+    );
+
     CREATE TABLE IF NOT EXISTS aggregates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sessionName TEXT NOT NULL UNIQUE,
@@ -104,6 +111,14 @@ export function initializeDatabase(dbPath: string): Database.Database {
   `)
 
   dbInstance = db
+
+  // Seed initial admin if none exists
+  const adminCount = db.prepare("SELECT COUNT(*) as count FROM admins").get() as any
+  if (adminCount.count === 0) {
+    db.prepare("INSERT INTO admins (username, password) VALUES (?, ?)").run("admin", "Dtool@2026")
+    console.log("[DB] Initial admin account seeded: admin / Dtool@2026")
+  }
+
   return db
 }
 
@@ -366,6 +381,31 @@ export function getPlatformOverview(): any {
     ...userStats,
     ...tradeStats
   }
+}
+
+export function getPlatformTransactions(): any[] {
+  const db = getDatabase()
+  const trades = db.prepare("SELECT * FROM trades ORDER BY createdAt DESC LIMIT 50").all()
+  // We'll treat trades as transactions for now to populate the list
+  return trades
+}
+
+export function createAdmin(username: string, password: string): void {
+  const db = getDatabase()
+  const stmt = db.prepare("INSERT OR IGNORE INTO admins (username, password) VALUES (?, ?)")
+  stmt.run(username, password)
+}
+
+export function verifyAdmin(username: string, password: string): any {
+  const db = getDatabase()
+  const admin = db.prepare("SELECT * FROM admins WHERE username = ? AND password = ?").get(username, password)
+  return admin
+}
+
+export function getAdminsCount(): number {
+  const db = getDatabase()
+  const result = db.prepare("SELECT COUNT(*) as count FROM admins").get() as any
+  return result.count
 }
 
 export function closeDatabase(): void {

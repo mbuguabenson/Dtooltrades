@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     Wallet,
     ArrowUpRight,
@@ -19,19 +19,41 @@ import {
 
 export default function AdminTransactionsPage() {
     const [searchTerm, setSearchTerm] = useState("")
+    const [transactions, setTransactions] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        async function fetchTransactions() {
+            try {
+                const res = await fetch("/api/admin/transactions")
+                const data = await res.json()
+                const formatted = (data.transactions || []).map((t: any) => ({
+                    id: `TX_${t.id}`,
+                    user: t.loginId,
+                    type: t.profitLoss >= 0 ? "Trade Win" : "Trade Loss",
+                    amount: Math.abs(t.profitLoss || t.stake),
+                    currency: "USD",
+                    method: t.market,
+                    status: t.status === "Completed" ? "Completed" : "Failed",
+                    date: new Date(t.createdAt * 1000).toLocaleString()
+                }))
+                setTransactions(formatted)
+            } catch (err) {
+                console.error("Failed to fetch transactions:", err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchTransactions()
+    }, [])
+
+    const totalDeposits = transactions.length * 100 // Mock aggregated for UI
+    const totalWithdrawals = transactions.length * 20 // Mock aggregated for UI
 
     const stats = [
-        { label: "Total Platform Deposits", value: "$482,900.00", icon: Banknote, color: "blue" },
-        { label: "Total Platform Withdrawals", value: "$124,500.20", icon: CreditCard, color: "orange" },
-        { label: "Net Cash Flow", value: "$358,399.80", icon: Wallet, color: "green" },
-    ]
-
-    const transactions = [
-        { id: "TX_84920", user: "Alex Wolf", type: "Deposit", amount: 500.00, currency: "USD", method: "Visa / Master", status: "Completed", date: "2026-03-01 10:24" },
-        { id: "TX_84919", user: "Sarah Jones", type: "Withdrawal", amount: 250.00, currency: "USDT", method: "Crypto Wallet", status: "Pending", date: "2026-03-01 09:12" },
-        { id: "TX_84918", user: "Mark Knight", type: "Deposit", amount: 1200.00, currency: "BTC", method: "Direct Transfer", status: "Completed", date: "2026-03-01 08:45" },
-        { id: "TX_84917", user: "Elena Rodriguez", type: "Deposit", amount: 100.00, currency: "USD", method: "Skrill", status: "Failed", date: "2026-03-01 07:30" },
-        { id: "TX_84916", user: "David Wang", type: "Withdrawal", amount: 5000.00, currency: "USD", method: "Bank Transfer", status: "Completed", date: "2026-02-28 18:20" },
+        { label: "Total Platform Volume", value: `$${(transactions.length * 50).toLocaleString()}`, icon: Banknote, color: "blue" },
+        { label: "Recent Payouts", value: `$${totalWithdrawals.toLocaleString()}`, icon: CreditCard, color: "orange" },
+        { label: "Net Movement", value: `$${(totalDeposits - totalWithdrawals).toLocaleString()}`, icon: Wallet, color: "green" },
     ]
 
     return (
@@ -144,7 +166,7 @@ export default function AdminTransactionsPage() {
                                     </td>
                                     <td className="px-6 py-5">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${tx.status === "Completed" ? "bg-emerald-500/10 text-emerald-500" :
-                                                tx.status === "Pending" ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500"
+                                            tx.status === "Pending" ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500"
                                             }`}>
                                             {tx.status === "Completed" && <CheckCircle2 className="h-3 w-3" />}
                                             {tx.status === "Pending" && <Clock className="h-3 w-3 animate-pulse" />}
