@@ -89,9 +89,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   const [status, setStatus] = useState<"idle" | "analyzing" | "trading" | "completed">("idle")
   const [sessionProfit, setSessionProfit] = useState(0)
   const [sessionTrades, setSessionTrades] = useState(0)
-  const [analysisProgress, setAnalysisProgress] = useState(0)
   const [analysisLog, setAnalysisLog] = useState<AnalysisLogEntry[]>([])
-  const [timeLeft, setTimeLeft] = useState(0)
 
   const [marketPrice, setMarketPrice] = useState<number | null>(null)
   const [lastDigit, setLastDigit] = useState<number | null>(null)
@@ -134,7 +132,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   const differsWaitingForEntryRef = useRef(false)
   const differsSelectedDigitRef = useRef<number | null>(null)
 
-  // SmartAuto24 Engine
+  // SmartAuto24 Engine with Unified Signals
   const {
     engineRef,
     currentDigit: engineDigit,
@@ -143,7 +141,9 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
     setPipSize,
     processTick: engineProcessTick,
     reset: resetEngine,
-    marketScores
+    marketScores,
+    unifiedSignals,
+    patterns
   } = useSmartAuto24(symbol, isConnected)
 
   // Modal state
@@ -165,7 +165,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
   // Refs for real-time trading logic
   const isRunningRef = useRef(false)
-  const statusRef = useRef<"idle" | "analyzing" | "trading" | "completed">("idle")
+  const statusRef = useRef<"idle" | "trading" | "completed">("idle")
   const entryPointMetRef = useRef(false)
   const selectedStrategyRef = useRef("Even/Odd")
   const analysisRef = useRef<any>(null)
@@ -371,16 +371,14 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   }
 
 
-  const handleStartAnalysis = async () => {
+  const handleStartTrading = async () => {
     if (!isLoggedIn || !apiClient || !isConnected) {
       addAnalysisLog("Not logged in or API not ready", "warning")
       return
     }
 
     setIsRunning(true)
-    setStatus("analyzing")
-    setAnalysisProgress(0)
-    setTimeLeft(Number.parseInt(analysisTimeMinutes) * 60)
+    setStatus("trading")
     setDigitFrequencies(Array(10).fill(0))
     setOverUnderAnalysis({ over: 0, under: 0, total: 0 })
     setTicksCollected(0)
@@ -393,57 +391,69 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
     setDiffersWaitingForEntry(false)
     setDiffersTicksSinceAppearance(0)
 
-    addAnalysisLog(`Starting ${analysisTimeMinutes} minute analysis on ${symbol}...`, "info")
+    addAnalysisLog(`Automated scanning started on ${symbol}. Waiting for High-Probability Signal...`, "info")
 
     // Initialize trader
     if (!traderRef.current) {
       traderRef.current = new DerivRealTrader(apiClient)
     }
 
-    // Start timer
-    const analysisSeconds = Number.parseInt(analysisTimeMinutes) * 60
-    let secondsElapsed = 0
-
-    timerIntervalRef.current = setInterval(() => {
-      secondsElapsed++
-      setTimeLeft(Math.max(0, analysisSeconds - secondsElapsed))
-      setAnalysisProgress((secondsElapsed / analysisSeconds) * 100)
-
-      if (secondsElapsed >= analysisSeconds) {
-        clearInterval(timerIntervalRef.current!)
-        completeAnalysis()
-      }
-    }, 1000)
+    // Check for immediate signals
+    checkInstantSignals()
   }
 
-  const completeAnalysis = async () => {
-    setStatus("completed")
-    setIsRunning(false)
-    addAnalysisLog("Analysis complete! Reviewing all market conditions...", "success")
+  const checkInstantSignals = () => {
+    // Don't process new signals if we are already executing a trade or not running
+    if (isExecutingTradeRef.current || !isRunningRef.current || statusRef.current !== "trading") return
 
-    // Generate signals for all strategies
-    const signals = strategiesRef.current.generateSignals()
-    const currentAnalysis = strategiesRef.current.getAnalysis()
+    // Look for a confirmed signal in unifiedSignals
+    const validSignals = unifiedSignals.filter(s => s.entryStatus === "Confirmed" && s.confidence >= 58)
 
-    // Filter for viable signals
-    const viableSignals = signals.filter(s => s.status !== "NEUTRAL")
-    setMarketSuggestions(viableSignals)
-    setShowAnalysisResults(true)
+    if (validSignals.length > 0) {
+      // Select the strongest signal
+      const bestSignal = [...validSignals].sort((a, b) => b.confidence - a.confidence)[0]
 
-    if (viableSignals.length === 0) {
-      addAnalysisLog("No clear bias found in the market. Consider increasing analysis time.", "warning")
-      if (isAutoPilotEnabledRef.current) {
-        addAnalysisLog("AutoPilot: Retrying analysis in 5 seconds...", "info")
-        setTimeout(() => handleStartAnalysis(), 5000)
-      }
-    } else {
-      addAnalysisLog(`Analysis finished! Found ${viableSignals.length} suggested strategies based on current market power.`, "success")
-      if (isAutoPilotEnabledRef.current) {
-        const bestSignal = [...viableSignals].sort((a, b) => b.probability - a.probability)[0]
-        addAnalysisLog(`AutoPilot: Automatically selecting highest probability strategy: ${bestSignal.type.toUpperCase()}`, "info")
-        setTimeout(() => handleSelectSuggestion(bestSignal), 2000)
+      if (!entryPointMetRef.current) {
+        entryPointMetRef.current = true
+        addAnalysisLog(`High Probability Signal Detected: ${bestSignal.strategy} (${bestSignal.confidence.toFixed(1)}%)`, "success")
+        handleSelectInstantSuggestion(bestSignal)
       }
     }
+  }
+
+  const handleSelectInstantSuggestion = (signal: any) => {
+    const strategyName = signal.strategy
+    setSelectedStrategy(strategyName)
+    addAnalysisLog(`Executing ${strategyName} on ${symbol}...`, "info")
+
+    let analysisSignalCode = signal.type.toUpperCase()
+
+    if (strategyName === "Differs") {
+      setDiffersSelectedDigit(Number(signal.barrier))
+      setDiffersWaitingForEntry(true)
+      setDiffersTicksSinceAppearance(0)
+    }
+
+    const executionAnalysis = {
+      strategy: strategyName,
+      power: signal.confidence,
+      signal: analysisSignalCode,
+      confidence: signal.confidence,
+      description: signal.description,
+      status: "TRADE NOW",
+      targetDigit: signal.barrier ? Number(signal.barrier) : undefined
+    }
+
+    setAnalysisData({
+      ...executionAnalysis,
+      digitFrequencies,
+      ticksCollected,
+    })
+
+    analysisRef.current = executionAnalysis
+
+    executeTrades(executionAnalysis)
+    performTrade(executionAnalysis)
   }
 
   const handleSelectSuggestion = (signal: Signal) => {
@@ -641,25 +651,10 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
             setSessionTrades(0)
             contractsLostRef.current = 0
 
-            // Go back to scanning/analyzing phase instead of stopping
-            setStatus("analyzing")
-            setAnalysisProgress(0)
-            setTimeLeft(Number.parseInt(analysisTimeMinutes) * 60)
-
-            const analysisSeconds = Number.parseInt(analysisTimeMinutes) * 60
-            let secondsElapsed = 0
-
-            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-            timerIntervalRef.current = setInterval(() => {
-              secondsElapsed++
-              setTimeLeft(Math.max(0, analysisSeconds - secondsElapsed))
-              setAnalysisProgress((secondsElapsed / analysisSeconds) * 100)
-
-              if (secondsElapsed >= analysisSeconds) {
-                clearInterval(timerIntervalRef.current!)
-                completeAnalysis()
-              }
-            }, 1000)
+            // Restart trading automatically
+            setTimeout(() => {
+              handleStartTrading()
+            }, 5000)
 
           } else {
             setTpAmount(traderRef.current.getTotalProfit())
@@ -866,27 +861,6 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
                 </Select>
               </div>
 
-              <div className="space-y-1 sm:space-y-2">
-                <Label className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Analysis (Min)</Label>
-                <Input
-                  type="number"
-                  value={analysisTimeMinutes}
-                  onChange={(e) => setAnalysisTimeMinutes(e.target.value)}
-                  disabled={isRunning}
-                  className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
-                />
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <Label className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>History Ticks</Label>
-                <Input
-                  type="number"
-                  value={ticksForEntry}
-                  onChange={(e) => setTicksForEntry(e.target.value)}
-                  disabled={isRunning}
-                  className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
-                />
-              </div>
-
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}
@@ -1040,22 +1014,20 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
             <div className="flex gap-3">
               <Button
-                onClick={status === "analyzing" ? handleStopTrading : handleStartAnalysis}
-                disabled={(status !== "analyzing" && isRunning) || !isLoggedIn || loadingMarkets}
-                className={`flex-1 font-bold shadow-lg transition-all duration-300 ${status === "analyzing"
-                  ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-                  : theme === "dark"
-                    ? "bg-linear-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black"
-                    : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                onClick={status === "trading" ? handleStopTrading : handleStartTrading}
+                disabled={!isLoggedIn || loadingMarkets}
+                className={`flex-1 font-bold shadow-lg transition-all duration-300 ${theme === "dark"
+                  ? "bg-linear-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black"
+                  : "bg-yellow-500 hover:bg-yellow-600 text-white"
                   }`}
               >
-                {status === "analyzing" ? (
+                {status === "trading" ? (
                   <>
-                    <Pause className="w-4 h-4 mr-2" /> Stop Analysis
+                    <Pause className="w-4 h-4 mr-2" /> Stop Trading
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 mr-2" /> Start Analysis
+                    <Play className="w-4 h-4 mr-2" /> Start Trading
                   </>
                 )}
               </Button>
@@ -1072,76 +1044,41 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
             </div>
           </Card>
 
-          {/* Analysis Progress */}
-          {status === "analyzing" && (
+          {/* Real-time Session Status */}
+          {status === "trading" && (
             <Card
               className={`p-6 border ${theme === "dark"
-                ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-yellow-500/20"
-                : "bg-white border-gray-200"
+                ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
+                : "bg-white border-blue-200"
                 }`}
             >
-              <h3 className={`text-lg font-bold mb-6 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                Analysis in Progress
+              <h3 className={`text-lg font-bold mb-6 ${theme === "dark" ? "text-cyan-400" : "text-blue-600"}`}>
+                AutoPilot Monitor
               </h3>
-
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-3">
-                  <span className={`text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                    Time Left: {Math.floor(timeLeft / 60)}m {timeLeft % 60}s
-                  </span>
-                  <span className={`text-sm font-bold ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}>
-                    {analysisProgress.toFixed(0)}%
-                  </span>
-                </div>
-                <div
-                  className={`w-full h-4 rounded-full overflow-hidden ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`}
-                >
-                  <div
-                    className="h-full bg-linear-to-r from-yellow-500 to-amber-500 transition-all duration-300"
-                    style={{ width: `${analysisProgress}%` }}
-                  />
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-gray-400">Market Readiness (Confidence Level)</span>
-                    <span className="text-cyan-400 font-bold">{Math.min(100, (ticksCollected / (Number.parseInt(ticksForEntry) || 100)) * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-cyan-500 transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
-                      style={{ width: `${Math.min(100, (ticksCollected / (Number.parseInt(ticksForEntry) || 100)) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-gray-500 text-center font-medium italic">
-                    Optimal analysis requires 100% readiness for maximum pattern recognition precision.
-                  </p>
-                </div>
-              </div>
 
               {/* Analysis Log */}
               <div
-                className={`p-4 rounded-lg ${theme === "dark" ? "bg-gray-900/50 border border-gray-700" : "bg-gray-900 border border-gray-800"
+                className={`p-4 rounded-lg mt-6 ${theme === "dark" ? "bg-gray-900/50 border border-gray-700" : "bg-gray-50 border border-gray-200"
                   }`}
               >
-                <h4 className={`text-sm font-bold mb-3 ${theme === "dark" ? "text-gray-300" : "text-gray-300"}`}>
-                  Analysis Log
+                <h4 className={`text-sm font-bold mb-3 ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                  System Journal
                 </h4>
-                <div className="space-y-1 max-h-48 overflow-y-auto font-mono text-xs">
+                <div className={`space-y-1 max-h-48 overflow-y-auto font-mono text-xs ${theme === "dark" ? "" : "bg-white p-2 rounded"}`}>
                   {analysisLog.length === 0 ? (
-                    <div className="text-gray-500">Waiting for analysis to start...</div>
+                    <div className="text-gray-500">Waiting for AutoPilot events...</div>
                   ) : (
                     analysisLog.map((log, idx) => (
                       <div
                         key={idx}
                         className={`${log.type === "success"
-                          ? "text-green-400"
+                          ? "text-green-500"
                           : log.type === "warning"
-                            ? "text-yellow-400"
-                            : "text-gray-400"
+                            ? "text-yellow-500"
+                            : theme === "dark" ? "text-gray-300" : "text-gray-700"
                           }`}
                       >
-                        <span className="text-gray-600">[{log.timestamp.toLocaleTimeString()}]</span> {log.message}
+                        <span className="text-gray-400">[{log.timestamp.toLocaleTimeString()}]</span> {log.message}
                       </div>
                     ))
                   )}
@@ -1150,7 +1087,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
             </Card>
           )}
 
-          {/* Market Suggestions */}
+          {/* Market Suggestions - Omitted as AutoPilot selects it */}
           {status === "completed" && (
             <Card
               className={`p-6 border ${theme === "dark"
