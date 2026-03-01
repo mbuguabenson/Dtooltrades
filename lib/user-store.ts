@@ -48,6 +48,7 @@ export interface ChatMessage {
     message: string
     ts: number
     read: boolean
+    attachments: { name: string; type: string; data: string }[]  // base64 encoded files
     replies: { adminMsg: string; ts: number }[]
 }
 
@@ -193,7 +194,7 @@ export function getTradesByFilter(since: number): TradeResult[] {
 export function addChatMessage(msg: Omit<ChatMessage, "id" | "replies" | "read">): ChatMessage {
     const store = chatStore()
     const id = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    const full: ChatMessage = { ...msg, id, read: false, replies: [] }
+    const full: ChatMessage = { ...msg, id, read: false, replies: [], attachments: msg.attachments ?? [] }
     store.set(id, full)
     return full
 }

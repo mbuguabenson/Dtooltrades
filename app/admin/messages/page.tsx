@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { MessageSquare, RefreshCw, Send, User, Clock, Check, CheckCheck, Inbox } from "lucide-react"
+import { MessageSquare, RefreshCw, Send, User, Clock, Check, CheckCheck, Inbox, FileText, Download } from "lucide-react"
 
 interface Reply { adminMsg: string; ts: number }
+interface Attachment { name: string; type: string; data: string }
 interface ChatMessage {
     id: string
     fromUser: string
@@ -11,6 +12,7 @@ interface ChatMessage {
     message: string
     ts: number
     read: boolean
+    attachments: Attachment[]
     replies: Reply[]
 }
 
@@ -138,16 +140,34 @@ export default function AdminMessagesPage() {
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-                            {/* User message */}
+                            {/* User message + attachments */}
                             <div className="flex gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
                                     <User className="h-4 w-4 text-blue-400" />
                                 </div>
-                                <div>
-                                    <div className="bg-white/5 border border-white/5 rounded-2xl rounded-tl-none px-4 py-3 max-w-sm">
-                                        <p className="text-sm text-gray-200">{selected.message}</p>
-                                    </div>
-                                    <p className="text-[9px] text-gray-600 mt-1 ml-1">{timeAgo(selected.ts)}</p>
+                                <div className="space-y-2 max-w-sm">
+                                    {/* Attachments */}
+                                    {selected.attachments?.map((att, j) => (
+                                        att.type.startsWith("image/") ? (
+                                            <img key={j} src={att.data} alt={att.name}
+                                                className="max-h-48 rounded-2xl rounded-tl-none border border-white/10 object-cover cursor-pointer hover:opacity-90"
+                                                onClick={() => window.open(att.data, "_blank")} />
+                                        ) : (
+                                            <a key={j} href={att.data} download={att.name}
+                                                className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl rounded-tl-none px-4 py-3 text-xs text-gray-300 hover:bg-white/10 transition-all group">
+                                                <FileText className="h-4 w-4 text-blue-400 shrink-0" />
+                                                <span className="flex-1 truncate">{att.name}</span>
+                                                <Download className="h-3.5 w-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                                            </a>
+                                        )
+                                    ))}
+                                    {/* Text */}
+                                    {selected.message && (
+                                        <div className="bg-white/5 border border-white/5 rounded-2xl rounded-tl-none px-4 py-3">
+                                            <p className="text-sm text-gray-200">{selected.message}</p>
+                                        </div>
+                                    )}
+                                    <p className="text-[9px] text-gray-600 ml-1">{timeAgo(selected.ts)}</p>
                                 </div>
                             </div>
                             {/* Admin replies */}

@@ -1,17 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { addChatMessage, getRepliesForUser } from "@/lib/user-store"
 
-// POST — user sends a message
+// POST — user sends a message (with optional attachments as base64)
 export async function POST(request: NextRequest) {
     try {
-        const { fromUser, name, message } = await request.json()
-        if (!message || !fromUser) {
-            return NextResponse.json({ error: "fromUser and message required" }, { status: 400 })
+        const { fromUser, name, message, attachments } = await request.json()
+        if (!fromUser || (!message && (!attachments || attachments.length === 0))) {
+            return NextResponse.json({ error: "fromUser and message or attachment required" }, { status: 400 })
         }
         const msg = addChatMessage({
             fromUser,
             name: name || "Visitor",
-            message,
+            message: message || "",
+            attachments: attachments || [],
             ts: Math.floor(Date.now() / 1000),
         })
         return NextResponse.json({ success: true, id: msg.id })
