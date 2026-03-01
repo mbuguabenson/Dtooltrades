@@ -9,9 +9,14 @@ export async function POST(request: NextRequest) {
         }
 
         // Hardcode admin verify to avoid SQLite breaking on Vercel deployment
-        const isValid = username === "admin" && password === "Dtool@2026"
+        // Make it robust to copy-paste trailing spaces and case sensitivity
+        const cleanUser = username.trim().toLowerCase()
+        const cleanPass = password.trim()
+
+        const isValid = cleanUser === "admin" && cleanPass === "Dtool@2026"
 
         if (!isValid) {
+            console.log(`[Login Failed] Invalid attempt. User: '${username}', Pass length: ${password.length}`)
             return NextResponse.json({ error: "Invalid username or password" }, { status: 401 })
         }
 
