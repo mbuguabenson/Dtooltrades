@@ -21,6 +21,13 @@ export interface UserRecord {
     flag: UserFlag
     lastSeen: number
     firstSeen: number
+    // Enriched tracking fields
+    ip: string
+    country: string
+    city: string
+    userAgent: string
+    isNew: boolean       // true if registered within last 24h
+    pageViews: number    // heartbeat count as proxy for page views
 }
 
 export interface SiteConfig {
@@ -122,11 +129,21 @@ export function upsertLiveUser(data: Omit<UserRecord, "firstSeen" | "flag" | "ba
     balanceHistory.push({ ts: data.lastSeen, balance: data.balance })
     if (balanceHistory.length > 100) balanceHistory.shift()
 
+    const firstSeen = existing?.firstSeen ?? data.firstSeen ?? Math.floor(Date.now() / 1000)
+    const isNew = (Math.floor(Date.now() / 1000) - firstSeen) < 86400  // new if < 24h old
+
     store.set(data.loginId, {
         ...data,
         flag: existing?.flag ?? "none",
         balanceHistory,
-        firstSeen: existing?.firstSeen ?? data.firstSeen ?? Math.floor(Date.now() / 1000),
+        firstSeen,
+        isNew,
+        // Preserve existing geo/agent if new heartbeat didn't include them
+        ip: data.ip || existing?.ip || "unknown",
+        country: data.country || existing?.country || "Unknown",
+        city: data.city || existing?.city || "Unknown",
+        userAgent: data.userAgent || existing?.userAgent || "",
+        pageViews: (existing?.pageViews ?? 0) + 1,
     })
 }
 
