@@ -14,8 +14,17 @@ import { User, ReceiptText, BarChart3, PieChart, ShieldCheck, ArrowLeft, Home } 
 import Link from "next/link"
 
 export default function AccountPage() {
-    const { isLoggedIn, accountType, activeLoginId } = useDerivAPI()
+    const { isLoggedIn, accountType, activeLoginId, isInitializing } = useDerivAPI()
     const [activeTab, setActiveTab] = useState("details")
+
+    if (isInitializing) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 text-center">
+                <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-8"></div>
+                <h2 className="text-xl font-bold animate-pulse text-slate-400">Restoring Session...</h2>
+            </div>
+        )
+    }
 
     if (!isLoggedIn) {
         return (
