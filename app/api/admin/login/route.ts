@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { verifyAdmin } from "@/lib/trading/db"
 
 export async function POST(request: NextRequest) {
     try {
@@ -9,13 +8,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing credentials" }, { status: 400 })
         }
 
-        const admin = verifyAdmin(username, password)
+        // Hardcode admin verify to avoid SQLite breaking on Vercel deployment
+        const isValid = username === "admin" && password === "Dtool@2026"
 
-        if (!admin) {
+        if (!isValid) {
             return NextResponse.json({ error: "Invalid username or password" }, { status: 401 })
         }
 
-        const response = NextResponse.json({ success: true, user: { username: admin.username, role: admin.role } })
+        const response = NextResponse.json({ success: true, user: { username: "admin", role: "admin" } })
 
         // Set a simple session cookie for demo purposes
         // In a real app, use a JWT and HTTP-only cookie
