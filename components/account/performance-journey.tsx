@@ -150,7 +150,7 @@ export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) 
                         <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Account Standing</CardDescription>
                         <CardTitle className="text-2xl font-black text-slate-200 flex items-center gap-2">
                             <Wallet className="h-5 w-5 text-purple-400" />
-                            ${events.length > 0 ? events[events.length - 1].balance.toFixed(2) : "0.00"}
+                            ${events.length > 0 ? (events[events.length - 1]?.balance || 0).toFixed(2) : "0.00"}
                         </CardTitle>
                     </CardHeader>
                 </Card>

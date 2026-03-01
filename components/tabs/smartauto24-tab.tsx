@@ -20,6 +20,7 @@ import { TradingJournalPanel } from "@/components/trading-journal-panel"
 import { TradeLog } from "@/components/trade-log"
 import { SmartAuto24Engine } from "@/lib/smartauto24-engine-integration"
 import { useSmartAuto24 } from "@/hooks/use-smartauto24"
+import { TabMarketBar } from "@/components/tab-market-bar"
 import type { BotSignal } from "@/lib/bot-engines"
 
 interface AnalysisLogEntry {
@@ -661,7 +662,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
               <div>
                 <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Account Balance</p>
                 <h3 className={`text-3xl font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
-                  ${balance?.amount.toFixed(2) || "0.00"}
+                  ${(balance?.amount || 0).toFixed(2)}
                 </h3>
                 <p className={`text-xs mt-1 ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}>
                   {balance?.currency || "USD"}
@@ -747,7 +748,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
                 <div className="flex flex-col items-start px-2 border-r border-gray-500/20">
                   <span className="text-[8px] uppercase tracking-tighter text-gray-500 font-black">Market Price</span>
                   <span className={`text-xs font-mono font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    {marketPrice?.toFixed(5) || "-----.--"}
+                    {(marketPrice || 0).toFixed(5)}
                   </span>
                 </div>
 
@@ -1099,7 +1100,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
                           />
                         </div>
                         <span className={`text-xs font-black ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                          {suggestion.probability.toFixed(0)}%
+                          {(suggestion.probability || 0).toFixed(0)}%
                         </span>
                       </div>
 
@@ -1157,7 +1158,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
                   <div className="flex justify-between items-center mb-2">
                     <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>Win Rate</span>
                     <span className={`text-sm font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
-                      {stats.winRate.toFixed(1)}%
+                      {(stats.winRate || 0).toFixed(1)}%
                     </span>
                   </div>
                   <div className={`w-full h-3 rounded-full overflow-hidden ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`}>
@@ -1262,7 +1263,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
               <div
                 className={`text-3xl font-bold ${sessionProfit >= 0 ? (theme === "dark" ? "text-green-400" : "text-green-600") : theme === "dark" ? "text-red-400" : "text-red-600"}`}
               >
-                {sessionProfit >= 0 ? "+" : ""} ${sessionProfit.toFixed(2)}
+                {sessionProfit >= 0 ? "+" : ""} ${(sessionProfit || 0).toFixed(2)}
               </div>
             </Card>
 
@@ -1306,19 +1307,19 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
                 <div className="bg-white/10 rounded-lg p-6 space-y-3">
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-4xl font-bold text-red-400">-${slAmount.toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-red-400">-${(slAmount || 0).toFixed(2)}</span>
                   </div>
                   <div className="text-sm text-gray-300">Total Loss (USD)</div>
 
                   <div className="border-t border-white/20 pt-3">
-                    <div className="text-2xl font-bold text-red-400">-KES {(slAmount * 129.5).toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-red-400">-KES {((slAmount || 0) * 129.5).toFixed(2)}</div>
                     <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = 129.5 KES)</div>
                   </div>
 
                   {marketPrice && (
                     <div className="border-t border-white/20 pt-3">
                       <div className="text-xs text-gray-400">Market Price at Loss</div>
-                      <div className="text-lg font-bold text-white">{marketPrice.toFixed(5)}</div>
+                      <div className="text-lg font-bold text-white">{(marketPrice || 0).toFixed(5)}</div>
                     </div>
                   )}
                 </div>
@@ -1347,19 +1348,19 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
                 <div className="bg-white/10 rounded-lg p-6 space-y-3">
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-4xl font-bold text-green-400">+${tpAmount.toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-green-400">+${(tpAmount || 0).toFixed(2)}</span>
                   </div>
                   <div className="text-sm text-gray-300">Total Profit (USD)</div>
 
                   <div className="border-t border-white/20 pt-3">
-                    <div className="text-2xl font-bold text-green-400">+KES {(tpAmount * 129.5).toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-green-400">+KES {((tpAmount || 0) * 129.5).toFixed(2)}</div>
                     <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = 129.5 KES)</div>
                   </div>
 
                   {marketPrice && (
                     <div className="border-t border-white/20 pt-3">
                       <div className="text-xs text-gray-400">Market Price at Profit</div>
-                      <div className="text-lg font-bold text-white">{marketPrice.toFixed(5)}</div>
+                      <div className="text-lg font-bold text-white">{(marketPrice || 0).toFixed(5)}</div>
                     </div>
                   )}
                 </div>

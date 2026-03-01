@@ -202,7 +202,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       signals.push({
         market: displayName,
         tradeType: "Under (0-4)",
-        entryPoint: price.toFixed(5),
+        entryPoint: (price || 0).toFixed(5),
         validity: "5 ticks",
         confidence: analysis.under.percentage,
         category: "over-under",
@@ -218,7 +218,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       signals.push({
         market: displayName,
         tradeType: "Over (5-9)",
-        entryPoint: price.toFixed(5),
+        entryPoint: (price || 0).toFixed(5),
         validity: "5 ticks",
         confidence: analysis.over.percentage,
         category: "over-under",
@@ -234,7 +234,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       signals.push({
         market: displayName,
         tradeType: "Even",
-        entryPoint: price.toFixed(5),
+        entryPoint: (price || 0).toFixed(5),
         validity: "5 ticks",
         confidence: analysis.even.percentage,
         category: "even-odd",
@@ -250,7 +250,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       signals.push({
         market: displayName,
         tradeType: "Odd",
-        entryPoint: price.toFixed(5),
+        entryPoint: (price || 0).toFixed(5),
         validity: "5 ticks",
         confidence: analysis.odd.percentage,
         category: "even-odd",
@@ -266,7 +266,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       signals.push({
         market: displayName,
         tradeType: `Differs (${analysis.differs.digit})`,
-        entryPoint: price.toFixed(5),
+        entryPoint: (price || 0).toFixed(5),
         validity: "5 ticks",
         confidence: analysis.differs.percentage,
         category: "differs",
@@ -448,7 +448,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
                     <div className="flex items-center gap-2">
                       <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Price:</span>
                       <span className={`text-sm font-bold ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-                        {market.currentPrice.toFixed(5)}
+                        {(market.currentPrice || 0).toFixed(5)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

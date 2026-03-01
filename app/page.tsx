@@ -4,11 +4,9 @@ import { useState, useEffect } from "react"
 import { useDeriv } from "@/hooks/use-deriv"
 import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Moon, Sun, Home, User, Settings } from 'lucide-react'
+import { Moon, Sun, User } from 'lucide-react'
 import Link from 'next/link'
-import { MarketSelector } from "@/components/market-selector"
 import { DigitDistribution } from "@/components/digit-distribution"
 import { SignalsTab } from "@/components/tabs/signals-tab"
 import { ProSignalsTab } from "@/components/tabs/pro-signals-tab"
@@ -30,11 +28,9 @@ import { AutomatedTab } from "@/components/tabs/automated-tab"
 import { SmartAuto24Tab } from "@/components/tabs/smartauto24-tab"
 import { useGlobalTradingContext } from "@/hooks/use-global-trading-context"
 import { verifier } from "@/lib/system-verifier"
-import { LiveTicker } from "@/components/live-ticker"
 import { ResponsiveTabs } from "@/components/responsive-tabs"
 import { MoneyMakerTab } from "@/components/tabs/money-maker-tab"
 import { ToolsInfoTab } from "@/components/tabs/tools-info-tab"
-import { UnifiedTradingDashboard } from "@/components/unified-trading-dashboard"
 import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
 import {
   Dialog,
@@ -49,7 +45,6 @@ export default function DerivAnalysisApp() {
   const [theme, setTheme] = useState<"light" | "dark">("dark")
   const [activeTab, setActiveTab] = useState("smart-analysis")
   const [isLoading, setIsLoading] = useState(true)
-  const [showTradingSlider, setShowTradingSlider] = useState(true)
   const [initError, setInitError] = useState<string | null>(null)
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
   const globalContext = useGlobalTradingContext()
@@ -85,32 +80,6 @@ export default function DerivAnalysisApp() {
     try {
       document.documentElement.classList.add("dark")
       console.log("[v0] App initialization started")
-      console.log("[v0] ✅ UI Responsiveness Updated")
-      console.log("[v0] ✅ Global API Token Integration Complete")
-      console.log("[v0] ✅ Balance Update Fixed")
-      console.log("[v0] ✅ Digits Distribution Updated")
-      console.log("[v0] ✅ Super Signals Updated")
-      console.log("[v0] ✅ Even/Odd Tab Updated - WAIT text now shows in blue badge")
-      console.log("[v0] ✅ Over/Under Tab Updated - Duplicate '(Selected: 4)' text removed")
-      console.log("[v0] ✅ AI Analysis Updated")
-      console.log("[v0] ✅ Autobot Updated")
-      console.log("[v0] ✅ Autonomous Bot Updated")
-      console.log("[v0] ✅ Trade Now Tab Updated")
-      console.log(
-        "[v0] ✅ SmartAuto24 Tab Updated - Martingale multipliers: Even/Odd=2.1, Over3/Under6=2.6, Over2/Under7=3.5",
-      )
-      console.log("[v0] ✅ Flux Traders Branding Applied")
-      console.log("[v0] ✅ FOX Loader Created with Liquid Fill")
-      console.log("[v0] ✅ Soft UI with Glowing Edges Implemented")
-      console.log("[v0] ✅ Trading Slider Now Visible on Right Side")
-      console.log("[v0] ✅ Digit Distribution Horizontal (0-4, 5-9) Updated")
-      console.log("[v0] ✅ Signals Tab Beautified with Glowing Effects")
-      console.log("[v0] ✅ Over/Under Tab Simplified")
-      console.log("[v0] ✅ AutoBot Single Market Trade Implemented")
-      console.log("[v0] ✅ Autonomous Bot API Socket Connection")
-      console.log("[v0] ✅ Trade Now Tab Contract Dropdowns")
-      console.log("[v0] ✅ SmartAuto24 User Martingale Configuration")
-      console.log("[v0] ✅ Mobile Responsive & Fast Loading")
       verifier.markComplete("Core System")
       console.log("[v0] App initialization completed successfully")
     } catch (error) {
@@ -154,8 +123,6 @@ export default function DerivAnalysisApp() {
       />
     )
   }
-
-  console.log("[v0] Main app rendering, connectionStatus:", connectionStatus)
 
   return (
     <div
@@ -290,7 +257,7 @@ export default function DerivAnalysisApp() {
                   theme={theme}
                 />
                 <div
-                  className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border glow-card-active flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                  className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                 >
                   <div className="flex items-center gap-3 sm:gap-6">
                     <div className="flex flex-col items-start">
@@ -322,7 +289,7 @@ export default function DerivAnalysisApp() {
 
                 {analysis && analysis.digitFrequencies && (
                   <div
-                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border glow-card-active ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                   >
                     <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-3">
                       <h3
@@ -343,7 +310,7 @@ export default function DerivAnalysisApp() {
                 {analysis && recent100Digits.length > 0 && recentDigits.length > 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-4">
                     <div
-                      className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 border glow-card-active ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                      className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                     >
                       <h3
                         className={`text-sm sm:text-base md:text-lg font-bold mb-3 sm:mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -354,7 +321,7 @@ export default function DerivAnalysisApp() {
                     </div>
 
                     <div
-                      className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 border glow-card-active ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                      className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                     >
                       <StatisticalAnalysis analysis={analysis} recentDigits={recent100Digits} theme={theme} />
                     </div>
@@ -363,7 +330,7 @@ export default function DerivAnalysisApp() {
 
                 {recentDigits.length > 0 && (
                   <div
-                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border glow-card-active ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                   >
                     <h3
                       className={`text-sm sm:text-base md:text-lg font-bold mb-3 sm:mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -376,7 +343,7 @@ export default function DerivAnalysisApp() {
 
                 {analysis && analysis.digitFrequencies && analysis.powerIndex && (
                   <div
-                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border glow-card-active ${theme === "dark" ? "bg-linear-to-br from-green-500/10 to-green-500/10 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]" : "bg-green-50 border-green-200 shadow-lg"}`}
+                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border ${theme === "dark" ? "bg-linear-to-br from-green-500/10 to-green-500/10 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]" : "bg-green-50 border-green-200 shadow-lg"}`}
                   >
                     <h3
                       className={`text-sm sm:text-base md:text-lg font-bold mb-3 sm:mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -385,7 +352,7 @@ export default function DerivAnalysisApp() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                       <div
-                        className={`text-center rounded-lg p-2 sm:p-3 md:p-4 border glow-card-active ${theme === "dark" ? "bg-blue-500/10" : "bg-blue-50"}`}
+                        className={`text-center rounded-lg p-2 sm:p-3 md:p-4 border ${theme === "dark" ? "bg-blue-500/10" : "bg-blue-50"}`}
                       >
                         <div
                           className={`text-xs sm:text-sm mb-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
@@ -404,7 +371,7 @@ export default function DerivAnalysisApp() {
                         </div>
                       </div>
                       <div
-                        className={`text-center rounded-lg p-2 sm:p-3 md:p-4 border glow-card-active ${theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}
+                        className={`text-center rounded-lg p-2 sm:p-3 md:p-4 border ${theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}
                       >
                         <div
                           className={`text-xs sm:text-sm mb-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
@@ -420,44 +387,6 @@ export default function DerivAnalysisApp() {
                           className={`mt-1 text-xs sm:text-sm md:text-base font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}
                         >
                           {analysis.digitFrequencies[analysis.powerIndex.weakest]?.percentage.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {analysis && (
-                  <div
-                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border glow-card-active ${theme === "dark" ? "bg-linear-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.2)]" : "bg-purple-50 border-purple-200 shadow-lg"}`}
-                  >
-                    <h3
-                      className={`text-sm sm:text-base md:text-lg font-bold mb-3 sm:mb-4 ${theme === "dark" ? "bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" : "text-purple-900"}`}
-                    >
-                      Analysis Summary
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                      <div
-                        className={`text-center p-2 sm:p-3 md:p-4 rounded-lg glow-card-active ${theme === "dark" ? "bg-blue-500/10" : "bg-blue-50"}`}
-                      >
-                        <div
-                          className={`text-xl sm:text-2xl md:text-3xl font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}
-                        >
-                          {analysis.totalTicks || 0}
-                        </div>
-                        <div className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                          Total Ticks
-                        </div>
-                      </div>
-                      <div
-                        className={`text-center p-2 sm:p-3 md:p-4 rounded-lg glow-card-active ${theme === "dark" ? "bg-green-500/10" : "bg-green-50"}`}
-                      >
-                        <div
-                          className={`text-xl sm:text-2xl md:text-3xl font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}
-                        >
-                          {powerfulSignalsCount}
-                        </div>
-                        <div className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                          Powerful Signals
                         </div>
                       </div>
                     </div>
@@ -574,7 +503,7 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="smart-adaptive" className="mt-0">
-                {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} theme={theme} />}
+                {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} theme={theme} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />}
               </TabsContent>
 
               <TabsContent value="tools-info" className="mt-0">
@@ -620,7 +549,6 @@ export default function DerivAnalysisApp() {
         </div>
       </footer>
 
-      {/* Risk Disclaimer Modal */}
       <Dialog open={isDisclaimerOpen} onOpenChange={setIsDisclaimerOpen}>
         <DialogContent className={`${theme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : "bg-white"} sm:max-w-2xl`}>
           <DialogHeader>
@@ -629,18 +557,7 @@ export default function DerivAnalysisApp() {
             </DialogTitle>
             <DialogDescription className={`${theme === "dark" ? "text-gray-300" : "text-gray-700"} text-sm leading-relaxed space-y-4`}>
               <p>
-                Deriv offers complex derivatives, such as options and contracts for difference (&quot;CFDs&quot;). These products may not be suitable for all clients, and trading them puts you at risk. Please understand the following risks before trading Deriv products:
-              </p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li>
-                  <strong>a)</strong> You may lose some or all of the money you invest in the trade
-                </li>
-                <li>
-                  <strong>b)</strong> If your trade involves currency conversion, exchange rates will affect your profit and loss.
-                </li>
-              </ul>
-              <p className="font-bold border-l-2 border-blue-500 pl-3 italic">
-                You should never trade with borrowed money or with money that you cannot afford to lose.
+                Deriv offers complex derivatives, such as options and contracts for difference (&quot;CFDs&quot;). These products may not be suitable for all clients, and trading them puts you at risk.
               </p>
             </DialogDescription>
           </DialogHeader>

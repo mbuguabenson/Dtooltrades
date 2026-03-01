@@ -1,11 +1,9 @@
-"use client"
-
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Settings, LogIn, LogOut, UserPlus } from "lucide-react"
+import { LogIn, LogOut, UserPlus } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface DerivAuthProps {
   theme?: "light" | "dark"
@@ -24,12 +22,79 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
     activeLoginId,
   } = useDerivAPI()
 
-  const openDerivAccount = () => {
-    window.open("https://app.deriv.com/account", "_blank", "noopener,noreferrer")
-  }
+  const [customUsername, setCustomUsername] = useState<string>("")
+  const [profileImage, setProfileImage] = useState<string>("")
+
+  useEffect(() => {
+    if (activeLoginId) {
+      const savedUsername = localStorage.getItem(`dtool_username_${activeLoginId}`)
+      const savedImage = localStorage.getItem(`dtool_avatar_${activeLoginId}`)
+      setCustomUsername(savedUsername || "")
+      setProfileImage(savedImage || "")
+    }
+  }, [activeLoginId])
 
   const createDerivAccount = () => {
     window.open("https://track.deriv.com/_1mHiO0UpCX6NhxmBqQyZL2Nd7ZgqdRLk/1/", "_blank", "noopener,noreferrer")
+  }
+
+  const getAccountIcon = (accId: string, accCurrency?: string, accType?: string) => {
+    // If it's the active account and we have a custom image, show it
+    if (accId === activeLoginId && profileImage) {
+      return (
+        <Avatar className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 ring-1 ring-blue-500/30">
+          <AvatarImage src={profileImage} className="object-cover" />
+          <AvatarFallback className="bg-slate-800 text-blue-400 text-[10px] font-black">
+            {accCurrency?.charAt(0) || "U"}
+          </AvatarFallback>
+        </Avatar>
+      )
+    }
+
+    // Default icons
+    const isDemo = accType === "Demo" || accId.startsWith('VRTC')
+    if (isDemo) {
+      return (
+        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-400/10 text-amber-500 ring-1 ring-amber-400/30 flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/20 to-transparent"></div>
+          <span className="relative z-10 flex items-center gap-0.5"><span className="opacity-70 text-[9px]">$</span>D</span>
+        </div>
+      )
+    }
+
+    if (accCurrency === "USD") {
+      return (
+        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs shrink-0 bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/30 font-black relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400/20 to-transparent"></div>
+          <span className="relative z-10">$</span>
+        </div>
+      )
+    }
+
+    if (accCurrency === "UST" || accCurrency === "USDT") {
+      return (
+        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs shrink-0 bg-[#26A17B]/10 text-[#26A17B] ring-1 ring-[#26A17B]/30 font-black relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#26A17B]/20 to-transparent"></div>
+          <span className="relative z-10">₮</span>
+        </div>
+      )
+    }
+
+    if (accCurrency === "BTC") {
+      return (
+        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs shrink-0 bg-[#F7931A]/10 text-[#F7931A] ring-1 ring-[#F7931A]/30 font-black relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#F7931A]/20 to-transparent"></div>
+          <span className="relative z-10">₿</span>
+        </div>
+      )
+    }
+
+    return (
+      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/30 flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-tr from-blue-400/20 to-transparent"></div>
+        <span className="relative z-10">{accCurrency?.charAt(0) || "R"}</span>
+      </div>
+    )
   }
 
   return (
@@ -71,36 +136,11 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
                   }`}
               >
                 <div className="flex items-center gap-2 sm:gap-3 font-semibold text-xs sm:text-sm">
-                  {accountType === "Demo" || accountCode?.startsWith('VRTC') ? (
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-400/10 text-amber-500 ring-1 ring-amber-400/30 flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/20 to-transparent"></div>
-                      <span className="relative z-10 flex items-center gap-0.5"><span className="opacity-70 text-[9px]">$</span>D</span>
-                    </div>
-                  ) : balance?.currency === "USD" ? (
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs shrink-0 bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/30 font-black relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400/20 to-transparent"></div>
-                      <span className="relative z-10">$</span>
-                    </div>
-                  ) : balance?.currency === "UST" || balance?.currency === "USDT" ? (
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs shrink-0 bg-[#26A17B]/10 text-[#26A17B] ring-1 ring-[#26A17B]/30 font-black relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-[#26A17B]/20 to-transparent"></div>
-                      <span className="relative z-10">₮</span>
-                    </div>
-                  ) : balance?.currency === "BTC" ? (
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs shrink-0 bg-[#F7931A]/10 text-[#F7931A] ring-1 ring-[#F7931A]/30 font-black relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-[#F7931A]/20 to-transparent"></div>
-                      <span className="relative z-10">₿</span>
-                    </div>
-                  ) : (
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/30 flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-blue-400/20 to-transparent"></div>
-                      <span className="relative z-10">{balance?.currency?.charAt(0) || "R"}</span>
-                    </div>
-                  )}
+                  {getAccountIcon(activeLoginId || "", balance?.currency, accountType)}
                   {balance ? (
                     <div className="flex flex-col items-start leading-tight min-w-[80px]">
                       <span className={`text-[9px] sm:text-[10px] font-medium opacity-70 uppercase tracking-wide`}>
-                        {accountType === "Demo" || accountCode?.startsWith('VRTC') ? "Demo" : "Real"}
+                        {customUsername || (accountType === "Demo" || accountCode?.startsWith('VRTC') ? "Demo" : "Real")}
                       </span>
                       <span className="font-bold tracking-tight">
                         {Number(balance.amount).toFixed(2)} <span className="text-[10px] opacity-70 font-medium">{balance.currency}</span>
@@ -109,7 +149,7 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
                   ) : (
                     <div className="flex flex-col items-start leading-tight min-w-[80px]">
                       <span className={`text-[9px] sm:text-[10px] font-medium opacity-70 uppercase tracking-wide`}>
-                        {accountType || "Loading"}
+                        {customUsername || accountType || "Loading"}
                       </span>
                       <span className="animate-pulse opacity-50 font-bold tracking-tight text-xs">Syncing...</span>
                     </div>
@@ -119,42 +159,13 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
               <SelectContent className={`min-w-[190px] p-2 rounded-xl shadow-xl border ${theme === "dark" ? "bg-[#0f172a] border-slate-700/50 text-white" : "bg-white border-gray-100"}`}>
                 <div className="px-2 pb-2 mb-2 border-b border-gray-500/20 text-[10px] font-bold tracking-wider uppercase opacity-50">Select Account</div>
                 {accounts.map((acc) => {
-                  const isDemo = acc.type === "Demo" || acc.id.startsWith("VRTC")
-                  const isUSD = acc.currency === "USD"
-                  const isUSDT = acc.currency === "UST" || acc.currency === "USDT"
-                  const isBTC = acc.currency === "BTC"
                   return (
                     <SelectItem key={acc.id} value={acc.id} className={`cursor-pointer mb-1 last:mb-0 rounded-lg py-2.5 transition-colors ${theme === "dark" ? "hover:bg-slate-800/80 focus:bg-slate-800/80" : "hover:bg-slate-50 focus:bg-slate-50"}`}>
                       <div className="flex items-center gap-3">
-                        {isDemo ? (
-                          <div className="w-8 h-8 rounded-full bg-amber-400/10 text-amber-500 ring-1 ring-amber-400/30 flex items-center justify-center text-[12px] font-black shrink-0 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/20 to-transparent"></div>
-                            <span className="relative z-10 flex items-center gap-0.5"><span className="opacity-70 text-[10px]">$</span>D</span>
-                          </div>
-                        ) : isUSD ? (
-                          <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/30 flex items-center justify-center text-[13px] font-black shrink-0 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400/20 to-transparent"></div>
-                            <span className="relative z-10">$</span>
-                          </div>
-                        ) : isUSDT ? (
-                          <div className="w-8 h-8 rounded-full bg-[#26A17B]/10 text-[#26A17B] ring-1 ring-[#26A17B]/30 flex items-center justify-center text-[13px] font-black shrink-0 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-[#26A17B]/20 to-transparent"></div>
-                            <span className="relative z-10">₮</span>
-                          </div>
-                        ) : isBTC ? (
-                          <div className="w-8 h-8 rounded-full bg-[#F7931A]/10 text-[#F7931A] ring-1 ring-[#F7931A]/30 flex items-center justify-center text-[13px] font-black shrink-0 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-[#F7931A]/20 to-transparent"></div>
-                            <span className="relative z-10">₿</span>
-                          </div>
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/30 flex items-center justify-center text-[12px] font-black shrink-0 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-400/20 to-transparent"></div>
-                            <span className="relative z-10">{acc.currency?.charAt(0) || "R"}</span>
-                          </div>
-                        )}
+                        {getAccountIcon(acc.id, acc.currency || undefined, acc.type || undefined)}
                         <div className="flex flex-col text-left">
                           <span className="text-sm font-bold tracking-tight">{acc.balance.toFixed(2)} <span className="text-[10px] opacity-70 font-medium">{acc.currency}</span></span>
-                          <span className={`text-[10px] font-medium tracking-wide ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>{isDemo ? "Demo" : "Real"} • {acc.id}</span>
+                          <span className={`text-[10px] font-medium tracking-wide ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>{acc.type === "Demo" || acc.id.startsWith("VRTC") ? "Demo" : "Real"} • {acc.id}</span>
                         </div>
                       </div>
                     </SelectItem>

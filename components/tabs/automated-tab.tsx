@@ -16,12 +16,14 @@ import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
 
 import { TabMarketBar } from "@/components/tab-market-bar"
-
 interface AutoBotTabProps {
   theme?: "light" | "dark"
   symbol: string
   onSymbolChange?: (symbol: string) => void
   availableSymbols?: DerivSymbol[]
+  currentPrice?: number
+  currentDigit?: number
+  tickCount?: number
 }
 
 const BOT_STRATEGIES: { id: BotStrategy; name: string; description: string }[] = [
@@ -308,12 +310,9 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
           </CardDescription>
         </CardHeader>
         <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
-          <div className="p-2 sm:p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-            <p className={`text-[10px] sm:text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
-            <p className={`text-sm sm:text-2xl font-bold mt-1 sm:mt-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-              Price: {marketPrice > 0 ? marketPrice.toFixed(5) : "0.00000"}
-            </p>
-          </div>
+          <p className={`text-sm sm:text-2xl font-bold mt-1 sm:mt-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+            Price: {(marketPrice || 0).toFixed(5)}
+          </p>
         </CardContent>
       </Card>
 
@@ -619,10 +618,10 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
                       : "text-red-600"
                     }`}
                 >
-                  ${botState.profitLoss.toFixed(2)}
+                  ${(botState.profitLoss || 0).toFixed(2)}
                 </div>
                 <div className={`text-[10px] sm:text-sm mt-0.5 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                  Target: ${((config.balance * config.tpPercent) / 100).toFixed(2)}
+                  Target: ${(((config.balance || 0) * (config.tpPercent || 0)) / 100).toFixed(2)}
                 </div>
               </CardContent>
             </Card>
@@ -663,7 +662,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                  ${botState.currentStake.toFixed(2)}
+                  ${(botState.currentStake || 0).toFixed(2)}
                 </div>
                 <div className={`text-sm mt-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                   {botState.consecutiveLosses} consecutive losses
@@ -687,7 +686,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
               <div>
                 <div className="flex justify-between mb-2">
                   <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                    Take Profit Target: ${tpAmount.toFixed(2)}
+                    Take Profit Target: ${(tpAmount || 0).toFixed(2)}
                   </span>
                   <span className={`text-sm font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
                     {tpProgress.toFixed(1)}%
@@ -701,7 +700,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
               <div>
                 <div className="flex justify-between mb-2">
                   <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                    Stop Loss Limit: ${slAmount.toFixed(2)}
+                    Stop Loss Limit: ${(slAmount || 0).toFixed(2)}
                   </span>
                   <span className={`text-sm font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
                     {slProgress.toFixed(1)}%

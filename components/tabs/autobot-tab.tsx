@@ -24,6 +24,9 @@ interface AutoBotTabProps {
   symbol: string
   onSymbolChange?: (symbol: string) => void
   availableSymbols?: DerivSymbol[]
+  currentPrice?: number
+  currentDigit?: number
+  tickCount?: number
 }
 
 interface BotConfig {
@@ -531,9 +534,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
             </div>
             <div className="p-2 sm:p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
               <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Price</p>
-              <p className={`text-[10px] sm:text-lg font-bold tabular-nums ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-                {currentMarketPrice.toFixed(5)}
-              </p>
+              {(currentMarketPrice || 0).toFixed(5)}
             </div>
             <div className="p-2 sm:p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
               <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Digit</p>
@@ -621,8 +622,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
                   <>
                     <div className={`p-2 sm:p-3 rounded-lg ${theme === "dark" ? "bg-blue-500/10 border border-blue-500/30" : "bg-blue-50 border border-blue-200"}`}>
                       <div className="flex justify-between items-center mb-1 sm:mb-2">
-                        <span className={`text-[10px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market Power</span>
-                        <span className={`text-xs sm:text-sm font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>{analysis.marketPower.toFixed(1)}%</span>
+                        <span className={`text-xs sm:text-sm font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>{(analysis.marketPower || 0).toFixed(1)}%</span>
                       </div>
                       <Progress value={analysis.marketPower} className={`h-1 sm:h-2 ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`} />
                     </div>
@@ -731,8 +731,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
                       <div className={`text-base sm:text-lg font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{botState.losses}</div>
                     </div>
                     <div className={`col-span-2 p-1.5 sm:p-2 rounded-lg text-center ${botState.profitLoss >= 0 ? (theme === "dark" ? "bg-green-500/10" : "bg-green-50") : theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}>
-                      <div className={`text-[8px] sm:text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>P/L</div>
-                      <div className={`text-base sm:text-lg font-bold ${botState.profitLoss >= 0 ? (theme === "dark" ? "text-green-400" : "text-green-600") : theme === "dark" ? "text-red-400" : "text-red-600"}`}>${botState.profitLoss.toFixed(2)}</div>
+                      <div className={`text-base sm:text-lg font-bold ${botState.profitLoss >= 0 ? (theme === "dark" ? "text-green-400" : "text-green-600") : theme === "dark" ? "text-red-400" : "text-red-600"}`}>${(botState.profitLoss || 0).toFixed(2)}</div>
                     </div>
                   </div>
                 )}
@@ -818,7 +817,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
                           {trade.exit}
                         </td>
                         <td className={`py-3 px-2 text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-                          ${trade.stake.toFixed(2)}
+                          ${(trade.stake || 0).toFixed(2)}
                         </td>
                         <td className="py-3 px-2">
                           <Badge
@@ -844,7 +843,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
                               : "text-red-600"
                             }`}
                         >
-                          {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
+                          {trade.profitLoss >= 0 ? "+" : ""}${(trade.profitLoss || 0).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -868,12 +867,12 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
                 <div className="bg-white/10 rounded-lg p-6 space-y-3">
                   <div className="flex items-center justify-center gap-2">
                     <DollarSign className="h-6 w-6 text-green-400" />
-                    <span className="text-4xl font-bold text-white">${tpAmount.toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-white">${(tpAmount || 0).toFixed(2)}</span>
                   </div>
                   <div className="text-sm text-gray-300">USD</div>
 
                   <div className="border-t border-white/20 pt-3">
-                    <div className="text-2xl font-bold text-green-400">KES {(tpAmount * USD_TO_KES_RATE).toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-green-400">KES {((tpAmount || 0) * (USD_TO_KES_RATE || 129.5)).toFixed(2)}</div>
                     <div className="text-xs text-gray-400 mt-1">(Conversion rate: 1 USD = {USD_TO_KES_RATE} KES)</div>
                   </div>
                 </div>
