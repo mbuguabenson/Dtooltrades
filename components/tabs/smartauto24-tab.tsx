@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Play, Pause, Zap, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { DerivRealTrader } from "@/lib/deriv-real-trader"
 import { EvenOddStrategy } from "@/lib/even-odd-strategy"
@@ -135,12 +136,14 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
   // SmartAuto24 Engine
   const {
+    engineRef,
     currentDigit: engineDigit,
     snapshot: engineSnapshot,
     signals: engineSignals,
     setPipSize,
     processTick: engineProcessTick,
-    reset: resetEngine
+    reset: resetEngine,
+    marketScores
   } = useSmartAuto24(symbol, isConnected)
 
   // Modal state
@@ -176,6 +179,13 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   // New state for stop loss percentage
   const [stopLossPercent, setStopLossPercent] = useState("50")
 
+  // New state for 24h AutoPilot
+  const [isAutoPilotEnabled, setIsAutoPilotEnabled] = useState(false)
+  const [isAutoMarketSwitchEnabled, setIsAutoMarketSwitchEnabled] = useState(false)
+  const isAutoPilotEnabledRef = useRef(false)
+  const isAutoMarketSwitchEnabledRef = useRef(false)
+  const marketScoresRef = useRef(marketScores)
+
   // Sync refs with state for use in stable tick callback
   useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
   useEffect(() => { statusRef.current = status }, [status])
@@ -188,6 +198,9 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   useEffect(() => { lastDigitWasEvenRef.current = lastDigitWasEven }, [lastDigitWasEven])
   useEffect(() => { differsWaitingForEntryRef.current = differsWaitingForEntry }, [differsWaitingForEntry])
   useEffect(() => { differsSelectedDigitRef.current = differsSelectedDigit }, [differsSelectedDigit])
+  useEffect(() => { isAutoPilotEnabledRef.current = isAutoPilotEnabled }, [isAutoPilotEnabled])
+  useEffect(() => { isAutoMarketSwitchEnabledRef.current = isAutoMarketSwitchEnabled }, [isAutoMarketSwitchEnabled])
+  useEffect(() => { marketScoresRef.current = marketScores }, [marketScores])
 
   useEffect(() => {
     if (!apiClient || !isConnected || !isAuthorized) return
@@ -383,7 +396,9 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
     addAnalysisLog(`Starting ${analysisTimeMinutes} minute analysis on ${symbol}...`, "info")
 
     // Initialize trader
-    traderRef.current = new DerivRealTrader(apiClient)
+    if (!traderRef.current) {
+      traderRef.current = new DerivRealTrader(apiClient)
+    }
 
     // Start timer
     const analysisSeconds = Number.parseInt(analysisTimeMinutes) * 60
@@ -417,8 +432,17 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
     if (viableSignals.length === 0) {
       addAnalysisLog("No clear bias found in the market. Consider increasing analysis time.", "warning")
+      if (isAutoPilotEnabledRef.current) {
+        addAnalysisLog("AutoPilot: Retrying analysis in 5 seconds...", "info")
+        setTimeout(() => handleStartAnalysis(), 5000)
+      }
     } else {
       addAnalysisLog(`Analysis finished! Found ${viableSignals.length} suggested strategies based on current market power.`, "success")
+      if (isAutoPilotEnabledRef.current) {
+        const bestSignal = [...viableSignals].sort((a, b) => b.probability - a.probability)[0]
+        addAnalysisLog(`AutoPilot: Automatically selecting highest probability strategy: ${bestSignal.type.toUpperCase()}`, "info")
+        setTimeout(() => handleSelectSuggestion(bestSignal), 2000)
+      }
     }
   }
 
@@ -599,10 +623,50 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
         // Handle TP/SL
         if (traderRef.current.getTotalProfit() >= Number.parseFloat(targetProfit)) {
-          setTpAmount(traderRef.current.getTotalProfit())
-          setShowTPPopup(true)
-          setStatus("completed")
-          setIsRunning(false)
+          if (isAutoPilotEnabledRef.current) {
+            addAnalysisLog(`Target Profit of $${targetProfit} reached! AutoPilot resting session...`, "success")
+
+            // Auto Market Switch
+            if (isAutoMarketSwitchEnabledRef.current && marketScoresRef.current.length > 0) {
+              const best = [...marketScoresRef.current].sort((a, b) => b.score - a.score)[0]
+              if (best && best.symbol !== symbol && best.score > 70) {
+                addAnalysisLog(`AutoPilot: Switching market to ${best.symbol.replace('_', ' ')} based on Intelligence score ${best.score}%.`, "info")
+                onSymbolChange(best.symbol)
+              }
+            }
+
+            // Reset Trader and Stats for the new cycle
+            traderRef.current = new DerivRealTrader(apiClient)
+            setSessionProfit(0)
+            setSessionTrades(0)
+            contractsLostRef.current = 0
+
+            // Go back to scanning/analyzing phase instead of stopping
+            setStatus("analyzing")
+            setAnalysisProgress(0)
+            setTimeLeft(Number.parseInt(analysisTimeMinutes) * 60)
+
+            const analysisSeconds = Number.parseInt(analysisTimeMinutes) * 60
+            let secondsElapsed = 0
+
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+            timerIntervalRef.current = setInterval(() => {
+              secondsElapsed++
+              setTimeLeft(Math.max(0, analysisSeconds - secondsElapsed))
+              setAnalysisProgress((secondsElapsed / analysisSeconds) * 100)
+
+              if (secondsElapsed >= analysisSeconds) {
+                clearInterval(timerIntervalRef.current!)
+                completeAnalysis()
+              }
+            }, 1000)
+
+          } else {
+            setTpAmount(traderRef.current.getTotalProfit())
+            setShowTPPopup(true)
+            setStatus("completed")
+            setIsRunning(false)
+          }
         }
       }
     } catch (error: any) {
@@ -946,6 +1010,31 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
                   min="10"
                   max="90"
                 />
+              </div>
+
+              <div className="flex flex-col justify-end space-y-3 pb-2 mt-4 sm:mt-0 col-span-2 sm:col-span-1 border-t sm:border-t-0 sm:border-l border-gray-200/20 pt-4 sm:pt-0 sm:pl-4">
+                <div className="flex items-center justify-between">
+                  <Label className={`text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"} font-bold cursor-pointer`} htmlFor="autopilot-toggle">
+                    24h AutoPilot
+                  </Label>
+                  <Switch
+                    id="autopilot-toggle"
+                    checked={isAutoPilotEnabled}
+                    onCheckedChange={setIsAutoPilotEnabled}
+                    disabled={isRunning}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className={`text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-700"} font-bold cursor-pointer`} htmlFor="market-switch-toggle">
+                    Auto Market Switch
+                  </Label>
+                  <Switch
+                    id="market-switch-toggle"
+                    checked={isAutoMarketSwitchEnabled}
+                    onCheckedChange={setIsAutoMarketSwitchEnabled}
+                    disabled={isRunning || !isAutoPilotEnabled}
+                  />
+                </div>
               </div>
             </div>
 

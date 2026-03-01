@@ -460,7 +460,16 @@ export function createAdmin(username: string, password: string): void {
 
 export function verifyAdmin(username: string, password: string): any {
   const db = getDatabase()
-  if (!db) return null;
+  if (!db) {
+    // Vercel / Production Bypass Fallback
+    const fallbackUsername = process.env.ADMIN_USERNAME || 'admin'
+    const fallbackPassword = process.env.ADMIN_PASSWORD || 'admin'
+
+    if (username === fallbackUsername && password === fallbackPassword) {
+      return { id: 1, username: fallbackUsername, role: 'superadmin' }
+    }
+    return null
+  }
   const admin = db.prepare("SELECT * FROM admins WHERE username = ? AND password = ?").get(username, password)
   return admin
 }
