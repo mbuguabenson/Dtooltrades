@@ -17,32 +17,28 @@ interface FeedItem {
 export function AdminLiveFeed() {
     const [items, setItems] = useState<FeedItem[]>([])
 
-    // Simulate incoming live data
     useEffect(() => {
-        const users = ["James K.", "Sarah M.", "Michael B.", "Elena R.", "David W.", "Sophia L."]
-        const currencies = ["USD", "USDT", "BTC"]
-
-        const generateItem = (): FeedItem => {
-            const types: FeedItem["type"][] = ["trade", "deposit", "withdrawal", "login"]
-            const type = types[Math.floor(Math.random() * types.length)]
-
-            return {
-                id: Math.random().toString(36).substr(2, 9),
-                type,
-                user: users[Math.floor(Math.random() * users.length)],
-                amount: type !== "login" ? Math.floor(Math.random() * 500) + 10 : undefined,
-                currency: type !== "login" ? currencies[Math.floor(Math.random() * currencies.length)] : undefined,
-                status: "Completed",
-                timestamp: new Date()
+        async function fetchTrades() {
+            try {
+                const res = await fetch("/api/admin/trades")
+                const data = await res.json()
+                const formatted = (data.trades || []).map((t: any) => ({
+                    id: t.id.toString(),
+                    type: "trade",
+                    user: t.loginId,
+                    amount: t.stake,
+                    currency: "USD",
+                    status: t.status,
+                    timestamp: new Date(t.createdAt * 1000)
+                }))
+                setItems(formatted)
+            } catch (err) {
+                console.error("Failed to fetch live feed:", err)
             }
         }
 
-        setItems([generateItem(), generateItem(), generateItem(), generateItem()])
-
-        const interval = setInterval(() => {
-            setItems(prev => [generateItem(), ...prev.slice(0, 7)])
-        }, 4000)
-
+        fetchTrades()
+        const interval = setInterval(fetchTrades, 10000) // Refresh every 10s
         return () => clearInterval(interval)
     }, [])
 

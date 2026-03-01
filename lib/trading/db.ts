@@ -62,6 +62,29 @@ export function initializeDatabase(dbPath: string): Database.Database {
       createdAt INTEGER DEFAULT (strftime('%s', 'now'))
     );
 
+    CREATE TABLE IF NOT EXISTS users (
+      loginId TEXT PRIMARY KEY,
+      name TEXT,
+      type TEXT, -- 'Demo' or 'Real'
+      currency TEXT,
+      balance REAL DEFAULT 0,
+      lastSeen INTEGER,
+      status TEXT DEFAULT 'offline', -- 'online', 'offline'
+      updatedAt INTEGER DEFAULT (strftime('%s', 'now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS transactions (
+      id TEXT PRIMARY KEY,
+      loginId TEXT NOT NULL,
+      type TEXT NOT NULL, -- 'deposit', 'withdrawal'
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL,
+      method TEXT,
+      status TEXT NOT NULL, -- 'pending', 'completed', 'failed'
+      timestamp INTEGER NOT NULL,
+      FOREIGN KEY(loginId) REFERENCES users(loginId)
+    );
+
     CREATE TABLE IF NOT EXISTS aggregates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sessionName TEXT NOT NULL UNIQUE,
@@ -279,6 +302,69 @@ export function getTradeStats(sessionName?: string): {
     totalLosses: result.losses || 0,
     totalProfitLoss: result.profitLoss || 0,
     winRate: result.count > 0 ? ((result.wins || 0) / result.count) * 100 : 0,
+  }
+}
+
+export function upsertUser(user: { loginId: string; name?: string; type?: string; currency?: string; balance?: number }): void {
+  const db = getDatabase()
+  const now = Math.floor(Date.now() / 1000)
+
+  const stmt = db.prepare(`
+    INSERT INTO users (loginId, name, type, currency, balance, lastSeen, status, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, 'online', ?)
+    ON CONFLICT(loginId) DO UPDATE SET
+      name = COALESCE(?, name),
+      type = COALESCE(?, type),
+      currency = COALESCE(?, currency),
+      balance = COALESCE(?, balance),
+      lastSeen = ?,
+      status = 'online',
+      updatedAt = ?
+  `)
+
+  stmt.run(
+    user.loginId, user.name || null, user.type || null, user.currency || null, user.balance || 0, now, now,
+    user.name || null, user.type || null, user.currency || null, user.balance || 0, now, now
+  )
+}
+
+export function updateUserStatus(loginId: string, status: 'online' | 'offline'): void {
+  const db = getDatabase()
+  const now = Math.floor(Date.now() / 1000)
+  const stmt = db.prepare("UPDATE users SET status = ?, lastSeen = ?, updatedAt = ? WHERE loginId = ?")
+  stmt.run(status, now, now, loginId)
+}
+
+export function getAllUsers(): any[] {
+  const db = getDatabase()
+  const stmt = db.prepare("SELECT * FROM users ORDER BY lastSeen DESC")
+  return stmt.all()
+}
+
+export function getPlatformOverview(): any {
+  const db = getDatabase()
+
+  const userStats = db.prepare(`
+    SELECT 
+      COUNT(*) as totalUsers,
+      SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as onlineUsers,
+      SUM(CASE WHEN type = 'Real' THEN balance ELSE 0 END) as totalRealBalance,
+      SUM(CASE WHEN type = 'Demo' THEN balance ELSE 0 END) as totalDemoBalance
+    FROM users
+  `).get() as any
+
+  const tradeStats = db.prepare(`
+    SELECT 
+      COUNT(*) as totalTrades,
+      SUM(profitLoss) as netPerformance,
+      SUM(stake) as totalVolume
+    FROM trades 
+    WHERE status = 'closed'
+  `).get() as any
+
+  return {
+    ...userStats,
+    ...tradeStats
   }
 }
 

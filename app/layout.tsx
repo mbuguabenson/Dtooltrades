@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   generator: "v0.app",
 }
 
+import { HeartbeatManager } from "@/components/heartbeat-manager"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,6 +26,7 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`} suppressHydrationWarning>
         <ThemeProviderAdvanced defaultTheme="dark">
           <DerivAPIProvider>
+            <HeartbeatManager />
             <Suspense fallback={null}>{children}</Suspense>
           </DerivAPIProvider>
         </ThemeProviderAdvanced>

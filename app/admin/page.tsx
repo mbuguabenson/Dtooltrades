@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import {
   Users,
   Wallet,
@@ -17,46 +17,66 @@ import { AdminStatsCard } from "@/components/admin/admin-stats-card"
 import { AdminLiveFeed } from "@/components/admin/admin-live-feed"
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/admin/overview")
+        const data = await res.json()
+        setStats(data)
+      } catch (err) {
+        console.error("Failed to fetch dashboard stats:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+    const interval = setInterval(fetchStats, 30000) // Refresh every 30s
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Welcome Header */}
       <div>
-        <h2 className="text-3xl font-black text-white tracking-tight">Good Morning, James</h2>
-        <p className="text-sm text-gray-500 mt-1">Don't forget to take a look at the platform performance today.</p>
+        <h2 className="text-3xl font-black text-white tracking-tight">Good Morning, Admin</h2>
+        <p className="text-sm text-gray-500 mt-1">Real-time platform performance overview.</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <AdminStatsCard
           label="Total Active Users"
-          value="1,284"
-          subValue="842 Online now"
+          value={loading ? "..." : (stats?.totalUsers || 0).toString()}
+          subValue={loading ? "Loading..." : `${stats?.onlineUsers || 0} Online now`}
           icon={UserCheck}
           trend={{ value: 12, label: "this month", positive: true }}
           color="blue"
         />
         <AdminStatsCard
           label="Real Balance Total"
-          value="$241,111.10"
-          subValue="Across 342 wallets"
+          value={loading ? "..." : `$${(stats?.totalRealBalance || 0).toLocaleString()}`}
+          subValue={loading ? "Loading..." : "Live platform reserve"}
           icon={Wallet}
           trend={{ value: 5.2, label: "vs last week", positive: true }}
           color="green"
         />
         <AdminStatsCard
-          label="Total Commission"
-          value="$15,680.25"
-          subValue="Accumulated fees"
-          icon={DollarSign}
-          trend={{ value: 14.3, label: "Profit margin", positive: true }}
+          label="Net Performance"
+          value={loading ? "..." : `$${(stats?.netPerformance || 0).toFixed(2)}`}
+          subValue={loading ? "Loading..." : "Total Platform P/L"}
+          icon={TrendingUp}
+          trend={{ value: stats?.netPerformance >= 0 ? 10 : -10, label: "All time", positive: stats?.netPerformance >= 0 }}
           color="purple"
         />
         <AdminStatsCard
           label="Trading Volume"
-          value="$3.2M"
-          subValue="Last 24 hours"
+          value={loading ? "..." : `$${(stats?.totalVolume || 0).toLocaleString()}`}
+          subValue={loading ? "Loading..." : "Total stake processed"}
           icon={Zap}
-          trend={{ value: 2.1, label: "System load", positive: false }}
+          trend={{ value: 2.1, label: "System load", positive: true }}
           color="orange"
         />
       </div>
@@ -91,24 +111,24 @@ export default function AdminDashboard() {
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/5">
             <div>
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Profits</p>
-              <h4 className="text-xl font-black text-white">+$15,680.25</h4>
+              <h4 className="text-xl font-black text-white">{loading ? "..." : (stats?.netPerformance >= 0 ? "+" : "") + (stats?.netPerformance || 0).toFixed(2)}</h4>
               <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold mt-1">
                 <ArrowUpRight className="h-3 w-3" />
-                +14.3% this month
+                Aggregated P/L
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Top Trader</p>
-              <h4 className="text-xl font-black text-white">Alex_Wolf</h4>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Online Users</p>
+              <h4 className="text-xl font-black text-white">{loading ? "..." : (stats?.onlineUsers || 0)}</h4>
               <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium mt-1 uppercase">
-                842 Winning trades
+                Active connections
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Deposits</p>
-              <h4 className="text-xl font-black text-white">$482,900</h4>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Platform Volume</p>
+              <h4 className="text-xl font-black text-white">${loading ? "..." : (stats?.totalVolume || 0).toLocaleString()}</h4>
               <div className="flex items-center gap-1 text-[10px] text-blue-400 font-bold mt-1 uppercase tracking-tighter">
-                72 Processing today
+                Processed Stakes
               </div>
             </div>
           </div>

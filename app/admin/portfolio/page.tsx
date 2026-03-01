@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     Search,
     Filter,
@@ -33,53 +33,29 @@ interface UserPortfolio {
 
 export default function AdminPortfolioPage() {
     const [searchTerm, setSearchTerm] = useState("")
+    const [users, setUsers] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
 
-    const users: UserPortfolio[] = [
-        {
-            id: "CR100521",
-            name: "Alex Wolf",
-            email: "alex.wolf@example.com",
-            status: "online",
-            balance: { real: 4200.50, demo: 10000, currency: "USD" },
-            performance: { winRate: 92, totalTrades: 842, netProfit: 15680 }
-        },
-        {
-            id: "CR200843",
-            name: "Sarah Jones",
-            email: "sarah.j@example.com",
-            status: "offline",
-            balance: { real: 1250.75, demo: 5000, currency: "USDT" },
-            performance: { winRate: 88, totalTrades: 512, netProfit: 8400 }
-        },
-        {
-            id: "CR300291",
-            name: "Mark Knight",
-            email: "mark.knight@example.com",
-            status: "online",
-            balance: { real: 8500.20, demo: 25000, currency: "BTC" },
-            performance: { winRate: 85, totalTrades: 1205, netProfit: 22100 }
-        },
-        {
-            id: "CR400511",
-            name: "Elena Rodriguez",
-            email: "elena.r@example.com",
-            status: "online",
-            balance: { real: 320.00, demo: 1000, currency: "USD" },
-            performance: { winRate: 72, totalTrades: 156, netProfit: -450 }
-        },
-        {
-            id: "CR500922",
-            name: "David Wang",
-            email: "d.wang@example.com",
-            status: "offline",
-            balance: { real: 15400.00, demo: 50000, currency: "USD" },
-            performance: { winRate: 78, totalTrades: 2100, netProfit: 45000 }
+    useEffect(() => {
+        async function fetchUsers() {
+            try {
+                const res = await fetch("/api/admin/users")
+                const data = await res.json()
+                setUsers(data.users || [])
+            } catch (err) {
+                console.error("Failed to fetch users:", err)
+            } finally {
+                setLoading(false)
+            }
         }
-    ]
+        fetchUsers()
+        const interval = setInterval(fetchUsers, 30000)
+        return () => clearInterval(interval)
+    }, [])
 
     const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.id.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        user.loginId.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     return (
@@ -131,15 +107,15 @@ export default function AdminPortfolioPage() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {filteredUsers.map((user) => (
-                                <tr key={user.id} className="group hover:bg-white/[0.02] transition-colors">
+                                <tr key={user.loginId} className="group hover:bg-white/[0.02] transition-colors">
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-800 to-gray-950 border border-white/10 flex items-center justify-center font-black group-hover:scale-110 transition-transform">
-                                                {user.name.split(' ').map(n => n[0]).join('')}
+                                                {(user.name || "U").split(' ').map((n: string) => n[0]).join('')}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-white mb-0.5">{user.name}</p>
-                                                <p className="text-[10px] text-gray-500 font-mono">{user.id}</p>
+                                                <p className="text-sm font-bold text-white mb-0.5">{user.name || "Trader"}</p>
+                                                <p className="text-[10px] text-gray-500 font-mono">{user.loginId}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -151,27 +127,27 @@ export default function AdminPortfolioPage() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-5 text-sm font-black text-white">
-                                        {user.balance.real.toLocaleString()} <span className="text-[10px] text-gray-500 font-medium">{user.balance.currency}</span>
+                                        {(user.type === 'Real' ? user.balance : 0).toLocaleString()} <span className="text-[10px] text-gray-500 font-medium">{user.currency || "USD"}</span>
                                     </td>
                                     <td className="px-6 py-5 text-sm font-bold text-gray-400">
-                                        {user.balance.demo.toLocaleString()} <span className="text-[10px] text-gray-600 font-medium">USD</span>
+                                        {(user.type === 'Demo' ? user.balance : 0).toLocaleString()} <span className="text-[10px] text-gray-600 font-medium">USD</span>
                                     </td>
                                     <td className="px-6 py-5">
                                         <div className="flex flex-col gap-1.5">
                                             <div className="flex justify-between items-center text-[10px]">
-                                                <span className="text-gray-500 font-bold">{user.performance.winRate}%</span>
+                                                <span className="text-gray-500 font-bold">--%</span>
                                             </div>
                                             <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                <div className="h-full bg-blue-500" style={{ width: `${user.performance.winRate}%` }} />
+                                                <div className="h-full bg-blue-500" style={{ width: `0%` }} />
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-5">
                                         <div className="flex flex-col">
-                                            <span className={`text-sm font-black ${user.performance.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                                {user.performance.netProfit >= 0 ? "+" : ""}${Math.abs(user.performance.netProfit).toLocaleString()}
+                                            <span className={`text-sm font-black text-gray-500 italic`}>
+                                                Limited Access
                                             </span>
-                                            <span className="text-[10px] text-gray-500 uppercase tracking-widest">{user.performance.totalTrades} trades</span>
+                                            <span className="text-[10px] text-gray-500 uppercase tracking-widest">Global Overview</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-5">
