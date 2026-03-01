@@ -86,7 +86,6 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
     }, [fetchProfitTable, activeLoginId])
 
     const filteredProfitTable = useMemo(() => {
-        const now = Math.floor(Date.now() / 1000)
         let filtered = [...profitTable]
 
         // Type filtering
@@ -94,19 +93,8 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
             filtered = filtered.filter(tx => tx.contract_type.toLowerCase().includes(typeFilter.toLowerCase()))
         }
 
-        // Duration filtering
-        if (durationFilter !== "all") {
-            const durationSecs = {
-                "24h": 24 * 60 * 60,
-                "7d": 7 * 24 * 60 * 60,
-                "30d": 30 * 24 * 60 * 60
-            }[durationFilter] || 0
-
-            filtered = filtered.filter(tx => tx.sell_time >= (now - durationSecs))
-        }
-
         return filtered
-    }, [profitTable, typeFilter, durationFilter])
+    }, [profitTable, typeFilter])
 
     const totals = useMemo(() => {
         const profit = filteredProfitTable.reduce((acc, tx) => acc + (tx.profit_loss || 0), 0)
