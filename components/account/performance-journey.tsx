@@ -2,16 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    AreaChart, Area, ComposedChart, Bar, Line, Cell
-} from "recharts"
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import {
     TrendingUp, TrendingDown, Wallet, ArrowDownCircle, ArrowUpCircle,
-    History, Calendar, RefreshCcw, Activity, BookOpen
+    Activity, RefreshCcw, Trophy, Target, Zap, BarChart3, BookOpen,
+    CheckCircle2, XCircle
 } from "lucide-react"
 
 interface JourneyEvent {
@@ -26,6 +21,27 @@ interface PerformanceJourneyProps {
     theme?: "light" | "dark"
 }
 
+const EVENT_COLORS = {
+    deposit: "#10b981",
+    withdrawal: "#f43f5e",
+    trade_win: "#3b82f6",
+    trade_loss: "#f43f5e",
+    other: "#6b7280",
+}
+
+const RADIAN = Math.PI / 180
+function CustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
+    if (percent < 0.05) return null
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+    return (
+        <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight="bold">
+            {`${(percent * 100).toFixed(0)}%`}
+        </text>
+    )
+}
+
 export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) {
     const { apiClient, isAuthorized, activeLoginId } = useDerivAPI()
     const [events, setEvents] = useState<JourneyEvent[]>([])
@@ -34,253 +50,208 @@ export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) 
 
     const fetchJourneyData = useCallback(async () => {
         if (!apiClient || !isAuthorized) return
-
         setIsLoading(true)
         setError(null)
         try {
-            // Fetch a larger set of data for a better journey view
-            const response = await apiClient.getStatement(100)
-            if (response && response.transactions) {
-                const txs = response.transactions
-
-                const processEvents: JourneyEvent[] = txs.reverse().map((tx: any) => {
+            const response = await apiClient.getStatement(200)
+            if (response?.transactions) {
+                const processEvents: JourneyEvent[] = [...response.transactions].reverse().map((tx: any) => {
+                    const action = tx.action_type?.toLowerCase()
                     let type: JourneyEvent["type"] = "other"
-                    const action = tx.action_type.toLowerCase()
-
                     if (action === "deposit") type = "deposit"
                     else if (action === "withdrawal") type = "withdrawal"
                     else if (action === "buy" || action === "sell") {
                         type = tx.amount > 0 ? "trade_win" : "trade_loss"
                     }
-
                     return {
-                        type,
-                        amount: tx.amount,
-                        time: tx.transaction_time,
-                        balance: tx.balance_after,
-                        description: tx.longcode || tx.display_name || action
+                        type, amount: tx.amount, time: tx.transaction_time,
+                        balance: tx.balance_after, description: tx.longcode || tx.display_name || action
                     }
                 })
-
                 setEvents(processEvents)
             }
         } catch (err: any) {
-            console.error("[v0] Error fetching journey data:", err)
             setError(err?.message || "Failed to load journey data")
         } finally {
             setIsLoading(false)
         }
     }, [apiClient, isAuthorized])
 
-    useEffect(() => {
-        fetchJourneyData()
-    }, [fetchJourneyData, activeLoginId])
+    useEffect(() => { fetchJourneyData() }, [fetchJourneyData, activeLoginId])
 
     const metrics = useMemo(() => {
         const deposited = events.filter(e => e.type === "deposit").reduce((s, e) => s + e.amount, 0)
         const withdrawn = events.filter(e => e.type === "withdrawal").reduce((s, e) => s + Math.abs(e.amount), 0)
-        const tradingPnL = events.filter(e => e.type === "trade_win" || e.type === "trade_loss").reduce((s, e) => s + e.amount, 0)
-
-        return {
-            deposited,
-            withdrawn,
-            tradingPnL,
-            totalFunding: deposited - withdrawn,
-            netResult: (deposited - withdrawn) + tradingPnL
-        }
+        const tradeTxs = events.filter(e => e.type === "trade_win" || e.type === "trade_loss")
+        const wins = tradeTxs.filter(e => e.type === "trade_win")
+        const losses = tradeTxs.filter(e => e.type === "trade_loss")
+        const tradingPnL = tradeTxs.reduce((s, e) => s + e.amount, 0)
+        const winRate = tradeTxs.length > 0 ? (wins.length / tradeTxs.length) * 100 : 0
+        const avgWin = wins.length > 0 ? wins.reduce((s, e) => s + e.amount, 0) / wins.length : 0
+        const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, e) => s + e.amount, 0)) / losses.length : 0
+        const currentBal = events.length > 0 ? events[events.length - 1].balance : 0
+        return { deposited, withdrawn, tradingPnL, wins: wins.length, losses: losses.length, total: tradeTxs.length, winRate, avgWin, avgLoss, currentBal }
     }, [events])
 
-    const chartData = useMemo(() => {
-        let cumulativeProfit = 0
-        return events.map((e, i) => {
-            // Only trades contribute to the "Profitability" line
-            if (e.type === "trade_win" || e.type === "trade_loss") {
-                cumulativeProfit += e.amount
-            }
-            return {
-                name: new Date(e.time * 1000).toLocaleDateString(),
-                balance: e.balance,
-                profit: Number(cumulativeProfit.toFixed(2)),
-                amount: e.amount,
-                type: e.type
-            }
-        })
-    }, [events])
+    const pieData = useMemo(() => [
+        { name: "Trade Wins", value: metrics.wins, color: "#10b981" },
+        { name: "Trade Losses", value: metrics.losses, color: "#f43f5e" },
+        { name: "Deposits", value: events.filter(e => e.type === "deposit").length, color: "#3b82f6" },
+        { name: "Withdrawals", value: events.filter(e => e.type === "withdrawal").length, color: "#f59e0b" },
+    ].filter(d => d.value > 0), [metrics, events])
+
+    const scorecards = [
+        { label: "Total Deposited", value: `$${metrics.deposited.toFixed(2)}`, icon: <ArrowDownCircle className="h-5 w-5" />, color: "text-emerald-400", gradient: "from-emerald-700/30 to-emerald-900/10", border: "border-emerald-500/20" },
+        { label: "Total Withdrawn", value: `$${metrics.withdrawn.toFixed(2)}`, icon: <ArrowUpCircle className="h-5 w-5" />, color: "text-rose-400", gradient: "from-rose-700/30 to-rose-900/10", border: "border-rose-500/20" },
+        { label: "Net Trading P&L", value: `${metrics.tradingPnL >= 0 ? "+" : ""}$${metrics.tradingPnL.toFixed(2)}`, icon: <Activity className="h-5 w-5" />, color: metrics.tradingPnL >= 0 ? "text-blue-400" : "text-rose-400", gradient: "from-blue-700/30 to-blue-900/10", border: "border-blue-500/20" },
+        { label: "Current Balance", value: `$${metrics.currentBal.toFixed(2)}`, icon: <Wallet className="h-5 w-5" />, color: "text-purple-400", gradient: "from-purple-700/30 to-purple-900/10", border: "border-purple-500/20" },
+    ]
+
+    const performanceMetrics = [
+        { label: "Win Rate", value: `${metrics.winRate.toFixed(1)}%`, icon: <Trophy className="h-4 w-4 text-amber-400" />, color: metrics.winRate >= 50 ? "text-emerald-400" : "text-rose-400" },
+        { label: "Total Trades", value: metrics.total, icon: <BarChart3 className="h-4 w-4 text-blue-400" />, color: "text-white" },
+        { label: "Wins", value: metrics.wins, icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />, color: "text-emerald-400" },
+        { label: "Losses", value: metrics.losses, icon: <XCircle className="h-4 w-4 text-rose-400" />, color: "text-rose-400" },
+        { label: "Avg Win", value: `$${metrics.avgWin.toFixed(2)}`, icon: <TrendingUp className="h-4 w-4 text-emerald-400" />, color: "text-emerald-400" },
+        { label: "Avg Loss", value: `$${metrics.avgLoss.toFixed(2)}`, icon: <TrendingDown className="h-4 w-4 text-rose-400" />, color: "text-rose-400" },
+    ]
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Summary Highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 group-hover:w-2 transition-all"></div>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Total Deposited</CardDescription>
-                        <CardTitle className="text-2xl font-black text-emerald-400 flex items-center gap-2">
-                            <ArrowDownCircle className="h-5 w-5" />
-                            ${metrics.deposited.toFixed(2)}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-rose-500 group-hover:w-2 transition-all"></div>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Total Withdrawn</CardDescription>
-                        <CardTitle className="text-2xl font-black text-rose-400 flex items-center gap-2">
-                            <ArrowUpCircle className="h-5 w-5" />
-                            ${metrics.withdrawn.toFixed(2)}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 group-hover:w-2 transition-all"></div>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Net Trading P&L</CardDescription>
-                        <CardTitle className={`text-2xl font-black flex items-center gap-2 ${metrics.tradingPnL >= 0 ? "text-blue-400" : "text-rose-400"}`}>
-                            <Activity className="h-5 w-5" />
-                            {metrics.tradingPnL >= 0 ? "+" : ""}${metrics.tradingPnL.toFixed(2)}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-purple-500 group-hover:w-2 transition-all"></div>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Account Standing</CardDescription>
-                        <CardTitle className="text-2xl font-black text-slate-200 flex items-center gap-2">
-                            <Wallet className="h-5 w-5 text-purple-400" />
-                            ${events.length > 0 ? (events[events.length - 1]?.balance || 0).toFixed(2) : "0.00"}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Performance Journey</h3>
+                    <p className="text-[10px] text-gray-600 mt-0.5">{events.length} account events loaded</p>
+                </div>
+                <button onClick={fetchJourneyData} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-gray-400 hover:bg-white/10 transition-all">
+                    <RefreshCcw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} /> Refresh
+                </button>
             </div>
 
-            {/* Journey Chart */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="lg:col-span-2 bg-slate-900/30 border-slate-800 shadow-2xl backdrop-blur-md">
-                    <CardHeader className="flex flex-row items-center justify-between pb-8">
-                        <div>
-                            <CardTitle className="text-lg font-black tracking-tight flex items-center gap-2">
-                                <TrendingUp className="h-5 w-5 text-blue-500" />
-                                Profitability Journey
-                            </CardTitle>
-                            <CardDescription className="text-xs text-slate-500">Cumulative balance including deposits, withdrawals, and trading result.</CardDescription>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={fetchJourneyData} className="rounded-xl hover:bg-slate-800">
-                            <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[400px] w-full">
-                            {isLoading ? (
-                                <Skeleton className="h-full w-full bg-slate-800/50 rounded-2xl" />
-                            ) : events.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <ComposedChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                        <XAxis dataKey="name" hide />
-                                        <YAxis
-                                            stroke="#64748b"
-                                            fontSize={10}
-                                            fontFamily="monospace"
-                                            tickFormatter={(val) => `$${val.toLocaleString()}`}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.4)" }}
-                                            itemStyle={{ fontWeight: "800" }}
-                                            formatter={(value: any, name: any) => {
-                                                const val = Number(value) || 0
-                                                const label = name === "profit" ? "Net Profit" : "Transaction"
-                                                return [`$${val.toFixed(2)}`, label]
-                                            }}
-                                        />
-                                        <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#profitGradient)" />
-                                        <Bar dataKey="amount" barSize={10}>
-                                            {chartData.map((entry, index) => (
-                                                <Cell
-                                                    key={`cell-${index}`}
-                                                    fill={entry.amount > 0 ? "#10b981" : "#f43f5e"}
-                                                    fillOpacity={0.4}
-                                                />
-                                            ))}
-                                        </Bar>
-                                    </ComposedChart>
-                                </ResponsiveContainer>
+            {/* Scorecards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {scorecards.map((s, i) => (
+                    <div key={i} className={`relative overflow-hidden bg-gradient-to-br ${s.gradient} border ${s.border} rounded-2xl p-5`}>
+                        <div className={`${s.color} mb-3`}>{s.icon}</div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">{s.label}</p>
+                        <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+                        <div className="absolute -bottom-3 -right-3 w-14 h-14 rounded-full bg-white/5" />
+                    </div>
+                ))}
+            </div>
 
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center opacity-30">
-                                    <History className="h-12 w-12 mb-4" />
-                                    <p>No journey data found.</p>
+            {isLoading ? (
+                <div className="h-60 flex items-center justify-center">
+                    <div className="relative w-12 h-12">
+                        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                    </div>
+                </div>
+            ) : events.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Pie Chart - Activity Breakdown */}
+                    <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-6">
+                        <div className="mb-4">
+                            <p className="text-xs font-black uppercase tracking-widest text-white mb-0.5">Activity Breakdown</p>
+                            <p className="text-[10px] text-gray-600">Distribution of all account events</p>
+                        </div>
+                        <div className="h-[240px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={pieData}
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={90}
+                                        innerRadius={50}
+                                        paddingAngle={3}
+                                        dataKey="value"
+                                        labelLine={false}
+                                        label={CustomLabel}
+                                        strokeWidth={0}
+                                    >
+                                        {pieData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12 }}
+                                    />
+                                    <Legend
+                                        formatter={(value) => <span className="text-[10px] font-bold text-gray-400">{value}</span>}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Performance Metrics Grid */}
+                    <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-6">
+                        <div className="mb-4">
+                            <p className="text-xs font-black uppercase tracking-widest text-white mb-0.5">Trading Scoreboard</p>
+                            <p className="text-[10px] text-gray-600">Key performance metrics at a glance</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {performanceMetrics.map((m, i) => (
+                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-start gap-3">
+                                    {m.icon}
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-0.5">{m.label}</p>
+                                        <p className={`text-lg font-black ${m.color}`}>{m.value}</p>
+                                    </div>
                                 </div>
-                            )}
+                            ))}
                         </div>
-                    </CardContent>
-                </Card>
+                        {/* Win rate bar */}
+                        <div className="mt-4">
+                            <div className="flex justify-between text-[10px] font-bold text-gray-600 mb-1">
+                                <span>Win Rate</span>
+                                <span className={metrics.winRate >= 50 ? "text-emerald-400" : "text-rose-400"}>{metrics.winRate.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-rose-500/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000"
+                                    style={{ width: `${Math.min(metrics.winRate, 100)}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
 
-                {/* Journal View */}
-                <Card className="bg-slate-900/30 border-slate-800 shadow-2xl backdrop-blur-md">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg font-black tracking-tight flex items-center gap-2">
-                            <BookOpen className="h-5 w-5 text-purple-500" />
-                            Account Journal
-                        </CardTitle>
-                        <CardDescription className="text-xs text-slate-500">Recent significant events in your journey.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="px-2">
-                        <div className="max-h-[420px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-                            {isLoading ? (
-                                Array.from({ length: 5 }).map((_, i) => (
-                                    <div key={i} className="flex gap-3 p-3 rounded-xl border border-slate-800/50">
-                                        <Skeleton className="h-10 w-10 rounded-full bg-slate-800" />
-                                        <div className="space-y-2 flex-1">
-                                            <Skeleton className="h-3 w-1/2 bg-slate-800" />
-                                            <Skeleton className="h-3 w-full bg-slate-800" />
-                                        </div>
-                                    </div>
-                                ))
-                            ) : events.length > 0 ? (
-                                [...events].reverse().slice(0, 20).map((event, idx) => (
-                                    <div key={idx} className="flex gap-4 p-3 rounded-2xl border border-slate-800/50 bg-slate-900/20 hover:bg-slate-800/40 transition-colors relative group">
-                                        <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center border ${event.type === 'deposit' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                            event.type === 'withdrawal' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
-                                                event.type === 'trade_win' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                                                    'bg-slate-500/10 border-slate-500/20 text-slate-500'
-                                            }`}>
-                                            {event.type === 'deposit' ? <ArrowDownCircle className="h-5 w-5" /> :
-                                                event.type === 'withdrawal' ? <ArrowUpCircle className="h-5 w-5" /> :
-                                                    <Activity className="h-5 w-5" />}
-                                        </div>
-                                        <div className="flex-1 space-y-1">
-                                            <div className="flex justify-between items-start">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                                    {event.type.replace('_', ' ')}
-                                                </span>
-                                                <span className="text-[9px] font-mono text-slate-600">
-                                                    {new Date(event.time * 1000).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs font-medium text-slate-300 line-clamp-2 leading-relaxed">
-                                                {event.description}
-                                            </p>
-                                            <div className={`text-sm font-black ${event.amount >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {event.amount >= 0 ? '+' : '-'}${Math.abs(event.amount).toFixed(2)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-center text-slate-600 py-20 text-sm italic">Your journey begins here.</p>
-                            )}
+            {/* Journal — recent events */}
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden">
+                <div className="px-6 py-5 border-b border-white/5 flex items-center gap-3">
+                    <BookOpen className="h-4 w-4 text-purple-400" />
+                    <p className="text-xs font-black uppercase tracking-widest text-white">Account Journal</p>
+                    <span className="ml-auto text-[10px] text-gray-600">Recent {Math.min(events.length, 20)} events</span>
+                </div>
+                <div className="divide-y divide-white/[0.03] max-h-96 overflow-y-auto custom-scrollbar">
+                    {[...events].reverse().slice(0, 20).map((event, idx) => (
+                        <div key={idx} className="flex items-start gap-4 px-6 py-4 hover:bg-white/[0.015] transition-colors">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${event.type === "deposit" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                : event.type === "withdrawal" ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                                    : event.type === "trade_win" ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                                        : event.type === "trade_loss" ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                                            : "bg-gray-500/10 border-gray-500/20 text-gray-400"}`}>
+                                {event.type === "deposit" ? <ArrowDownCircle className="h-4 w-4" /> :
+                                    event.type === "withdrawal" ? <ArrowUpCircle className="h-4 w-4" /> :
+                                        event.type === "trade_win" ? <TrendingUp className="h-4 w-4" /> :
+                                            event.type === "trade_loss" ? <TrendingDown className="h-4 w-4" /> :
+                                                <Activity className="h-4 w-4" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{event.type.replace("_", " ")}</span>
+                                    <span className="text-[9px] font-mono text-gray-700 shrink-0">{new Date(event.time * 1000).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{event.description}</p>
+                                <p className={`text-sm font-black mt-0.5 ${event.amount >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                    {event.amount >= 0 ? "+" : ""}${Math.abs(event.amount).toFixed(2)}
+                                    <span className="text-[10px] text-gray-600 font-medium ml-2">Bal: ${event.balance.toFixed(2)}</span>
+                                </p>
+                            </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    ))}
+                </div>
             </div>
         </div>
     )

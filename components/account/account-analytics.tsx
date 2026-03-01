@@ -1,111 +1,80 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import {
-    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, AreaChart, Area
+    PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from "recharts"
-import {
-    TrendingUp, TrendingDown, Target, Zap, BarChart3, ArrowRightLeft, RefreshCw,
-    Trophy, AlertTriangle
-} from "lucide-react"
+import { RefreshCw, TrendingUp, TrendingDown, Target, Zap, BarChart3, ArrowRightLeft, Trophy } from "lucide-react"
 
-interface AnalyticsData {
-    totalTrades: number
-    wins: number
-    losses: number
-    winRate: number
-    totalProfit: number
-    avgProfit: number
-    maxWin: number
-    maxLoss: number
-    equityCurve: { name: string; value: number }[]
-    distribution: { name: string; value: number; color: string }[]
+interface ProfitTableTransaction {
+    contract_type: string
+    shortcode: string
+    display_name: string
+    buy_price: number
+    sell_price: number
+    profit_loss: number
+    purchase_time: number
+    sell_time: number
+    contract_id: number
 }
 
 interface AccountAnalyticsProps {
     theme?: "light" | "dark"
 }
 
-const AREA_GRADIENT_ID = "acAnalyticsGrad"
-
-function StatCard({ icon, label, value, subValue, color, gradient }: {
-    icon: React.ReactNode
-    label: string
-    value: string | number
-    subValue?: string
-    color: string
-    gradient: string
-}) {
-    return (
-        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} p-5`}>
-            <div className="flex items-start justify-between mb-4">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center bg-white/10`}>{icon}</div>
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">{label}</p>
-            <p className={`text-2xl font-black text-white leading-none`}>{value}</p>
-            {subValue && <p className="text-[10px] text-white/40 mt-1">{subValue}</p>}
-            {/* decorative */}
-            <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-white/5" />
-            <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/5" />
-        </div>
-    )
+// Map Deriv contract types → human-readable strategy names
+function parseContractStrategy(contractType: string, shortcode: string): string {
+    const ct = (contractType || "").toUpperCase()
+    const sc = (shortcode || "").toUpperCase()
+    if (ct === "DIGITEVEN") return "Even/Odd — Even"
+    if (ct === "DIGITODD") return "Even/Odd — Odd"
+    if (ct.startsWith("DIGITOVER") || sc.includes("DIGITOVER")) return "Over/Under — Over"
+    if (ct.startsWith("DIGITUNDER") || sc.includes("DIGITUNDER")) return "Over/Under — Under"
+    if (ct === "DIGITDIFF" || ct.startsWith("DIGITDIFF")) return "Differs"
+    if (ct === "DIGITMATCH" || ct.startsWith("DIGITMATCH")) return "Matches"
+    if (ct === "CALL" || ct === "CALLE" || ct === "CALLSPREAD") return "Rise (Call)"
+    if (ct === "PUT" || ct === "PUTE" || ct === "PUTSPREAD") return "Fall (Put)"
+    if (ct.includes("TOUCH")) return "Touch/No Touch"
+    if (ct.includes("RANGE") || ct.includes("EXPIRYMISS") || ct.includes("EXPIRYRANGE")) return "In/Out Range"
+    if (ct.includes("RESET")) return "Reset Call/Put"
+    if (ct.includes("TICKHIGH") || ct.includes("TICKLOW")) return "High Ticks / Low Ticks"
+    if (ct.includes("ACCUMULATOR")) return "Accumulators"
+    if (ct.includes("VANILLA")) return "Vanilla Options"
+    if (ct.includes("TURBOS")) return "Turbos"
+    if (ct.includes("MULTIPLIER")) return "Multipliers"
+    return ct || "Other"
 }
 
-const CustomDot = (props: any) => {
-    const { cx, cy, value } = props
-    if (value === undefined) return null
-    return <circle cx={cx} cy={cy} r={3} fill="#818cf8" stroke="#0a0a0a" strokeWidth={2} />
+const STRATEGY_COLORS = [
+    "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
+    "#06b6d4", "#f97316", "#84cc16", "#ec4899", "#3b82f6"
+]
+
+const RADIAN = Math.PI / 180
+function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
+    if (percent < 0.04) return null
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+    return <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight="bold">{`${(percent * 100).toFixed(0)}%`}</text>
 }
 
 export function AccountAnalytics({ theme = "dark" }: AccountAnalyticsProps) {
     const { apiClient, isAuthorized, accountType, accounts, switchAccount, activeLoginId } = useDerivAPI()
-    const [data, setData] = useState<AnalyticsData | null>(null)
+    const [trades, setTrades] = useState<ProfitTableTransaction[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [viewType, setViewType] = useState<"Demo" | "Real">(accountType || "Demo")
 
     const fetchData = useCallback(async () => {
-        if (!apiClient || !isAuthorized) return
-        if (accountType !== viewType) return
-
+        if (!apiClient || !isAuthorized || accountType !== viewType) return
         setIsLoading(true)
         try {
-            const response = await apiClient.getProfitTable(100)
-            if (response?.transactions) {
-                const txs = [...response.transactions]
-                const wins = txs.filter(t => (t.profit_loss || 0) > 0)
-                const losses = txs.filter(t => (t.profit_loss || 0) <= 0)
-
-                let running = 0
-                const curve = txs.reverse().map((t, i) => {
-                    running += (t.profit_loss || 0)
-                    return { name: `T${i + 1}`, value: Number(running.toFixed(2)) }
-                })
-
-                const totalProfitSum = txs.reduce((acc, t) => acc + (t.profit_loss || 0), 0)
-
-                setData({
-                    totalTrades: txs.length,
-                    wins: wins.length,
-                    losses: losses.length,
-                    winRate: txs.length > 0 ? (wins.length / txs.length) * 100 : 0,
-                    totalProfit: totalProfitSum,
-                    avgProfit: txs.length > 0 ? totalProfitSum / txs.length : 0,
-                    maxWin: Math.max(...txs.map(t => (t.profit_loss || 0)), 0),
-                    maxLoss: Math.min(...txs.map(t => (t.profit_loss || 0)), 0),
-                    equityCurve: curve,
-                    distribution: [
-                        { name: "Wins", value: wins.length, color: "#10b981" },
-                        { name: "Losses", value: losses.length, color: "#f43f5e" }
-                    ]
-                })
-            } else {
-                setData(null)
-            }
+            const response = await apiClient.getProfitTable(500)
+            setTrades(response?.transactions ?? [])
         } catch (err) {
             console.error("[v0] Analytics fetch error:", err)
-            setData(null)
         } finally {
             setIsLoading(false)
         }
@@ -115,40 +84,66 @@ export function AccountAnalytics({ theme = "dark" }: AccountAnalyticsProps) {
 
     const handleSwitchAndLoad = (type: "Demo" | "Real") => {
         setViewType(type)
-        const target = accounts.find(acc => acc.type === type)
+        const target = accounts.find(a => a.type === type)
         if (target && target.id !== activeLoginId) switchAccount(target.id)
     }
 
+    // Group by strategy
+    const strategyData = useMemo(() => {
+        const map: Record<string, { wins: number; losses: number; pnl: number; trades: number }> = {}
+        trades.forEach(tx => {
+            const label = parseContractStrategy(tx.contract_type, tx.shortcode)
+            if (!map[label]) map[label] = { wins: 0, losses: 0, pnl: 0, trades: 0 }
+            map[label].trades++
+            map[label].pnl += tx.profit_loss || 0
+            if ((tx.profit_loss || 0) > 0) map[label].wins++
+            else map[label].losses++
+        })
+        return Object.entries(map)
+            .map(([name, d]) => ({
+                name,
+                trades: d.trades,
+                wins: d.wins,
+                losses: d.losses,
+                pnl: Number(d.pnl.toFixed(2)),
+                winRate: d.trades > 0 ? Math.round((d.wins / d.trades) * 100) : 0,
+            }))
+            .sort((a, b) => b.trades - a.trades)
+    }, [trades])
+
+    const pieData = useMemo(() =>
+        strategyData.map((s, i) => ({ name: s.name, value: s.trades, color: STRATEGY_COLORS[i % STRATEGY_COLORS.length] }))
+        , [strategyData])
+
+    const totals = useMemo(() => ({
+        trades: trades.length,
+        wins: trades.filter(t => (t.profit_loss || 0) > 0).length,
+        losses: trades.filter(t => (t.profit_loss || 0) <= 0).length,
+        pnl: trades.reduce((s, t) => s + (t.profit_loss || 0), 0),
+        strategies: strategyData.length,
+    }), [trades, strategyData])
+
     const isViewMatch = accountType === viewType
-    const netColor = (data?.totalProfit || 0) >= 0 ? "text-emerald-400" : "text-rose-400"
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-            {/* ─── Account Type Toggle ─── */}
-            <div className="flex items-center justify-between">
+            {/* Controls */}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex p-1 gap-1 bg-white/[0.03] border border-white/5 rounded-2xl">
                     {(["Real", "Demo"] as const).map(type => (
                         <button
                             key={type}
                             onClick={() => handleSwitchAndLoad(type)}
                             className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewType === type
-                                ? type === "Real"
-                                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
-                                    : "bg-amber-500 text-white shadow-lg shadow-amber-500/30"
-                                : "text-gray-500 hover:text-gray-300"
-                                }`}
+                                ? type === "Real" ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" : "bg-amber-500 text-white shadow-lg shadow-amber-500/30"
+                                : "text-gray-500 hover:text-gray-300"}`}
                         >
-                            {type} Account
+                            {type}
                         </button>
                     ))}
                 </div>
-                <button
-                    onClick={fetchData}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:bg-white/10 transition-all"
-                >
-                    <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
-                    Refresh
+                <button onClick={fetchData} className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-gray-400 hover:bg-white/10 transition-all">
+                    <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} /> Refresh
                 </button>
             </div>
 
@@ -159,176 +154,124 @@ export function AccountAnalytics({ theme = "dark" }: AccountAnalyticsProps) {
                 </div>
             )}
 
-            {data ? (
+            {isLoading ? (
+                <div className="h-60 flex items-center justify-center">
+                    <div className="relative w-12 h-12">
+                        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                        <div className="absolute inset-2 border-4 border-purple-500/20 border-b-purple-500 rounded-full animate-spin [animation-direction:reverse] [animation-duration:600ms]" />
+                    </div>
+                </div>
+            ) : trades.length > 0 ? (
                 <>
-                    {/* ─── Top Stat Gradient Cards ─── */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <StatCard
-                            icon={<BarChart3 className="h-5 w-5 text-white" />}
-                            label="Total Trades"
-                            value={data.totalTrades}
-                            subValue="Last 100"
-                            color="text-indigo-400"
-                            gradient="from-indigo-600 to-indigo-800"
-                        />
-                        <StatCard
-                            icon={<Trophy className="h-5 w-5 text-white" />}
-                            label="Win Rate"
-                            value={`${data.winRate.toFixed(1)}%`}
-                            subValue={`${data.wins}W / ${data.losses}L`}
-                            color="text-emerald-400"
-                            gradient="from-emerald-600 to-teal-700"
-                        />
-                        <StatCard
-                            icon={<Zap className="h-5 w-5 text-white" />}
-                            label="Max Win"
-                            value={`$${data.maxWin.toFixed(2)}`}
-                            subValue="Single trade"
-                            color="text-amber-400"
-                            gradient="from-amber-500 to-orange-600"
-                        />
-                        <StatCard
-                            icon={data.totalProfit >= 0
-                                ? <TrendingUp className="h-5 w-5 text-white" />
-                                : <TrendingDown className="h-5 w-5 text-white" />}
-                            label="Net P&L"
-                            value={`${data.totalProfit >= 0 ? "+" : ""}$${data.totalProfit.toFixed(2)}`}
-                            subValue={`Avg $${data.avgProfit.toFixed(2)}/trade`}
-                            color={netColor}
-                            gradient={data.totalProfit >= 0 ? "from-emerald-700 to-green-900" : "from-rose-700 to-red-900"}
-                        />
-                    </div>
-
-                    {/* ─── Charts Row ─── */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Equity Curve (spans 2 cols) */}
-                        <div className="md:col-span-2 bg-[#0a0a0a] border border-white/5 rounded-3xl p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <p className="text-xs font-black uppercase tracking-widest text-white mb-0.5">Equity Curve</p>
-                                    <p className="text-[10px] text-gray-600">Cumulative P&amp;L over {data.totalTrades} trades</p>
-                                </div>
-                                <span className={`text-lg font-black ${netColor}`}>
-                                    {data.totalProfit >= 0 ? "+" : ""}${data.totalProfit.toFixed(2)}
-                                </span>
-                            </div>
-                            <div className="h-[220px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={data.equityCurve} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                                        <defs>
-                                            <linearGradient id={AREA_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
-                                                <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                                        <XAxis dataKey="name" hide />
-                                        <YAxis
-                                            stroke="transparent"
-                                            tick={{ fill: "#4b5563", fontSize: 10 }}
-                                            tickFormatter={v => `$${v}`}
-                                            axisLine={false}
-                                            tickLine={false}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12 }}
-                                            itemStyle={{ color: "#818cf8" }}
-                                            formatter={(v: number) => [`$${v.toFixed(2)}`, "Equity"]}
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="value"
-                                            stroke="#6366f1"
-                                            strokeWidth={2}
-                                            fillOpacity={1}
-                                            fill={`url(#${AREA_GRADIENT_ID})`}
-                                            dot={false}
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        {/* Win/Loss Donut */}
-                        <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-6 flex flex-col">
-                            <div className="mb-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-white mb-0.5">Performance Split</p>
-                                <p className="text-[10px] text-gray-600">Win/Loss distribution</p>
-                            </div>
-                            <div className="flex-1 flex flex-col items-center justify-center">
-                                <div className="relative h-[160px] w-[160px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={data.distribution}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={50}
-                                                outerRadius={70}
-                                                paddingAngle={4}
-                                                dataKey="value"
-                                                strokeWidth={0}
-                                            >
-                                                {data.distribution.map((entry, i) => (
-                                                    <Cell key={i} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12 }}
-                                            />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    {/* Center label */}
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                        <span className="text-2xl font-black text-white">{data.winRate.toFixed(0)}%</span>
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-gray-600">Win</span>
-                                    </div>
-                                </div>
-                                <div className="flex gap-6 mt-4">
-                                    {data.distribution.map((d, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                                            <span className="text-[10px] font-bold text-gray-500">{d.name}: <span className="text-white">{d.value}</span></span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ─── Extra Stats Row ─── */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Summary */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {[
-                            { label: "Max Win", value: `$${data.maxWin.toFixed(2)}`, color: "text-emerald-400", icon: <TrendingUp className="h-4 w-4 text-emerald-500" /> },
-                            { label: "Max Loss", value: `$${Math.abs(data.maxLoss).toFixed(2)}`, color: "text-rose-400", icon: <AlertTriangle className="h-4 w-4 text-rose-500" /> },
-                            { label: "Avg Profit", value: `$${data.avgProfit.toFixed(2)}`, color: "text-blue-400", icon: <Target className="h-4 w-4 text-blue-500" /> },
-                            { label: "Profit Factor", value: data.losses > 0 ? (data.wins / data.losses).toFixed(2) : "∞", color: "text-purple-400", icon: <Zap className="h-4 w-4 text-purple-500" /> },
+                            { label: "Trades", value: totals.trades, color: "text-indigo-400", icon: <BarChart3 className="h-4 w-4" /> },
+                            { label: "Wins", value: totals.wins, color: "text-emerald-400", icon: <TrendingUp className="h-4 w-4" /> },
+                            { label: "Losses", value: totals.losses, color: "text-rose-400", icon: <TrendingDown className="h-4 w-4" /> },
+                            { label: "Net P&L", value: `${totals.pnl >= 0 ? "+" : ""}$${totals.pnl.toFixed(2)}`, color: totals.pnl >= 0 ? "text-emerald-400" : "text-rose-400", icon: <Target className="h-4 w-4" /> },
+                            { label: "Strategies", value: totals.strategies, color: "text-purple-400", icon: <Zap className="h-4 w-4" /> },
                         ].map((s, i) => (
-                            <div key={i} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all">
-                                <div className="flex items-center gap-2 mb-3">{s.icon}</div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">{s.label}</p>
+                            <div key={i} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4">
+                                <div className={`${s.color} mb-2`}>{s.icon}</div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-0.5">{s.label}</p>
                                 <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
                             </div>
                         ))}
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Pie Chart */}
+                        <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-6">
+                            <div className="mb-4">
+                                <p className="text-xs font-black uppercase tracking-widest text-white mb-0.5">Strategy Mix</p>
+                                <p className="text-[10px] text-gray-600">Trade count by contract type</p>
+                            </div>
+                            <div className="h-[260px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={pieData} cx="50%" cy="50%" outerRadius={90} innerRadius={45} paddingAngle={3} dataKey="value" labelLine={false} label={PieLabel} strokeWidth={0}>
+                                            {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                                        </Pie>
+                                        <Tooltip contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12 }} />
+                                        <Legend formatter={(v) => <span className="text-[10px] font-bold text-gray-500">{v}</span>} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Bar chart — P&L per strategy */}
+                        <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-6">
+                            <div className="mb-4">
+                                <p className="text-xs font-black uppercase tracking-widest text-white mb-0.5">P&amp;L by Strategy</p>
+                                <p className="text-[10px] text-gray-600">Net profit/loss per contract type</p>
+                            </div>
+                            <div className="h-[260px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={strategyData.slice(0, 8)} margin={{ left: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                                        <XAxis dataKey="name" tick={{ fill: "#4b5563", fontSize: 9 }} tickLine={false} axisLine={false}
+                                            tickFormatter={v => v.length > 10 ? `${v.slice(0, 10)}…` : v} />
+                                        <YAxis tick={{ fill: "#4b5563", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                                        <Tooltip
+                                            contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 11 }}
+                                            formatter={(v: number) => [`$${v.toFixed(2)}`, "Net P&L"]}
+                                        />
+                                        <Bar dataKey="pnl" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                                            {strategyData.slice(0, 8).map((entry, idx) => (
+                                                <Cell key={idx} fill={entry.pnl >= 0 ? "#10b981" : "#ef4444"} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Detailed strategy table */}
+                    <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden">
+                        <div className="px-6 py-5 border-b border-white/5">
+                            <p className="text-xs font-black uppercase tracking-widest text-white">Strategy Breakdown</p>
+                            <p className="text-[10px] text-gray-600 mt-0.5">All {totals.strategies} contract types detected in your trading history</p>
+                        </div>
+                        <div className="divide-y divide-white/[0.03]">
+                            {strategyData.map((s, i) => (
+                                <div key={i} className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.015] transition-colors">
+                                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: STRATEGY_COLORS[i % STRATEGY_COLORS.length] }} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-white truncate">{s.name}</p>
+                                        <p className="text-[10px] text-gray-600">{s.trades} trades</p>
+                                    </div>
+                                    {/* Win rate bar */}
+                                    <div className="hidden md:flex flex-col items-end w-36">
+                                        <div className="flex justify-between w-full text-[9px] font-bold mb-1">
+                                            <span className="text-emerald-400">{s.wins}W</span>
+                                            <span className="text-gray-600">{s.winRate}%</span>
+                                            <span className="text-rose-400">{s.losses}L</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-rose-500/20 rounded-full overflow-hidden">
+                                            <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${s.winRate}%` }} />
+                                        </div>
+                                    </div>
+                                    <div className={`text-right w-20 font-black text-sm ${s.pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                        {s.pnl >= 0 ? "+" : ""}${s.pnl.toFixed(2)}
+                                    </div>
+                                    {/* Best/worst badge */}
+                                    {i === 0 && (
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                            <Trophy className="h-2.5 w-2.5" /> Most Used
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </>
             ) : (
-                <div className="h-[360px] flex flex-col items-center justify-center bg-[#0a0a0a] border border-white/5 border-dashed rounded-3xl">
-                    {isLoading ? (
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="relative w-14 h-14">
-                                <div className="w-14 h-14 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-                                <div className="absolute inset-2 border-4 border-purple-500/20 border-b-purple-500 rounded-full animate-spin [animation-direction:reverse] [animation-duration:600ms]" />
-                            </div>
-                            <p className="text-gray-500 font-bold animate-pulse">Analyzing trading history…</p>
-                        </div>
-                    ) : (
-                        <div className="text-center">
-                            <BarChart3 className="h-12 w-12 text-gray-700 mx-auto mb-3" />
-                            <p className="text-gray-500 font-bold text-sm">No trading data available</p>
-                            <p className="text-gray-700 text-xs mt-1 max-w-xs">Start trading on this account to see your analytics dashboard here.</p>
-                        </div>
-                    )}
+                <div className="h-64 flex flex-col items-center justify-center bg-[#0a0a0a] border border-white/5 border-dashed rounded-3xl">
+                    <BarChart3 className="h-12 w-12 text-gray-700 mb-3" />
+                    <p className="text-gray-500 font-bold text-sm">No trading data available</p>
+                    <p className="text-gray-700 text-xs mt-1">Switch account or start trading to see strategy analytics.</p>
                 </div>
             )}
         </div>
