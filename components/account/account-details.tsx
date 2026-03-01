@@ -1,14 +1,40 @@
-import { useState, useEffect } from "react"
+"use client"
+
+import { useState, useEffect, useRef } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { User, CreditCard, ShieldCheck, Camera, Edit2, Check, X } from "lucide-react"
+import {
+    User, CreditCard, ShieldCheck, Camera, Edit2, Check, X,
+    TrendingUp, TrendingDown, Wallet, Copy, CheckCheck, Star,
+    ArrowUpRight, Zap, BarChart3
+} from "lucide-react"
 
 interface AccountDetailsProps {
     theme?: "light" | "dark"
+}
+
+function CopyBadge({ text }: { text: string }) {
+    const [copied, setCopied] = useState(false)
+    return (
+        <button
+            onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+            className="ml-1 p-0.5 text-gray-500 hover:text-blue-400 transition-colors"
+        >
+            {copied ? <CheckCheck className="h-3 w-3 text-blue-400" /> : <Copy className="h-3 w-3" />}
+        </button>
+    )
+}
+
+const ACCOUNT_GRADIENTS: Record<string, string> = {
+    "Real-USD": "from-emerald-600 to-teal-700",
+    "Real-EUR": "from-blue-600 to-indigo-700",
+    "Real-BTC": "from-orange-500 to-amber-600",
+    "Real-ETH": "from-purple-600 to-violet-700",
+    "Demo": "from-slate-600 to-slate-700",
+}
+
+function getGradient(type: string, currency: string) {
+    if (type === "Demo") return ACCOUNT_GRADIENTS["Demo"]
+    return ACCOUNT_GRADIENTS[`Real-${currency}`] || "from-blue-600 to-blue-800"
 }
 
 export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
@@ -17,9 +43,9 @@ export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
     const [profileImage, setProfileImage] = useState("")
     const [isEditingUsername, setIsEditingUsername] = useState(false)
     const [tempUsername, setTempUsername] = useState("")
+    const fileRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
-        // Load custom profile from localStorage
         const savedUsername = localStorage.getItem(`dtool_username_${activeLoginId}`)
         const savedImage = localStorage.getItem(`dtool_avatar_${activeLoginId}`)
         if (savedUsername) setUsername(savedUsername)
@@ -45,142 +71,205 @@ export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
         }
     }
 
-    const currentAccount = accounts.find(acc => acc.id === activeLoginId)
+    const totalBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0)
+    const realAccounts = accounts.filter(a => a.type === "Real")
+    const demoAccounts = accounts.filter(a => a.type === "Demo")
+    const initials = (username || activeLoginId || "U").slice(0, 2).toUpperCase()
+    const currentGradient = getGradient(accountType || "Demo", balance?.currency || "USD")
 
     return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className={`${theme === "dark" ? "bg-slate-900/50 border-slate-800" : "bg-white"} overflow-hidden`}>
-                    <CardHeader className="pb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="relative group">
-                                <Avatar className="h-20 w-20 border-2 border-blue-500/20 shadow-lg">
-                                    <AvatarImage src={profileImage} className="object-cover" />
-                                    <AvatarFallback className="bg-slate-800 text-blue-400 text-2xl font-black">
-                                        {(username || activeLoginId || "U").charAt(0).toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
-                                    <Camera className="h-6 w-6 text-white" />
-                                    <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
-                                </label>
-                            </div>
-                            <div className="space-y-1 flex-1">
-                                {isEditingUsername ? (
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            value={tempUsername}
-                                            onChange={(e) => setTempUsername(e.target.value)}
-                                            className="h-8 bg-slate-950 border-slate-700 text-sm"
-                                            placeholder="Enter username"
-                                            autoFocus
-                                        />
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-400" onClick={saveUsername}><Check className="h-4 w-4" /></Button>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-400" onClick={() => setIsEditingUsername(false)}><X className="h-4 w-4" /></Button>
-                                    </div>
-                                ) : (
-                                    <CardTitle className="flex items-center gap-2 text-xl font-black group">
-                                        {username || "Trader Profile"}
-                                        <button
-                                            onClick={() => { setTempUsername(username); setIsEditingUsername(true); }}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                        >
-                                            <Edit2 className="h-3.5 w-3.5 text-slate-500" />
-                                        </button>
-                                    </CardTitle>
-                                )}
-                                <CardDescription className="text-xs font-mono text-slate-500">{activeLoginId || "Deriv Member"}</CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4 border-t border-slate-800/50">
-                        <div className="flex justify-between items-center py-1">
-                            <span className="text-slate-400 text-sm">Account Status</span>
-                            <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-lg">
-                                <ShieldCheck className="h-3.5 w-3.5" />
-                                Verified
-                            </div>
-                        </div>
-                        <div className="flex justify-between items-center py-1">
-                            <span className="text-slate-400 text-sm">Account Type</span>
-                            <Badge variant={accountType === "Real" ? "default" : "secondary"} className={accountType === "Real" ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
-                                {accountType || "Unknown"}
-                            </Badge>
-                        </div>
-                        <div className="flex justify-between items-center py-1">
-                            <span className="text-slate-400 text-sm">Main Currency</span>
-                            <span className="font-bold text-slate-200">{balance?.currency || "N/A"}</span>
-                        </div>
-                    </CardContent>
-                </Card>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-                <Card className={`${theme === "dark" ? "bg-slate-900/50 border-slate-800" : "bg-white"}`}>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <CreditCard className="h-5 w-5 text-purple-500" />
-                            Balance Summary
-                        </CardTitle>
-                        <CardDescription>Current funds available for trading</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center py-6">
-                        <div className="text-4xl font-black tracking-tighter mb-1">
-                            {balance ? `${Number(balance.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "0.00"}
-                            <span className="ml-2 text-xl text-slate-500 font-medium">{balance?.currency}</span>
-                        </div>
-                        <p className="text-slate-400 text-sm">Total Equity</p>
+            {/* ─── Hero Profile Card ─── */}
+            <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${currentGradient} p-7 shadow-2xl`}>
+                {/* Decorative circles */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5" />
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-white/5" />
+                <div className="absolute top-4 right-20 w-8 h-8 rounded-full bg-white/10" />
 
-                        <div className="mt-8 w-full grid grid-cols-2 gap-4">
-                            <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 text-center">
-                                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">Accounts</div>
-                                <div className="text-lg font-bold">{accounts?.length || 0}</div>
-                            </div>
-                            <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 text-center">
-                                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">Active Trading</div>
-                                <div className="text-lg font-bold text-emerald-400">Yes</div>
-                            </div>
+                <div className="relative flex items-start gap-5">
+                    {/* Avatar */}
+                    <div className="relative group cursor-pointer shrink-0" onClick={() => fileRef.current?.click()}>
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white/30 shadow-xl bg-white/10 flex items-center justify-center">
+                            {profileImage ? (
+                                <img src={profileImage} alt="avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-3xl font-black text-white">{initials}</span>
+                            )}
                         </div>
-                    </CardContent>
-                </Card>
+                        <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Camera className="h-5 w-5 text-white" />
+                        </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                            {isEditingUsername ? (
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        value={tempUsername}
+                                        onChange={e => setTempUsername(e.target.value)}
+                                        autoFocus
+                                        placeholder="Enter display name"
+                                        className="bg-white/20 border-0 rounded-lg px-3 py-1.5 text-sm font-bold text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 w-40"
+                                        onKeyDown={e => e.key === "Enter" && saveUsername()}
+                                    />
+                                    <button onClick={saveUsername} className="p-1 bg-white/20 rounded-lg hover:bg-white/30"><Check className="h-4 w-4 text-white" /></button>
+                                    <button onClick={() => setIsEditingUsername(false)} className="p-1 bg-white/10 rounded-lg hover:bg-white/20"><X className="h-4 w-4 text-white/70" /></button>
+                                </div>
+                            ) : (
+                                <button onClick={() => { setTempUsername(username); setIsEditingUsername(true) }} className="group/edit flex items-center gap-2">
+                                    <h2 className="text-xl font-black text-white">{username || "Trader Profile"}</h2>
+                                    <Edit2 className="h-3.5 w-3.5 text-white/40 group-hover/edit:text-white/80 transition-colors" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1 text-white/60 text-xs font-mono">
+                            {activeLoginId || "—"}
+                            {activeLoginId && <CopyBadge text={activeLoginId} />}
+                        </div>
+                        <div className="flex items-center gap-2 mt-3">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest bg-white/20 text-white px-2.5 py-1 rounded-full">
+                                <ShieldCheck className="h-3 w-3" /> Verified
+                            </span>
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${accountType === "Real" ? "bg-emerald-400/20 text-emerald-300" : "bg-amber-400/20 text-amber-300"}`}>
+                                <Star className="h-3 w-3" /> {accountType || "Deriv"}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Big balance */}
+                    <div className="text-right hidden sm:block">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Active Balance</p>
+                        <p className="text-3xl font-black text-white leading-none">
+                            {balance ? Number(balance.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
+                        </p>
+                        <p className="text-sm text-white/60 mt-0.5">{balance?.currency || "—"}</p>
+                    </div>
+                </div>
+
+                {/* Balance (mobile) */}
+                <div className="sm:hidden mt-4 pt-4 border-t border-white/10">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Active Balance</p>
+                    <p className="text-3xl font-black text-white">
+                        {balance ? Number(balance.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
+                        <span className="text-base font-medium text-white/60 ml-2">{balance?.currency}</span>
+                    </p>
+                </div>
             </div>
 
-            <Card className={`${theme === "dark" ? "bg-slate-900/50 border-slate-800" : "bg-white"}`}>
-                <CardHeader>
-                    <CardTitle>Linked Accounts</CardTitle>
-                    <CardDescription>All your Deriv accounts associated with this profile</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        {accounts?.map((acc) => (
-                            <div
-                                key={acc.id}
-                                className={`flex items-center justify-between p-4 rounded-xl border transition-all ${acc.id === activeLoginId
-                                    ? "bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/20"
-                                    : "bg-slate-800/20 border-slate-800 hover:border-slate-700"
-                                    }`}
-                            >
+            {/* ─── Stat Cards Row ─── */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                    {
+                        icon: <Wallet className="h-5 w-5" />,
+                        label: "Total Accounts",
+                        value: accounts.length,
+                        color: "text-blue-400",
+                        bg: "bg-blue-500/10",
+                        border: "border-blue-500/20",
+                    },
+                    {
+                        icon: <TrendingUp className="h-5 w-5" />,
+                        label: "Real Accounts",
+                        value: realAccounts.length,
+                        color: "text-emerald-400",
+                        bg: "bg-emerald-500/10",
+                        border: "border-emerald-500/20",
+                    },
+                    {
+                        icon: <Zap className="h-5 w-5" />,
+                        label: "Demo Accounts",
+                        value: demoAccounts.length,
+                        color: "text-amber-400",
+                        bg: "bg-amber-500/10",
+                        border: "border-amber-500/20",
+                    },
+                    {
+                        icon: <BarChart3 className="h-5 w-5" />,
+                        label: "Trading Active",
+                        value: "Yes",
+                        color: "text-purple-400",
+                        bg: "bg-purple-500/10",
+                        border: "border-purple-500/20",
+                    },
+                ].map((s, i) => (
+                    <div key={i} className={`relative overflow-hidden rounded-2xl border ${s.border} ${s.bg} p-5 group hover:scale-[1.02] transition-transform`}>
+                        <div className={`${s.color} mb-3`}>{s.icon}</div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{s.label}</p>
+                        <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+                        <div className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full opacity-10" style={{ background: "currentColor" }} />
+                    </div>
+                ))}
+            </div>
+
+            {/* ─── Linked Accounts List ─── */}
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden">
+                <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
+                    <div>
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Linked Accounts</h3>
+                        <p className="text-[10px] text-gray-600 mt-0.5">All Deriv accounts associated with your profile</p>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-500 bg-white/5 px-3 py-1 rounded-full">{accounts.length} accounts</span>
+                </div>
+                <div className="divide-y divide-white/[0.03]">
+                    {accounts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-14 text-center">
+                            <CreditCard className="h-10 w-10 text-gray-700 mb-3" />
+                            <p className="text-gray-500 font-bold text-sm">No accounts linked</p>
+                            <p className="text-gray-700 text-xs mt-1">Connect your Deriv account to see your linked accounts here</p>
+                        </div>
+                    ) : accounts.map(acc => {
+                        const grad = getGradient(acc.type, acc.currency ?? "USD")
+                        const isActive = acc.id === activeLoginId
+                        return (
+                            <div key={acc.id} className={`flex items-center justify-between px-6 py-4 transition-all ${isActive ? "bg-blue-500/5" : "hover:bg-white/[0.015]"}`}>
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${acc.type === "Demo" ? "bg-amber-400/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500"
-                                        }`}>
-                                        {acc.type === "Demo" ? "D" : "R"}
+                                    {/* Gradient icon */}
+                                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shadow-lg`}>
+                                        <span className="text-xs font-black text-white">{acc.currency?.slice(0, 3) || (acc.type === "Demo" ? "D" : "R")}</span>
                                     </div>
                                     <div>
-                                        <div className="font-bold flex items-center gap-2">
-                                            {acc.id}
-                                            {acc.id === activeLoginId && (
-                                                <Badge variant="outline" className="text-[10px] h-4 bg-blue-500/20 text-blue-400 border-blue-500/30">Active</Badge>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-white font-mono">{acc.id}</span>
+                                            {isActive && (
+                                                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-blue-500/15 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">
+                                                    <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" /> Active
+                                                </span>
                                             )}
                                         </div>
-                                        <div className="text-xs text-slate-400">{acc.type} Account • {acc.currency}</div>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${acc.type === "Demo"
+                                                ? "bg-amber-500/10 text-amber-400"
+                                                : "bg-emerald-500/10 text-emerald-400"
+                                                }`}>{acc.type}</span>
+                                            <span className="text-[10px] text-gray-600">{acc.currency}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-bold">{(acc.balance || 0).toFixed(2)} {acc.currency}</div>
+                                    <p className="text-base font-black text-white tabular-nums">
+                                        {(acc.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                    <p className="text-[10px] text-gray-600">{acc.currency}</p>
                                 </div>
                             </div>
-                        )) || <div className="text-center py-8 text-slate-500">No accounts found</div>}
+                        )
+                    })}
+                </div>
+
+                {/* Total */}
+                {accounts.length > 0 && (
+                    <div className="px-6 py-4 bg-white/[0.015] border-t border-white/5 flex justify-between items-center">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Portfolio Total</span>
+                        <div className="text-right">
+                            <span className="text-lg font-black text-white">${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
                     </div>
-                </CardContent>
-            </Card>
+                )}
+            </div>
         </div>
     )
 }
