@@ -29,6 +29,7 @@ import {
     Globe
 } from 'lucide-react'
 import { useSmartAdaptiveTrading } from "@/hooks/use-smart-adaptive-trading"
+import { TransactionHistory } from "@/components/transaction-history"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 
 const containerVariants = {
@@ -73,6 +74,8 @@ export default function SmartAdaptiveTradingTab({
         setSelectedMarket,
         selectedStrategy,
         setSelectedStrategy,
+        selectedStrategies,
+        setSelectedStrategies,
         patterns,
         signals,
         stats,
@@ -259,23 +262,29 @@ export default function SmartAdaptiveTradingTab({
                             <div className="w-10 h-10 rounded-2xl bg-sky-500/10 flex items-center justify-center border border-sky-500/30">
                                 <Radio className={`w-5 h-5 text-sky-400 ${topSignal ? 'animate-pulse' : ''}`} />
                             </div>
-                            <h3 className="text-sm font-black tracking-[0.4em] text-slate-400 uppercase italic">Command Center</h3>
+                            <h3 className="text-sm font-black tracking-[0.4em] text-slate-400 uppercase italic">Adaptive Node Core</h3>
                         </div>
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={topSignal?.entryStatus || 'idle'}
-                                initial={{ y: 10, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -10, opacity: 0 }}
-                            >
-                                <Badge className={`px-6 py-2 rounded-full text-xs font-black italic shadow-2xl ${topSignal?.entryStatus === 'Confirmed' ? 'bg-emerald-500 text-white' :
-                                    topSignal?.entryStatus === 'Waiting' ? 'bg-amber-500 text-black' :
-                                        'bg-slate-800 text-slate-400 border border-slate-700'
-                                    }`}>
-                                    {topSignal?.entryStatus ?? 'SCANNING VECTOR'}
+                        <div className="flex gap-2">
+                            {["OverUnder", "EvenOdd", "Differs"].map((strat) => (
+                                <Badge
+                                    key={strat}
+                                    onClick={() => {
+                                        const exists = selectedStrategies.includes(strat)
+                                        if (exists) {
+                                            if (selectedStrategies.length > 1) setSelectedStrategies(prev => prev.filter(s => s !== strat))
+                                        } else {
+                                            setSelectedStrategies(prev => [...prev, strat])
+                                        }
+                                    }}
+                                    className={`px-3 py-1 rounded-full cursor-pointer transition-all duration-300 font-black text-[8px] uppercase tracking-widest border ${selectedStrategies.includes(strat)
+                                        ? 'bg-sky-500 border-sky-400 text-white shadow-lg shadow-sky-500/20'
+                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                                        }`}
+                                >
+                                    {strat}
                                 </Badge>
-                            </motion.div>
-                        </AnimatePresence>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-4 relative z-10">
@@ -426,136 +435,75 @@ export default function SmartAdaptiveTradingTab({
                         />
                     </div>
 
-                    <div className="space-y-6 mb-8">
+                    <div className="space-y-6 flex-1">
                         <div className="relative group">
-                            <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Base Stake</span>
+                            <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Stake Magnitude</span>
                             <div className="relative">
                                 <Input
                                     type="number"
                                     value={stake}
                                     onChange={(e) => setStake(parseFloat(e.target.value))}
-                                    className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-mono font-black text-base sm:text-lg focus:ring-sky-500 border-none pl-10"
+                                    className="bg-slate-950/80 border-slate-800 h-14 rounded-2xl font-mono font-black text-lg focus:ring-sky-500 border-none pl-12"
                                 />
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
+                                <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-500/50" />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest leading-none">Limit TP</span>
+                                <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Target TP</span>
                                 <Input
                                     type="number"
                                     value={tp}
                                     onChange={(e) => setTp(parseFloat(e.target.value))}
-                                    className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-mono font-black border-none text-center text-sm sm:text-base"
+                                    className="bg-slate-950/80 border-slate-800 h-12 rounded-xl font-mono font-bold focus:ring-sky-500 border-none px-4 text-emerald-400"
                                 />
                             </div>
                             <div>
-                                <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest leading-none">Max SL</span>
+                                <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Max SL</span>
                                 <Input
                                     type="number"
                                     value={sl}
                                     onChange={(e) => setSl(parseFloat(e.target.value))}
-                                    className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-mono font-black border-none text-center text-sm sm:text-base"
+                                    className="bg-slate-950/80 border-slate-800 h-12 rounded-xl font-mono font-bold focus:ring-sky-500 border-none px-4 text-rose-400"
                                 />
-                            </div>
-                        </div>
-
-                        <div>
-                            <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Active Strategy Cluster</span>
-                            <Select value={selectedStrategy} onValueChange={setSelectedStrategy}>
-                                <SelectTrigger className="bg-slate-950/80 border-slate-800 h-10 sm:h-14 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs italic">
-                                    <SelectValue placeholder="Select Strategy" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-slate-900 border-slate-800">
-                                    <SelectItem value="All">All Intelligence</SelectItem>
-                                    <SelectItem value="OverUnder">Over/Under Reversion</SelectItem>
-                                    <SelectItem value="EvenOdd">Even/Odd Reversion</SelectItem>
-                                    <SelectItem value="Differs">Cluster Fading (Differs)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <span className="text-[9px] text-slate-500 uppercase font-black px-2 mb-2 block tracking-widest">Temporal Resolution</span>
-                            <div className="grid grid-cols-2 gap-2">
-                                {[3, 5, 7, 10].map(t => (
-                                    <Button
-                                        key={t}
-                                        onClick={() => setTickDuration(t)}
-                                        className={`h-10 rounded-xl text-[10px] font-black border transition-all ${tickDuration === t ? 'bg-sky-500 text-white border-sky-400' : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:text-white'
-                                            }`}
-                                    >
-                                        {t} TICKS
-                                    </Button>
-                                ))}
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-auto">
+                    <div className="mt-8 space-y-4">
                         <Button
                             onClick={tradingStatus?.isAutoTrading ? stopAutoTrade : startAutoTrade}
-                            className={`w-full h-16 sm:h-24 rounded-2xl sm:rounded-[2rem] text-lg sm:text-xl font-black italic tracking-widest shadow-2xl transition-all active:scale-95 group ${tradingStatus?.isAutoTrading
-                                ? 'bg-rose-500 hover:bg-rose-600 text-white'
-                                : 'bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-500 hover:from-indigo-600 hover:via-sky-600 hover:to-emerald-600 text-white'
+                            className={`w-full h-20 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] transition-all duration-700 group overflow-hidden relative ${tradingStatus?.isAutoTrading
+                                ? 'bg-rose-500 hover:bg-rose-600 shadow-[0_0_30px_rgba(244,63,94,0.3)]'
+                                : 'bg-emerald-500 hover:bg-emerald-600 shadow-[0_0_30px_rgba(16,185,129,0.3)]'
                                 }`}
                         >
+                            <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                             {tradingStatus?.isAutoTrading ? (
-                                <span className="flex items-center justify-center gap-3">
-                                    <Square className="fill-white w-6 h-6 animate-pulse" /> TERMINATE ENGINE
-                                </span>
+                                <div className="flex flex-col items-center">
+                                    <Square className="w-4 h-4 mb-1" />
+                                    <span>DISENGAGE AUTOPILOT</span>
+                                </div>
                             ) : (
-                                <span className="flex items-center justify-center gap-3">
-                                    <Play className="fill-white w-6 h-6 group-hover:scale-125 transition-transform" /> RUN QUANT AUTO
-                                </span>
+                                <div className="flex flex-col items-center">
+                                    <Play className="w-4 h-4 mb-1" />
+                                    <span>ACTIVATE 24H CYCLE</span>
+                                </div>
                             )}
                         </Button>
+                        <p className="text-[8px] text-slate-600 font-black uppercase tracking-[0.4em] text-center italic">
+                            {tradingStatus?.isAutoTrading ? 'System Locked in Auto-Phase' : 'Awaiting Pilot Initialization'}
+                        </p>
                     </div>
                 </Card>
             </div>
 
-            {/* --- BOTTOM HUD & LOGS --- */}
-            <motion.div variants={itemVariants} className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <Card className="lg:col-span-4 bg-slate-900/40 border-slate-800/50 p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] backdrop-blur-xl shadow-2xl overflow-hidden relative group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-1000" />
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" /> Session Vault
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                        <div className="p-4 sm:p-6 rounded-xl sm:rounded-[2rem] bg-slate-950/60 border border-slate-800 flex flex-col items-center">
-                            <div className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-2">Portfolio P/L</div>
-                            <div className={`text-2xl sm:text-4xl font-black tabular-nums italic ${stats?.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {stats?.profit >= 0 ? '+' : ''}${Math.abs(stats?.profit ?? 0).toFixed(2)}
-                            </div>
-                        </div>
-                        <div className="p-4 sm:p-6 rounded-xl sm:rounded-[2rem] bg-slate-950/60 border border-slate-800 flex flex-col items-center">
-                            <div className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-2">Strike Rate</div>
-                            <div className="text-2xl sm:text-4xl font-black text-white italic tabular-nums">
-                                {stats ? Math.round((stats.wins / (stats.trades || 1)) * 100) : 0}%
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mt-4 p-4 sm:p-6 rounded-xl sm:rounded-[2rem] bg-slate-950/60 border border-slate-800 flex items-center justify-between relative z-10 overflow-hidden">
-                        <div className="absolute right-0 top-0 p-4 rotate-12 opacity-5 pointer-events-none">
-                            <History className="w-24 h-24" />
-                        </div>
-                        <div>
-                            <div className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Execution Index</div>
-                            <div className="text-2xl font-black text-sky-400 italic tabular-nums">{stats?.trades ?? 0} <span className="text-[10px] text-slate-600 not-italic uppercase tracking-widest ml-1">Trades</span></div>
-                        </div>
-                        <div className="flex -space-x-2">
-                            {[...Array(5)].map((_, i) => (
-                                <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-950 bg-slate-900 flex items-center justify-center">
-                                    <div className="w-2 h-2 rounded-full bg-sky-500/40" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="lg:col-span-8 bg-slate-900/40 border-slate-800/50 p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] backdrop-blur-xl shadow-2xl flex flex-col min-h-[300px] group overflow-hidden">
-                    <div className="flex items-center justify-between mb-8">
+            {/* --- BOTTOM HUD & LOGS & HISTORY --- */}
+            <motion.div variants={itemVariants} className="col-span-12 flex flex-col gap-4">
+                {/* 1. NEURAL SYSTEM STREAM (LOGS) - NOW TOP */}
+                <Card className="bg-slate-900/40 border-slate-800/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl backdrop-blur-xl shadow-2xl flex flex-col group overflow-hidden">
+                    <div className="flex items-center justify-between mb-4">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 flex items-center gap-2">
                             <Terminal className="w-4 h-4 text-sky-400" /> Neural System Stream
                         </h3>
@@ -565,8 +513,8 @@ export default function SmartAdaptiveTradingTab({
                             <div className="w-2 h-2 rounded-full bg-emerald-500/50" />
                         </div>
                     </div>
-                    <div className="flex-1 bg-black/60 rounded-xl sm:rounded-[2rem] border border-slate-800/50 p-3 sm:p-6 font-mono text-[9px] sm:text-[10px] overflow-y-auto max-h-[220px] scrollbar-hide selection:bg-sky-500/50">
-                        <div className="flex flex-col gap-2">
+                    <div className="flex-1 bg-black/60 rounded-xl sm:rounded-2xl border border-slate-800/50 p-3 sm:p-4 font-mono text-[9px] sm:text-[10px] overflow-y-auto min-h-[250px] max-h-[350px] scrollbar-hide selection:bg-sky-500/50">
+                        <div className="flex flex-col gap-1.5">
                             {logs.map((log, i) => (
                                 <motion.div
                                     initial={{ x: -10, opacity: 0 }}
@@ -576,7 +524,7 @@ export default function SmartAdaptiveTradingTab({
                                 >
                                     <span className="text-slate-700 min-w-[70px] font-bold">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
                                     <div className={`flex-1 ${log.type === 'system' ? 'text-slate-500' :
-                                        log.type === 'scanner' ? 'text-emerald-400/80 shadow-[0_0_10px_rgba(52,211,153,0.1)]' :
+                                        log.type === 'scanner' ? 'text-emerald-400/80' :
                                             log.type === 'trade' ? 'text-sky-400 font-bold' :
                                                 log.type === 'error' ? 'text-rose-500 font-black' :
                                                     'text-purple-400/80'}
@@ -592,8 +540,54 @@ export default function SmartAdaptiveTradingTab({
                         </div>
                     </div>
                 </Card>
-            </motion.div>
 
+                {/* 2. SESSION VAULT (STATS) - NOW MIDDLE & COMPACT */}
+                <Card className="bg-slate-900/40 border-slate-800/50 p-3 sm:p-5 rounded-2xl sm:rounded-3xl backdrop-blur-xl shadow-2xl overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-1000" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" /> Session Vault
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
+                        <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col items-center">
+                            <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-1">Portfolio P/L</div>
+                            <div className={`text-xl sm:text-2xl font-black tabular-nums italic ${stats?.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {stats?.profit >= 0 ? '+' : ''}${Math.abs(stats?.profit ?? 0).toFixed(2)}
+                            </div>
+                        </div>
+                        <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col items-center">
+                            <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-1">Strike Rate</div>
+                            <div className="text-xl sm:text-2xl font-black text-white italic tabular-nums">
+                                {stats ? Math.round((stats.wins / (stats.trades || 1)) * 100) : 0}%
+                            </div>
+                        </div>
+                        <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between overflow-hidden">
+                            <div className="flex flex-col">
+                                <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-0.5">Execution Index</div>
+                                <div className="text-xl font-black text-sky-400 italic tabular-nums">
+                                    {stats?.trades ?? 0} <span className="text-[8px] text-slate-600 not-italic uppercase tracking-widest ml-1">Trades</span>
+                                </div>
+                            </div>
+                            <div className="flex -space-x-1">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="w-5 h-5 rounded-full border-2 border-slate-950 bg-slate-900 flex items-center justify-center">
+                                        <div className="w-1 h-1 rounded-full bg-sky-500/40" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* 3. TRANSACTION HISTORY - NOW LAST */}
+                <Card className="bg-slate-900/40 border-slate-800/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl backdrop-blur-xl shadow-2xl overflow-hidden group">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 flex items-center gap-2">
+                        <History className="w-4 h-4 text-sky-500" /> Automated Ledger
+                    </h3>
+                    <div className="rounded-xl overflow-hidden border border-slate-800/50">
+                        <TransactionHistory transactions={[]} theme={theme as any} />
+                    </div>
+                </Card>
+            </motion.div>
         </motion.div>
     )
 }

@@ -122,15 +122,32 @@ export function initializeDatabase(dbPath: string): Database.Database {
   return db
 }
 
-export function getDatabase(): Database.Database {
+export function getDatabase(): Database.Database | null {
+  if (typeof window !== "undefined") return null;
+
   if (!dbInstance) {
-    throw new Error("Database not initialized")
+    // Check if we are in environment where we should bypass SQLite (Vercel/Production)
+    const isVercel = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+    const dbPath = process.env.DB_PATH || path.join(process.cwd(), "trading.db");
+
+    if (isVercel) {
+      console.warn("[DB] Running on Vercel/Production. Database persistence is disabled (Mock Mode active).");
+      return null;
+    }
+
+    try {
+      initializeDatabase(dbPath);
+    } catch (err) {
+      console.error("[DB] Failed to initialize database:", err);
+      return null;
+    }
   }
-  return dbInstance
+  return dbInstance;
 }
 
 export function addTrade(trade: Trade): number {
   const db = getDatabase()
+  if (!db) return 0;
   const stmt = db.prepare(`
     INSERT INTO trades (
       loginId, market, contractType, stake, entryPrice, entryTime,
@@ -158,6 +175,7 @@ export function addTrade(trade: Trade): number {
 
 export function updateTrade(id: number, updates: Partial<Trade>): void {
   const db = getDatabase()
+  if (!db) return;
 
   const fields: string[] = []
   const values: any[] = []
@@ -192,6 +210,7 @@ export function updateTrade(id: number, updates: Partial<Trade>): void {
 
 export function getTrades(limit = 100, offset = 0): Trade[] {
   const db = getDatabase()
+  if (!db) return [];
   const stmt = db.prepare(`
     SELECT * FROM trades
     ORDER BY createdAt DESC
@@ -203,6 +222,7 @@ export function getTrades(limit = 100, offset = 0): Trade[] {
 
 export function getTradesByMarket(market: string, limit = 100): Trade[] {
   const db = getDatabase()
+  if (!db) return [];
   const stmt = db.prepare(`
     SELECT * FROM trades
     WHERE market = ?
@@ -215,8 +235,9 @@ export function getTradesByMarket(market: string, limit = 100): Trade[] {
 
 export function createAggregate(sessionName: string): Aggregate {
   const db = getDatabase()
-  const now = Math.floor(Date.now() / 1000)
+  if (!db) return { sessionName, startTime: Math.floor(Date.now() / 1000), totalStake: 0, totalRuns: 0, totalWins: 0, totalLosses: 0, totalProfitLoss: 0, lastUpdated: Math.floor(Date.now() / 1000) };
 
+  const now = Math.floor(Date.now() / 1000)
   const stmt = db.prepare(`
     INSERT INTO aggregates (
       sessionName, startTime, lastUpdated
@@ -239,6 +260,7 @@ export function createAggregate(sessionName: string): Aggregate {
 
 export function updateAggregate(sessionName: string, updates: Partial<Aggregate>): void {
   const db = getDatabase()
+  if (!db) return;
 
   const fields: string[] = []
   const values: any[] = []
@@ -279,12 +301,14 @@ export function updateAggregate(sessionName: string, updates: Partial<Aggregate>
 
 export function getAggregate(sessionName: string): Aggregate | null {
   const db = getDatabase()
+  if (!db) return null;
   const stmt = db.prepare("SELECT * FROM aggregates WHERE sessionName = ?")
   return (stmt.get(sessionName) as Aggregate) || null
 }
 
 export function getAllAggregates(): Aggregate[] {
   const db = getDatabase()
+  if (!db) return [];
   const stmt = db.prepare("SELECT * FROM aggregates ORDER BY startTime DESC")
   return stmt.all() as Aggregate[]
 }
@@ -299,6 +323,14 @@ export function getTradeStats(sessionName?: string): {
 } {
   const db = getDatabase()
 
+  if (!db) return {
+    totalTrades: 0,
+    totalStake: 0,
+    totalWins: 0,
+    totalLosses: 0,
+    totalProfitLoss: 0,
+    winRate: 0
+  };
   const query =
     "SELECT COUNT(*) as count, SUM(stake) as stake, SUM(CASE WHEN profitLoss > 0 THEN 1 ELSE 0 END) as wins, SUM(CASE WHEN profitLoss < 0 THEN 1 ELSE 0 END) as losses, SUM(profitLoss) as profitLoss FROM trades WHERE status = 'closed'"
 
@@ -322,8 +354,9 @@ export function getTradeStats(sessionName?: string): {
 
 export function upsertUser(user: { loginId: string; name?: string; type?: string; currency?: string; balance?: number }): void {
   const db = getDatabase()
-  const now = Math.floor(Date.now() / 1000)
+  if (!db) return;
 
+  const now = Math.floor(Date.now() / 1000)
   const stmt = db.prepare(`
     INSERT INTO users (loginId, name, type, currency, balance, lastSeen, status, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, 'online', ?)
@@ -345,6 +378,7 @@ export function upsertUser(user: { loginId: string; name?: string; type?: string
 
 export function updateUserStatus(loginId: string, status: 'online' | 'offline'): void {
   const db = getDatabase()
+  if (!db) return;
   const now = Math.floor(Date.now() / 1000)
   const stmt = db.prepare("UPDATE users SET status = ?, lastSeen = ?, updatedAt = ? WHERE loginId = ?")
   stmt.run(status, now, now, loginId)
@@ -352,39 +386,66 @@ export function updateUserStatus(loginId: string, status: 'online' | 'offline'):
 
 export function getAllUsers(): any[] {
   const db = getDatabase()
+  if (!db) return [];
   const stmt = db.prepare("SELECT * FROM users ORDER BY lastSeen DESC")
   return stmt.all()
 }
 
 export function getPlatformOverview(): any {
   const db = getDatabase()
+  if (!db) {
+    // Return mock data for Vercel/Production without DB
+    return {
+      totalUsers: 1,
+      onlineUsers: 1,
+      totalRealBalance: 0,
+      totalDemoBalance: 10000,
+      totalTrades: 0,
+      netPerformance: 0,
+      totalVolume: 0
+    }
+  }
 
-  const userStats = db.prepare(`
-    SELECT 
-      COUNT(*) as totalUsers,
-      SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as onlineUsers,
-      SUM(CASE WHEN type = 'Real' THEN balance ELSE 0 END) as totalRealBalance,
-      SUM(CASE WHEN type = 'Demo' THEN balance ELSE 0 END) as totalDemoBalance
-    FROM users
-  `).get() as any
+  try {
+    const userStats = db.prepare(`
+      SELECT 
+        COUNT(*) as totalUsers,
+        SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as onlineUsers,
+        SUM(CASE WHEN type = 'Real' THEN balance ELSE 0 END) as totalRealBalance,
+        SUM(CASE WHEN type = 'Demo' THEN balance ELSE 0 END) as totalDemoBalance
+      FROM users
+    `).get() as any
 
-  const tradeStats = db.prepare(`
-    SELECT 
-      COUNT(*) as totalTrades,
-      SUM(profitLoss) as netPerformance,
-      SUM(stake) as totalVolume
-    FROM trades 
-    WHERE status = 'closed'
-  `).get() as any
+    const tradeStats = db.prepare(`
+      SELECT 
+        COUNT(*) as totalTrades,
+        SUM(profitLoss) as netPerformance,
+        SUM(stake) as totalVolume
+      FROM trades 
+      WHERE status = 'closed'
+    `).get() as any
 
-  return {
-    ...userStats,
-    ...tradeStats
+    return {
+      ...userStats,
+      ...tradeStats
+    }
+  } catch (err) {
+    console.error("[DB] Error in getPlatformOverview:", err);
+    return {
+      totalUsers: 0,
+      onlineUsers: 0,
+      totalRealBalance: 0,
+      totalDemoBalance: 0,
+      totalTrades: 0,
+      netPerformance: 0,
+      totalVolume: 0
+    }
   }
 }
 
 export function getPlatformTransactions(): any[] {
   const db = getDatabase()
+  if (!db) return [];
   const trades = db.prepare("SELECT * FROM trades ORDER BY createdAt DESC LIMIT 50").all()
   // We'll treat trades as transactions for now to populate the list
   return trades
@@ -392,18 +453,21 @@ export function getPlatformTransactions(): any[] {
 
 export function createAdmin(username: string, password: string): void {
   const db = getDatabase()
+  if (!db) return;
   const stmt = db.prepare("INSERT OR IGNORE INTO admins (username, password) VALUES (?, ?)")
   stmt.run(username, password)
 }
 
 export function verifyAdmin(username: string, password: string): any {
   const db = getDatabase()
+  if (!db) return null;
   const admin = db.prepare("SELECT * FROM admins WHERE username = ? AND password = ?").get(username, password)
   return admin
 }
 
 export function getAdminsCount(): number {
   const db = getDatabase()
+  if (!db) return 0;
   const result = db.prepare("SELECT COUNT(*) as count FROM admins").get() as any
   return result.count
 }

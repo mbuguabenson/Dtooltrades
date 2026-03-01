@@ -6,7 +6,7 @@ import type { AnalysisSnapshot, BotSignal } from '@/lib/core-analytics-engine'
 
 export function useSmartAuto24(market: string, isConnected: boolean) {
   const engineRef = useRef<SmartAuto24Engine>(new SmartAuto24Engine(100))
-  
+
   const [currentDigit, setCurrentDigit] = useState<number | null>(null)
   const [snapshot, setSnapshot] = useState<AnalysisSnapshot | null>(null)
   const [signals, setSignals] = useState<BotSignal[]>([])
@@ -17,6 +17,11 @@ export function useSmartAuto24(market: string, isConnected: boolean) {
   const setBotsActive = useCallback((bots: string[]) => {
     setActiveBots(bots)
     engineRef.current.setActiveBots(bots)
+  }, [])
+
+  // Set pip size
+  const setPipSize = useCallback((pipSize: number) => {
+    engineRef.current.setPipSize(pipSize)
   }, [])
 
   // Process tick
@@ -59,6 +64,7 @@ export function useSmartAuto24(market: string, isConnected: boolean) {
     tickCount,
     activeBots,
     setBotsActive,
+    setPipSize,
     processTick,
     recordTradeResult,
     getBotState,

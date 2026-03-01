@@ -75,6 +75,10 @@ export class CoreAnalyticsEngine {
     }
   }
 
+  setPipSize(pipSize: number): void {
+    this.pipSize = pipSize
+  }
+
   addTick(price: number, symbol?: string): number {
     if (symbol) this.symbol = symbol
     const digit = this.extractDigit(price)

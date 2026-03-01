@@ -31,16 +31,27 @@ export class TradingManager {
     private defaultStake = 0.35
     private lastTradeTime = 0
     private tickDuration = 3
+    private onCycleEnd?: (stats: SessionStats) => void
 
     constructor(apiClient: DerivAPIClient) {
         this.trader = new DerivRealTrader(apiClient)
     }
 
-    public setConfig(config: { maxLoss: number, targetProfit: number, stake: number, duration: number }) {
+    public setConfig(config: { maxLoss: number, targetProfit: number, stake: number, duration: number, onCycleEnd?: (stats: SessionStats) => void }) {
         this.maxLoss = config.maxLoss
         this.targetProfit = config.targetProfit
         this.defaultStake = config.stake
         this.tickDuration = config.duration
+        this.onCycleEnd = config.onCycleEnd
+    }
+
+    public getConfig() {
+        return {
+            maxLoss: this.maxLoss,
+            targetProfit: this.targetProfit,
+            stake: this.defaultStake,
+            duration: this.tickDuration
+        }
     }
 
     public async tradeOnce(signal: StrategySignal, symbol: string, bypassLimit = false) {
@@ -86,8 +97,12 @@ export class TradingManager {
     }
 
     private async autoLoop(symbol: string, getSignal: () => StrategySignal | null) {
+        let cycleTrades = 0
+        const MAX_CYCLE_TRADES = 5
+
         while (this.isAutoTrading) {
             if (this.stats.profit <= -this.maxLoss || this.stats.profit >= this.targetProfit) {
+                if (this.onCycleEnd) this.onCycleEnd(this.stats)
                 this.stopAutoTrade()
                 break
             }
@@ -97,15 +112,26 @@ export class TradingManager {
                 continue
             }
 
+            // Cycle management: After 5 trades, re-evaluate
+            if (cycleTrades >= MAX_CYCLE_TRADES) {
+                cycleTrades = 0
+                if (this.onCycleEnd) {
+                    this.onCycleEnd(this.stats)
+                    // Wait for hook to potentially switch symbol
+                    await new Promise(r => setTimeout(r, 2000))
+                }
+            }
+
             const signal = getSignal()
-            if (signal && signal.entryStatus === "Confirmed") {
+            if (signal && (signal.entryStatus === "Confirmed" || signal.strategy === "SuperSignals")) {
                 // Double safety: check for API lag or tick freeze
-                if (Date.now() - this.lastTradeTime < 5000) {
+                if (Date.now() - this.lastTradeTime < 2000) {
                     await new Promise(r => setTimeout(r, 1000))
                     continue
                 }
 
-                await this.execute(signal, symbol)
+                const result = await this.execute(signal, symbol)
+                if (result) cycleTrades++
             }
 
             await new Promise(r => setTimeout(r, 1000))

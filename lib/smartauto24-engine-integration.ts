@@ -22,6 +22,10 @@ export class SmartAuto24Engine {
     this.matchesBot = new MatchesBot()
   }
 
+  setPipSize(pipSize: number): void {
+    this.analyticsEngine.setPipSize(pipSize)
+  }
+
   // Add a new tick and generate analysis
   processTick(price: number): { digit: number; snapshot: AnalysisSnapshot; signals: BotSignal[] } {
     const digit = this.analyticsEngine.addTick(price)

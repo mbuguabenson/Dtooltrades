@@ -134,7 +134,14 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   const differsSelectedDigitRef = useRef<number | null>(null)
 
   // SmartAuto24 Engine
-  const smartAuto24Engine = useSmartAuto24(symbol, isConnected)
+  const {
+    currentDigit: engineDigit,
+    snapshot: engineSnapshot,
+    signals: engineSignals,
+    setPipSize,
+    processTick: engineProcessTick,
+    reset: resetEngine
+  } = useSmartAuto24(symbol, isConnected)
 
   // Modal state
   const [showResultModal, setShowResultModal] = useState(false)
@@ -225,8 +232,8 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
       // Process through SmartAuto24 engine
       if (isRunning) {
-        const result = smartAuto24Engine.processTick(tick.quote)
-        // Engine now handles analysis internally
+        setPipSize(pipSize)
+        engineProcessTick(tick.quote)
       }
 
       const isEven = lastDigitValue % 2 === 0

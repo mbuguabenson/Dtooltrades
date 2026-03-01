@@ -7,13 +7,15 @@ import { SmartPatternEngine, type PatternMatch } from "@/lib/trading/smart-patte
 import { AdaptiveStrategyManager, type StrategySignal } from "@/lib/trading/adaptive-strategy-manager"
 import { TradingManager } from "@/lib/trading/trading-manager"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
+import { AnalysisEngine } from "@/lib/analysis-engine"
 
 export function useSmartAdaptiveTrading() {
     const { apiClient, isConnected, isAuthorized, balance } = useDerivAPI()
 
     const [marketScores, setMarketScores] = useState<MarketScore[]>([])
     const [selectedMarket, setSelectedMarket] = useState("R_100")
-    const [selectedStrategy, setSelectedStrategy] = useState<string>("All")
+    const [selectedStrategies, setSelectedStrategies] = useState<string[]>(["OverUnder", "SuperSignals"])
+    const [selectedStrategy, setSelectedStrategy] = useState("All")
     const [patterns, setPatterns] = useState<PatternMatch[]>([])
     const [signals, setSignals] = useState<StrategySignal[]>([])
     const [stats, setStats] = useState<any>(null)
@@ -24,6 +26,7 @@ export function useSmartAdaptiveTrading() {
     const intelligenceRef = useRef<SmartIntelligenceEngine | null>(null)
     const patternRef = useRef<SmartPatternEngine>(new SmartPatternEngine())
     const strategyRef = useRef<AdaptiveStrategyManager>(new AdaptiveStrategyManager())
+    const analysisRef = useRef<AnalysisEngine>(new AnalysisEngine())
     const tradingRef = useRef<TradingManager | null>(null)
     const isScanningRef = useRef(false)
 
@@ -89,12 +92,51 @@ export function useSmartAdaptiveTrading() {
             const currentPatterns = patternRef.current.analyze()
             setPatterns(currentPatterns)
 
-            const currentSignals = strategyRef.current.getSignals(currentPatterns)
+            const allVariants = strategyRef.current.getSignalsWithVariants(currentPatterns)
+
+            // Integrate Super Signals from AnalysisEngine
+            const proSignals = analysisRef.current.generateProSignals()
+            const mappedProSignals: StrategySignal[] = proSignals.map(s => ({
+                strategy: "SuperSignals",
+                type: s.type,
+                barrier: s.targetDigit?.toString() || "0",
+                confidence: s.probability,
+                description: s.recommendation,
+                entryStatus: s.status === "TRADE NOW" ? "Confirmed" : "Waiting"
+            }))
+
+            const currentSignals = [
+                ...allVariants.filter(s => selectedStrategies.includes(s.strategy)),
+                ...mappedProSignals.filter(s => selectedStrategies.includes("SuperSignals"))
+            ]
+
             setSignals(currentSignals)
 
             if (tradingRef.current) {
                 setStats(tradingRef.current.getStats())
                 setTradingStatus(tradingRef.current.getStatus())
+            }
+        }
+
+        // Note: moved inside to avoid closure/scope issues if needed, but tradingRef.current is stable
+        const handleCycleEnd = (sessionStats: any) => {
+            const config = tradingRef.current?.getConfig()
+            if (!config) return
+
+            if (sessionStats.profit >= (tradingRef.current?.getStats().profit || 0)) {
+                if (sessionStats.profit >= config.targetProfit) {
+                    addLog(`Target Profit Hit! Resetting session and re-analyzing...`, "scanner")
+                    tradingRef.current?.resetSession()
+                }
+            }
+
+            if (intelligenceRef.current) {
+                const scores = intelligenceRef.current.getScores()
+                const best = [...scores].sort((a, b) => b.score - a.score)[0]
+                if (best && best.symbol !== selectedMarket && best.score > 70) {
+                    addLog(`Switching to higher potential market: ${best.symbol.replace('_', ' ')} (${best.score}%)`, "scanner")
+                    setSelectedMarket(best.symbol)
+                }
             }
         }
 
@@ -121,11 +163,10 @@ export function useSmartAdaptiveTrading() {
         }
     }, [apiClient, isConnected, isAuthorized, selectedMarket, tickDuration])
 
-    // Filter signals based on selected strategy
+    // Filter signals based on selected strategies
     const filteredSignals = useMemo(() => {
-        if (selectedStrategy === "All") return signals
-        return signals.filter(s => s.strategy === selectedStrategy)
-    }, [signals, selectedStrategy])
+        return signals
+    }, [signals])
 
     const tradeOnce = useCallback(async (signal: StrategySignal) => {
         if (!tradingRef.current) return
@@ -147,23 +188,34 @@ export function useSmartAdaptiveTrading() {
 
     const startAutoTrade = useCallback(() => {
         if (!tradingRef.current) return
-        addLog(`PI Auto Engine ENGAGED: ${selectedStrategy} only`, "system")
+        addLog(`AutoPilot ENGAGED: Multi-strategy mode`, "system")
+
         tradingRef.current.startAutoTrade(selectedMarket, () => {
             const currentPatterns = patternRef.current.analyze()
-            const currentSignals = strategyRef.current.getSignals(currentPatterns)
+            const allVariants = strategyRef.current.getSignalsWithVariants(currentPatterns)
 
-            const possibleSignals = selectedStrategy === "All"
-                ? currentSignals
-                : currentSignals.filter(s => s.strategy === selectedStrategy)
+            // Integrate Super Signals
+            const proSignals = analysisRef.current.generateProSignals()
+            const mappedProSignals: StrategySignal[] = proSignals.map(s => ({
+                strategy: "SuperSignals" as const,
+                type: s.type,
+                barrier: s.targetDigit?.toString() || "0",
+                confidence: s.probability,
+                description: s.recommendation,
+                entryStatus: s.status === "TRADE NOW" ? ("Confirmed" as const) : ("Waiting" as const)
+            }))
 
-            const signal = possibleSignals.length > 0 ? possibleSignals[0] : null
+            const possibleSignals = [
+                ...allVariants,
+                ...mappedProSignals
+            ].filter(s =>
+                selectedStrategies.includes(s.strategy) &&
+                s.entryStatus === "Confirmed"
+            )
 
-            if (signal && signal.entryStatus === "Confirmed") {
-                addLog(`Auto-executing: ${signal.strategy} - ${signal.type}`, "trade")
-            }
-            return signal
+            return possibleSignals.length > 0 ? possibleSignals[0] : null
         })
-    }, [selectedMarket, selectedStrategy])
+    }, [selectedMarket, selectedStrategies])
 
     const addLog = (message: string, type = "info") => {
         setLogs(prev => [{ message, type, timestamp: Date.now() }, ...prev].slice(0, 50))
@@ -191,6 +243,8 @@ export function useSmartAdaptiveTrading() {
         setSelectedMarket,
         selectedStrategy,
         setSelectedStrategy,
+        selectedStrategies,
+        setSelectedStrategies,
         patterns,
         signals: filteredSignals,
         stats,
