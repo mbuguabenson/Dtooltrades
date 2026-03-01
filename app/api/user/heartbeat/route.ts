@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { upsertUser, updateUserStatus } from "@/lib/trading/db"
 
 export async function POST(request: NextRequest) {
     try {
@@ -10,11 +9,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "loginId is required" }, { status: 400 })
         }
 
-        if (status === "offline") {
-            updateUserStatus(loginId, "offline")
-        } else {
-            upsertUser({ loginId, name, type, currency, balance })
-        }
+        // Bypassing SQLite for Vercel deployment to prevent global 500 crashes
+        console.log(`[Heartbeat API] Mock update for User: ${loginId} | Status: ${status}`)
 
         return NextResponse.json({ success: true })
     } catch (error) {
