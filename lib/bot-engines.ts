@@ -24,7 +24,7 @@ export class EvenOddBot {
     lastSignal: null,
   }
 
-  private powerThreshold = 60
+  private powerThreshold = 58
   private waitThreshold = 55
   private maxRuns = 10
 
@@ -144,13 +144,13 @@ export class OverUnderBot {
     let action: 'trade' | 'wait' | 'skip' = 'skip'
     let confidence = 0
 
-    if (dominantPower >= 60 && trendPositive && hasPower) {
+    if (dominantPower >= 58 && trendPositive && hasPower) {
       action = 'trade'
       confidence = Math.min(dominantPower + Math.abs(trend), 100)
-    } else if (dominantPower >= 56 && trendPositive) {
+    } else if (dominantPower >= 55 && trendPositive) {
       action = 'trade'
       confidence = dominantPower
-    } else if (dominantPower >= 53) {
+    } else if (dominantPower >= 52) {
       action = 'wait'
       confidence = dominantPower
     }

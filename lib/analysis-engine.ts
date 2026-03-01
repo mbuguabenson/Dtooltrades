@@ -244,7 +244,7 @@ export class AnalysisEngine {
 
     const marketChanging = Math.abs(evenPercent25 - evenPercent50) < 2
 
-    if (maxPercentage >= 60) {
+    if (maxPercentage >= 58) {
       if ((favored === "even" && isEvenIncreasing) || (favored === "odd" && isOddIncreasing)) {
         return {
           type: "even_odd",
@@ -324,7 +324,7 @@ export class AnalysisEngine {
     }
 
     if (
-      maxPercentage >= 60 &&
+      maxPercentage >= 58 &&
       ((favored === "under" && isUnderIncreasing) || (favored === "over" && !isUnderIncreasing))
     ) {
       const prediction = favored === "under" ? getUnderPrediction() : getOverPrediction()

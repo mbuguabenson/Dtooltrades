@@ -133,23 +133,6 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
     }
   }, [emergencyStop, bot])
 
-  useEffect(() => {
-    if (!symbol) return
-
-    console.log("[v0] Subscribing to market data for", symbol)
-
-    const unsubscribe = DerivWebSocketManager.subscribe(symbol, (data) => {
-      if (data.quote) {
-        console.log("[v0] Received market price:", data.quote)
-        setMarketPrice(data.quote)
-      }
-    })
-
-    return () => {
-      console.log("[v0] Unsubscribing from market data for", symbol)
-      unsubscribe()
-    }
-  }, [symbol])
 
   const handleStart = async () => {
     setLocalError(null)

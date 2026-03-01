@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LastDigitsChart } from "@/components/charts/last-digits-chart"
@@ -130,9 +130,8 @@ export function OverUnderTab({
         }
     }
 
-    const digitPower = calculateDigitPower(selectedDigit)
-
-    const streak = calculateStreak(analysisDigits)
+    const digitPower = useMemo(() => calculateDigitPower(selectedDigit), [selectedDigit, analysisDigits])
+    const streak = useMemo(() => calculateStreak(analysisDigits), [analysisDigits])
 
     const calculateUnderOverStats = () => {
         const underDigits = recentDigits.filter((d) => d >= 0 && d <= 4)
@@ -158,7 +157,8 @@ export function OverUnderTab({
         return { underPercent, overPercent, highestUnder, highestOver }
     }
 
-    const { underPercent, overPercent, highestUnder, highestOver } = calculateUnderOverStats()
+    const stats = useMemo(() => calculateUnderOverStats(), [recentDigits])
+    const { underPercent, overPercent, highestUnder, highestOver } = stats
 
     let signalStatus: "TRADE NOW" | "WAIT" | "NEUTRAL" = "NEUTRAL"
     let signalMessage = ""
