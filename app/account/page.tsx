@@ -39,10 +39,10 @@ export default function AccountPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
                     <DerivAuth theme="dark" />
-                    <Link href="/">
-                        <Button variant="ghost" className="text-slate-500 hover:text-white">
-                            <Home className="mr-2 h-4 w-4" />
-                            Back to Home
+                    <Link href="/platform">
+                        <Button variant="ghost" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                            <Home className="h-4 w-4" />
+                            <span className="text-sm font-medium">Home</span>
                         </Button>
                     </Link>
                 </div>

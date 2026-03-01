@@ -16,7 +16,8 @@ import {
     ShieldAlert,
     BarChart3,
     MessageSquare,
-    LogOut
+    LogOut,
+    Globe
 } from "lucide-react"
 
 interface AdminSidebarProps {
@@ -52,6 +53,9 @@ export function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
         { label: "Account", icon: Users, href: "/admin/account", active: pathname === "/admin/account" },
         { label: "Notifications", icon: ShieldAlert, href: "/admin/notifications", active: pathname === "/admin/notifications" },
         { label: "Settings", icon: Settings, href: "/admin/settings", active: pathname === "/admin/settings" },
+        { label: "SITE", type: "header", className: "mt-6" },
+        { label: "View Platform", icon: Globe, href: "/platform", active: pathname === "/platform" },
+        { label: "Live Site", icon: Globe, href: "/", active: pathname === "/" },
     ]
 
     return (
