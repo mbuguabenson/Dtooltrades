@@ -136,7 +136,7 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
                   }`}
               >
                 <div className="flex items-center gap-2 sm:gap-3 font-semibold text-xs sm:text-sm">
-                  {getAccountIcon(activeLoginId || "", balance?.currency, accountType)}
+                  {getAccountIcon(activeLoginId || "", balance?.currency, accountType || undefined)}
                   {balance ? (
                     <div className="flex flex-col items-start leading-tight min-w-[80px]">
                       <span className={`text-[9px] sm:text-[10px] font-medium opacity-70 uppercase tracking-wide`}>
