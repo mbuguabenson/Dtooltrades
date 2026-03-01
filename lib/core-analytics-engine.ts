@@ -28,6 +28,7 @@ export interface BotSignal {
 
 export interface AnalysisSnapshot {
   timestamp: number
+  symbol: string     // Added for tracking
   totalTicks: number
   currentDigit: number
   lastDigits: number[]
@@ -63,6 +64,7 @@ export class CoreAnalyticsEngine {
   private digits: number[] = []
   private previousSnapshot: AnalysisSnapshot | null = null
   private digitHistory: Map<number, number[]> = new Map() // digit -> power history
+  private symbol: string = "Unknown"
   private pipSize: number = 2
 
   constructor(maxTicks: number = 100) {
@@ -73,7 +75,8 @@ export class CoreAnalyticsEngine {
     }
   }
 
-  addTick(price: number): number {
+  addTick(price: number, symbol?: string): number {
+    if (symbol) this.symbol = symbol
     const digit = this.extractDigit(price)
     this.digits.push(digit)
 
@@ -171,6 +174,7 @@ export class CoreAnalyticsEngine {
 
     const snapshot: AnalysisSnapshot = {
       timestamp: Date.now(),
+      symbol: this.symbol,
       totalTicks,
       currentDigit,
       lastDigits: [...this.digits.slice(-15)],
@@ -223,6 +227,7 @@ export class CoreAnalyticsEngine {
   private getEmptySnapshot(): AnalysisSnapshot {
     return {
       timestamp: Date.now(),
+      symbol: this.symbol,
       totalTicks: 0,
       currentDigit: 0,
       lastDigits: [],

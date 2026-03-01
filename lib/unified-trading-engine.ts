@@ -69,10 +69,10 @@ export class UnifiedTradingEngine {
   }
 
   // Process incoming tick
-  processTick(price: number): void {
+  processTick(price: number, symbol?: string): void {
     try {
       // 1. Add tick to analytics
-      const digit = this.analytics.addTick(price)
+      const digit = this.analytics.addTick(price, symbol)
 
       // 2. Analyze market
       const analysis = this.analytics.analyze()
@@ -126,6 +126,7 @@ export class UnifiedTradingEngine {
     const trade = this.tradeExecution.executeTrade(
       botType,
       signal.prediction,
+      currentAnalysis.symbol, // Use symbol from analysis
       currentAnalysis.currentDigit,
       1 // 1 tick duration
     )
@@ -147,6 +148,16 @@ export class UnifiedTradingEngine {
     if (trade) {
       trade.result = result
       trade.profit = profit
+
+      // Report to global store for admin dashboard
+      import("@/lib/trade-reporting").then(({ reportTrade }) => {
+        reportTrade({
+          strategy: trade.botType || "Unified",
+          market: trade.market || "Unknown",
+          profit: profit,
+          stake: trade.stake || 0
+        })
+      })
     }
 
     // Update bot states

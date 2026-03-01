@@ -471,6 +471,16 @@ export class AutoBot {
       console.log(`[v0] ❌ ${this.strategy} LOSS! Loss: $${Math.abs(result.profit).toFixed(2)}`)
     }
 
+    // Report to global store for admin dashboard
+    import("./trade-reporting").then(({ reportTrade }) => {
+      reportTrade({
+        strategy: this.strategy,
+        market: this.config.symbol,
+        profit: result.profit,
+        stake: this.state.currentStake
+      })
+    }).catch(err => console.error("[v0] Trade reporting failed in AutoBot:", err))
+
     this.state.profitLossPercent = (this.state.profitLoss / this.config.balance) * 100
 
     this.updateUI()

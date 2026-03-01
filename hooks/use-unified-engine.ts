@@ -81,10 +81,10 @@ export const useUnifiedEngine = (): UseUnifiedEngineReturn => {
   }, [])
 
   // Process tick
-  const processTick = useCallback((price: number) => {
+  const processTick = useCallback((price: number, symbol?: string) => {
     if (!engineRef.current) return
-    console.log('[v0] Processing tick:', price)
-    engineRef.current.processTick(price)
+    console.log('[v0] Processing tick:', price, symbol)
+    engineRef.current.processTick(price, symbol)
   }, [])
 
   // Execute trade

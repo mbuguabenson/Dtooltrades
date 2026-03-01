@@ -104,6 +104,8 @@ export class DerivRealTrader extends EventEmitter {
           payout: buyResponse.payout,
           startTime: new Date(),
           isSold: false,
+          symbol: config.symbol,
+          contractType: config.contractType
         })
 
         this.pendingTrades.set(contractId, { resolve })
@@ -154,6 +156,16 @@ export class DerivRealTrader extends EventEmitter {
       }
 
       console.log(`[v0] Contract ${contractId} closed: ${isWin ? "WIN" : "LOSS"}, Profit: ${profit.toFixed(2)}`)
+
+      // Report to global store for admin dashboard
+      import("./trade-reporting").then(({ reportTrade }) => {
+        reportTrade({
+          strategy: activeContract.contractType || "RealTrader",
+          market: activeContract.symbol || "Unknown",
+          profit: profit,
+          stake: activeContract.buyPrice
+        })
+      }).catch(err => console.error("[v0] Trade reporting failed in DerivRealTrader:", err))
 
       this.tradeHistory.push(result)
       this.totalProfit += profit

@@ -132,6 +132,8 @@ export class TradingManager {
 
     private updateStats(result: any) {
         this.stats.trades++
+        const profit = result.isWin ? result.profit : -result.buyPrice
+
         if (result.isWin) {
             this.stats.wins++
             this.stats.profit += result.profit
@@ -141,6 +143,16 @@ export class TradingManager {
             this.stats.profit -= result.buyPrice
             if (result.buyPrice > this.stats.worstLoss) this.stats.worstLoss = result.buyPrice
         }
+
+        // Report to global store for admin dashboard
+        import("@/lib/trade-reporting").then(({ reportTrade }) => {
+            reportTrade({
+                strategy: result.strategy || "Adaptive",
+                market: result.symbol || "Unknown",
+                profit: profit,
+                stake: result.buyPrice || 0
+            })
+        })
     }
 
     public getStats() {

@@ -16,6 +16,7 @@ export interface Trade {
   timestamp: number
   botType: string
   prediction: number | number[]
+  market: string     // Added for tracking
   stake: number
   digit: number
   result: 'win' | 'loss' | 'pending'
@@ -54,6 +55,7 @@ export class TradeExecutionEngine {
   executeTrade(
     botType: string,
     prediction: number | number[],
+    market: string,
     digit: number,
     duration: number = 1
   ): Trade {
@@ -62,6 +64,7 @@ export class TradeExecutionEngine {
       timestamp: Date.now(),
       botType,
       prediction,
+      market,
       stake: this.currentStake,
       digit,
       result: 'pending',
@@ -176,8 +179,8 @@ export class TradeExecutionEngine {
       winRate: totalTrades > 0 ? (wins / totalTrades) * 100 : 0,
       averageStake: totalTrades > 0
         ? this.trades
-            .filter(t => t.result !== 'pending')
-            .reduce((sum, t) => sum + t.stake, 0) / totalTrades
+          .filter(t => t.result !== 'pending')
+          .reduce((sum, t) => sum + t.stake, 0) / totalTrades
         : 0,
     }
   }
