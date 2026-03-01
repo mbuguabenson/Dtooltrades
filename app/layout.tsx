@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 }
 
 import { HeartbeatManager } from "@/components/heartbeat-manager"
+import { LiveChat } from "@/components/live-chat"
 
 export default function RootLayout({
   children,
@@ -28,6 +29,7 @@ export default function RootLayout({
           <DerivAPIProvider>
             <HeartbeatManager />
             <Suspense fallback={null}>{children}</Suspense>
+            <LiveChat />
           </DerivAPIProvider>
         </ThemeProviderAdvanced>
         <Analytics />

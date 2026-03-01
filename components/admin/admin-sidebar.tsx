@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -15,6 +15,7 @@ import {
     ChevronRight,
     ShieldAlert,
     BarChart3,
+    MessageSquare,
     LogOut
 } from "lucide-react"
 
@@ -25,11 +26,21 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
     const pathname = usePathname()
+    const [unreadMsgs, setUnreadMsgs] = useState(0)
+
+    useEffect(() => {
+        const fetchUnread = () =>
+            fetch("/api/admin/messages").then(r => r.json()).then(d => setUnreadMsgs(d.unread || 0)).catch(() => { })
+        fetchUnread()
+        const iv = setInterval(fetchUnread, 15000)
+        return () => clearInterval(iv)
+    }, [])
 
     const navItems = [
         { label: "GENERAL", type: "header" },
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin", active: pathname === "/admin" },
         { label: "Users", icon: Users, href: "/admin/users", active: pathname === "/admin/users" },
+        { label: "Messages", icon: MessageSquare, href: "/admin/messages", active: pathname === "/admin/messages", badge: unreadMsgs },
         { label: "Portfolio", icon: BarChart3, href: "/admin/portfolio", active: pathname === "/admin/portfolio" },
         { label: "Market Data", icon: TrendingUp, href: "/admin/market", active: pathname === "/admin/market" },
         { label: "Trading", icon: TrendingUp, href: "/admin/trading", active: pathname === "/admin/trading" },
@@ -85,8 +96,13 @@ export function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
                             )}
                             <Icon className={`h-5 w-5 shrink-0 ${item.active ? 'text-blue-500' : 'group-hover:text-blue-400'}`} />
                             {isOpen && (
-                                <span className="text-sm font-medium animate-in slide-in-from-left-2 duration-300">
+                                <span className="text-sm font-medium animate-in slide-in-from-left-2 duration-300 flex-1">
                                     {item.label}
+                                </span>
+                            )}
+                            {isOpen && (item as any).badge > 0 && (
+                                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-blue-500 text-white text-[9px] font-black rounded-full">
+                                    {(item as any).badge}
                                 </span>
                             )}
                         </Link>
