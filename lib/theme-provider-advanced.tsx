@@ -38,15 +38,17 @@ export const ThemeProviderAdvanced: React.FC<ThemeProviderProps> = ({
 
   // Determine actual theme based on preference
   const determineTheme = (selectedTheme: Theme): 'light' | 'dark' => {
-    if (selectedTheme === 'auto') {
+    if (typeof window !== 'undefined' && selectedTheme === 'auto') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     }
-    return selectedTheme as 'light' | 'dark'
+    return selectedTheme === 'light' ? 'light' : 'dark'
   }
 
   // Initialize theme on mount
   useEffect(() => {
     setMounted(true)
+
+    if (typeof window === 'undefined') return
 
     // Get stored theme preference
     const stored = localStorage.getItem(storageKey) as Theme | null
@@ -72,6 +74,7 @@ export const ThemeProviderAdvanced: React.FC<ThemeProviderProps> = ({
   }, [])
 
   const applyTheme = (themeToApply: 'light' | 'dark') => {
+    if (typeof document === 'undefined') return
     const root = document.documentElement
 
     // Remove existing theme classes
@@ -93,7 +96,9 @@ export const ThemeProviderAdvanced: React.FC<ThemeProviderProps> = ({
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
-    localStorage.setItem(storageKey, newTheme)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(storageKey, newTheme)
+    }
 
     const actual = determineTheme(newTheme)
     setCurrentTheme(actual)
@@ -104,14 +109,11 @@ export const ThemeProviderAdvanced: React.FC<ThemeProviderProps> = ({
     setTheme(currentTheme === 'dark' ? 'light' : 'dark')
   }
 
-  // Don't render until mounted to avoid hydration mismatch
-  if (!mounted) {
-    return <>{children}</>
-  }
-
   return (
     <ThemeContext.Provider value={{ theme, currentTheme, setTheme, toggleTheme }}>
-      {children}
+      <div style={{ visibility: mounted ? 'visible' : 'hidden' }}>
+        {children}
+      </div>
     </ThemeContext.Provider>
   )
 }
