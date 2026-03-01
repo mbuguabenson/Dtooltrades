@@ -295,72 +295,65 @@ export class AnalysisEngine {
     const maxPercentage = Math.max(under, over)
     const favored = under > over ? "under" : "over"
 
+    const isIncreasing = favored === "under" ? isUnderIncreasing : !isUnderIncreasing
+
     const underDigits = digitFrequencies.filter((d) => d.digit <= 4).sort((a, b) => b.count - a.count)
     const overDigits = digitFrequencies.filter((d) => d.digit >= 5).sort((a, b) => b.count - a.count)
 
+    const top3Digits = [...digitFrequencies].sort((a, b) => b.count - a.count).slice(0, 3).map(d => d.digit)
+
     const getUnderPrediction = () => {
-      // Find which group of digits appears most
-      const count06 = digitFrequencies.filter(d => d.digit >= 0 && d.digit <= 6).reduce((s, d) => s + d.count, 0)
-      const count05 = digitFrequencies.filter(d => d.digit >= 0 && d.digit <= 5).reduce((s, d) => s + d.count, 0)
-      const count04 = digitFrequencies.filter(d => d.digit >= 0 && d.digit <= 4).reduce((s, d) => s + d.count, 0)
-
       const topDigit = underDigits[0]?.digit ?? "-"
+      const entryPointText = `Entry Point is Highest in under (${topDigit}) Power Digit appears.`
+      const maxDigitInTop3 = Math.max(...top3Digits)
 
-      if (count04 > count05 && count04 > count06) return `Under 6 (0-4 dominant, Power: ${topDigit})`
-      if (count05 > count06) return `Under 6,7,8 (0-5 dominant, Power: ${topDigit})`
-      return `Under 8,9 (0-6 dominant, Power: ${topDigit})`
+      if (maxDigitInTop3 <= 4) {
+        return { text: `Under 6`, target: 6, entry: entryPointText }
+      } else if (maxDigitInTop3 <= 5) {
+        return { text: `Under 7 (Also Under 6,7,8)`, target: 7, entry: entryPointText }
+      } else {
+        return { text: `Under 8 and Under 9`, target: 8, entry: entryPointText }
+      }
     }
 
     const getOverPrediction = () => {
-      const count39 = digitFrequencies.filter(d => d.digit >= 3 && d.digit <= 9).reduce((s, d) => s + d.count, 0)
-      const count49 = digitFrequencies.filter(d => d.digit >= 4 && d.digit <= 9).reduce((s, d) => s + d.count, 0)
-      const count59 = digitFrequencies.filter(d => d.digit >= 5 && d.digit <= 9).reduce((s, d) => s + d.count, 0)
-
       const topDigit = overDigits[0]?.digit ?? "-"
+      const entryPointText = `Entry Point is Highest in Over (${topDigit}) Power Digit appears.`
+      const minDigitInTop3 = Math.min(...top3Digits)
 
-      if (count59 > count49 && count59 > count39) return `Over 3 (5-9 dominant, Power: ${topDigit})`
-      if (count49 > count39) return `Over 3,2,1 (4-9 dominant, Power: ${topDigit})`
-      return `Over 1,0 (3-9 dominant, Power: ${topDigit})`
-    }
-
-    if (
-      maxPercentage >= 58 &&
-      ((favored === "under" && isUnderIncreasing) || (favored === "over" && !isUnderIncreasing))
-    ) {
-      const prediction = favored === "under" ? getUnderPrediction() : getOverPrediction()
-      return {
-        type: "over_under",
-        status: "TRADE NOW",
-        probability: maxPercentage,
-        recommendation: `STRONG ${favored.toUpperCase()} signal at ${maxPercentage.toFixed(1)}% - POWERFUL market direction! Prediction: ${prediction}`,
-        entryCondition: "Wait for market to show clear direction (55%+ and increasing)",
+      if (minDigitInTop3 >= 5) {
+        return { text: `Over 3`, target: 3, entry: entryPointText }
+      } else if (minDigitInTop3 >= 4) {
+        return { text: `Over 2 (Also Over 3,2,1)`, target: 2, entry: entryPointText }
+      } else {
+        return { text: `Over 1 and Over 0`, target: 1, entry: entryPointText }
       }
     }
 
-    if (
-      maxPercentage >= 56 &&
-      ((favored === "under" && isUnderIncreasing) || (favored === "over" && !isUnderIncreasing))
-    ) {
-      const prediction = favored === "under" ? getUnderPrediction() : getOverPrediction()
-      return {
-        type: "over_under",
-        status: "TRADE NOW",
-        probability: maxPercentage,
-        recommendation: `${favored.toUpperCase()} signal at ${maxPercentage.toFixed(1)}% and increasing - Ready to trade! Prediction: ${prediction}`,
-        entryCondition: "Wait for market to show clear direction (55%+ and increasing)",
-      }
-    }
+    if (maxPercentage >= 53 && isIncreasing) {
+      let status = "WAIT"
+      let recommendation = ""
 
-    if (
-      maxPercentage >= 53 &&
-      ((favored === "under" && isUnderIncreasing) || (favored === "over" && !isUnderIncreasing))
-    ) {
+      const prediction = favored === "under" ? getUnderPrediction() : getOverPrediction()
+
+      if (maxPercentage >= 60) {
+        status = "TRADE NOW"
+        recommendation = `STRONG ${favored.toUpperCase()} signal at ${maxPercentage.toFixed(1)}% - POWERFUL direction! Prediction: ${prediction.text}`
+      } else if (maxPercentage >= 56) {
+        status = "TRADE NOW"
+        recommendation = `${favored.toUpperCase()} signal at ${maxPercentage.toFixed(1)}% and increasing - Ready to trade! Prediction: ${prediction.text}`
+      } else {
+        status = "WAIT"
+        recommendation = `Wait signal: ${favored.toUpperCase()} bias at ${maxPercentage.toFixed(1)}% and increasing. Prediction: ${prediction.text}`
+      }
+
       return {
         type: "over_under",
-        status: "WAIT",
+        status: status as any,
         probability: maxPercentage,
-        recommendation: `${favored.toUpperCase()} bias at ${maxPercentage.toFixed(1)}% and increasing - Market building direction (analyzing for 5 min minimum)`,
-        entryCondition: "Wait for market to show clear direction (55%+ and increasing)",
+        recommendation: recommendation,
+        entryCondition: `Wait for market to show clear direction (55%+ and increasing). ${prediction.entry}`,
+        targetDigit: prediction.target
       }
     }
 
@@ -428,7 +421,7 @@ export class AnalysisEngine {
           status: "WAIT",
           probability: 100 - bestDigit.percentage,
           recommendation: `Differs digit ${bestDigit.digit} appeared - Waiting for 3 clean ticks`,
-          entryCondition: `Wait for digit ${bestDigit.digit} to appear, then wait for next 3 ticks. If not appearing, trade DIFFERS.`,
+          entryCondition: `wait for the digit to appear wait for next 3 digits to appear if the exit spot or last digit is not differd digit give signal on differs bots start trading.`,
           targetDigit: bestDigit.digit,
         }
       }
@@ -438,7 +431,7 @@ export class AnalysisEngine {
         status: "TRADE NOW",
         probability: 100 - bestDigit.percentage,
         recommendation: `DIFFERS signal on digit ${bestDigit.digit} at ${bestDigit.percentage.toFixed(1)}% (decreasing, <10.5% power)`,
-        entryCondition: `Digit ${bestDigit.digit} has not appeared in 3+ ticks - TRADE DIFFERS NOW`,
+        entryCondition: `wait for the digit to appear wait for next 3 digits to appear if the exit spot or last digit is not differd digit give signal on differs bots start trading.`,
         targetDigit: bestDigit.digit,
       }
     }
