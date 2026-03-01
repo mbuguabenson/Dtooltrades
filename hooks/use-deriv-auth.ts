@@ -256,5 +256,6 @@ export function useDerivAuth() {
     activeLoginId,
     showTokenModal,
     submitApiToken,
+    openTokenSettings,
   }
 }
