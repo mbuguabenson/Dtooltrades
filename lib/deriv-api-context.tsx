@@ -23,6 +23,7 @@ interface DerivAPIContextType {
   apiClient: DerivAPIClient | null
   isConnected: boolean
   isAuthorized: boolean
+  isInitializing: boolean
   error: string | null
   connectionStatus: "disconnected" | "connecting" | "connected" | "reconnecting"
   // Auth properties from useDerivAuth
@@ -54,7 +55,7 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
   const clientRef = useRef<DerivAPIClient | null>(null)
   const initAttemptRef = useRef(0)
   const auth = useDerivAuth()
-  const { token, isLoggedIn } = auth
+  const { token, isLoggedIn, isInitializing } = auth
 
   useEffect(() => {
     if (token && isLoggedIn && token.length > 10) {
@@ -139,9 +140,21 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
         apiClient: clientRef.current,
         isConnected,
         isAuthorized,
+        isInitializing,
         error,
         connectionStatus,
-        ...auth,
+        token: auth.token,
+        isLoggedIn: auth.isLoggedIn,
+        balance: auth.balance,
+        accountType: auth.accountType,
+        accountCode: auth.accountCode,
+        accounts: auth.accounts,
+        activeLoginId: auth.activeLoginId,
+        logout: auth.logout,
+        requestLogin: auth.requestLogin,
+        switchAccount: auth.switchAccount,
+        submitApiToken: auth.submitApiToken,
+        openTokenSettings: auth.openTokenSettings,
       }}
     >
       {children}
@@ -158,6 +171,7 @@ export function useDerivAPI() {
       apiClient: null,
       isConnected: false,
       isAuthorized: false,
+      isInitializing: false,
       error: "Context not found",
       connectionStatus: "disconnected",
       token: "",
