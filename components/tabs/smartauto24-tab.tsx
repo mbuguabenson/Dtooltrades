@@ -86,7 +86,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
   // Trading state
   const [isRunning, setIsRunning] = useState(false)
-  const [status, setStatus] = useState<"idle" | "analyzing" | "trading" | "completed">("idle")
+  const [status, setStatus] = useState<"idle" | "trading" | "completed">("idle")
   const [sessionProfit, setSessionProfit] = useState(0)
   const [sessionTrades, setSessionTrades] = useState(0)
   const [analysisLog, setAnalysisLog] = useState<AnalysisLogEntry[]>([])
@@ -132,7 +132,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   const differsWaitingForEntryRef = useRef(false)
   const differsSelectedDigitRef = useRef<number | null>(null)
 
-  // SmartAuto24 Engine with Unified Signals
+  // SmartAuto24 Engine
   const {
     engineRef,
     currentDigit: engineDigit,
@@ -141,9 +141,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
     setPipSize,
     processTick: engineProcessTick,
     reset: resetEngine,
-    marketScores,
-    unifiedSignals,
-    patterns
+    marketScores
   } = useSmartAuto24(symbol, isConnected)
 
   // Modal state
@@ -305,39 +303,28 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
           // Increment ticks since appearance
           setDiffersTicksSinceAppearance((prev) => prev + 1)
         }
+
+        if (differsTicksSinceAppearance >= 3) {
+          differsWaitingForEntryRef.current = false
+          setDiffersWaitingForEntry(false)
+          addAnalysisLog(`Target digit ${differsSelectedDigitRef.current} hasn't appeared for 3 ticks. Taking entry!`, "success")
+          startDiffersTrades(analysisRef.current)
+        }
       }
 
       // REAL-TIME ENTRY DETECTION
       if (isRunningRef.current && statusRef.current === "trading" && !entryPointMetRef.current && !isExecutingTradeRef.current) {
-        const currentAnalysis = analysisRef.current
-        if (!currentAnalysis) return
-
-        let met = false
-        const strat = selectedStrategyRef.current
-
-        if (strat === "Even/Odd") {
-          const targetIsEven = currentAnalysis.signal === "EVEN"
-          if (targetIsEven && consecutiveOddCountRef.current >= 2 && lastDigitValue % 2 === 0) {
-            met = true
-          } else if (!targetIsEven && consecutiveEvenCountRef.current >= 2 && lastDigitValue % 2 === 1) {
-            met = true
-          }
-        } else if (strat === "Differs") {
-          if (differsWaitingForEntryRef.current) {
-            // We check state-based ticks here, but it's updated in the same tick cycle
-            if (lastDigitValue !== differsSelectedDigitRef.current) {
-              // We'll use a more direct approach for differs in a moment if needed
-              // For now, let's stick to the 3-tick rule
-            }
+        // If analysis is already set (e.g. Differs waiting room), use it
+        if (analysisRef.current) {
+          const currentAnalysis = analysisRef.current
+          if (currentAnalysis.strategy !== "Differs") {
+            // Ensure we execute right away if not Differs
+            entryPointMetRef.current = true
+            performTrade(currentAnalysis)
           }
         } else {
-          met = true // Immediate entry for other strats
-        }
-
-        if (met) {
-          entryPointMetRef.current = true
-          addAnalysisLog(`Real-time entry point MET! Executing ${strat} trade...`, "success")
-          performTrade(currentAnalysis)
+          // Otherwise constantly hunt for new signals
+          checkInstantSignals()
         }
       }
     }
@@ -406,17 +393,62 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
     // Don't process new signals if we are already executing a trade or not running
     if (isExecutingTradeRef.current || !isRunningRef.current || statusRef.current !== "trading") return
 
-    // Look for a confirmed signal in unifiedSignals
-    const validSignals = unifiedSignals.filter(s => s.entryStatus === "Confirmed" && s.confidence >= 58)
+    // Don't trade blindly: require at least 15 ticks of analysis
+    if (ticksCollected < 15) {
+      if (ticksCollected === 1) addAnalysisLog("Gathering pattern data (15 ticks minimum). Please wait...", "info")
+      return
+    }
+
+    // Generate all strategy signals from the collected ticks
+    const signals = strategiesRef.current.generateSignals()
+    let validSignals = signals.filter(s => s.status === "TRADE NOW" && s.probability >= 58)
+
+    // If AutoPilot is OFF, respect the user's strategy choice
+    if (!isAutoPilotEnabledRef.current) {
+      const strategyMap: Record<string, string> = {
+        "Even/Odd": "even_odd",
+        "Over/Under": "over_under",
+        "Differs": "differs",
+        "Matches": "matches"
+      }
+      const allowedType = strategyMap[selectedStrategyRef.current]
+      validSignals = validSignals.filter(s => s.type === allowedType)
+    }
 
     if (validSignals.length > 0) {
       // Select the strongest signal
-      const bestSignal = [...validSignals].sort((a, b) => b.confidence - a.confidence)[0]
+      const bestSignal = [...validSignals].sort((a, b) => b.probability - a.probability)[0]
 
       if (!entryPointMetRef.current) {
         entryPointMetRef.current = true
-        addAnalysisLog(`High Probability Signal Detected: ${bestSignal.strategy} (${bestSignal.confidence.toFixed(1)}%)`, "success")
-        handleSelectInstantSuggestion(bestSignal)
+
+        // Map to strategy name
+        const typeToStrat: Record<string, string> = {
+          "even_odd": "Even/Odd",
+          "over_under": "Over/Under",
+          "differs": "Differs",
+          "matches": "Matches"
+        }
+        const strategyName = typeToStrat[bestSignal.type] || "Even/Odd"
+
+        addAnalysisLog(`High Probability Signal Detected: ${strategyName} (${bestSignal.probability.toFixed(1)}%)`, "success")
+
+        // Determine exact signal code (EVEN, ODD, OVER, UNDER, etc.)
+        let analysisCode = "DIGIT"
+        if (bestSignal.recommendation?.includes("EVEN")) analysisCode = "EVEN"
+        if (bestSignal.recommendation?.includes("ODD")) analysisCode = "ODD"
+        if (bestSignal.recommendation?.includes("OVER")) analysisCode = "OVER"
+        if (bestSignal.recommendation?.includes("UNDER")) analysisCode = "UNDER"
+        if (bestSignal.recommendation?.includes("DIFFER")) analysisCode = "DIFFERS"
+        if (bestSignal.recommendation?.includes("MATCH")) analysisCode = "MATCH"
+
+        handleSelectInstantSuggestion({
+          strategy: strategyName,
+          confidence: bestSignal.probability,
+          type: analysisCode,
+          barrier: bestSignal.targetDigit,
+          description: bestSignal.recommendation
+        })
       }
     }
   }
@@ -424,14 +456,15 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
   const handleSelectInstantSuggestion = (signal: any) => {
     const strategyName = signal.strategy
     setSelectedStrategy(strategyName)
-    addAnalysisLog(`Executing ${strategyName} on ${symbol}...`, "info")
+    addAnalysisLog(`Executing ${strategyName} on ${symbol}... Prediction Details: ${signal.type} ${signal.barrier !== undefined ? signal.barrier : ''}`, "info")
 
-    let analysisSignalCode = signal.type.toUpperCase()
+    let analysisSignalCode = signal.type
 
     if (strategyName === "Differs") {
       setDiffersSelectedDigit(Number(signal.barrier))
       setDiffersWaitingForEntry(true)
       setDiffersTicksSinceAppearance(0)
+      addAnalysisLog(`Waiting for digit ${signal.barrier} to disappear for 3 consecutive ticks...`, "warning")
     }
 
     const executionAnalysis = {
@@ -441,7 +474,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
       confidence: signal.confidence,
       description: signal.description,
       status: "TRADE NOW",
-      targetDigit: signal.barrier ? Number(signal.barrier) : undefined
+      targetDigit: signal.barrier !== undefined ? Number(signal.barrier) : undefined
     }
 
     setAnalysisData({
@@ -452,8 +485,12 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
 
     analysisRef.current = executionAnalysis
 
-    executeTrades(executionAnalysis)
-    performTrade(executionAnalysis)
+    // For Differs, we wait for 3 ticks without the digit.
+    // For others, execute right away.
+    if (strategyName !== "Differs") {
+      executeTrades(executionAnalysis)
+      performTrade(executionAnalysis)
+    }
   }
 
   const handleSelectSuggestion = (signal: Signal) => {
@@ -646,7 +683,9 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
             }
 
             // Reset Trader and Stats for the new cycle
-            traderRef.current = new DerivRealTrader(apiClient)
+            if (apiClient) {
+              traderRef.current = new DerivRealTrader(apiClient)
+            }
             setSessionProfit(0)
             setSessionTrades(0)
             contractsLostRef.current = 0
