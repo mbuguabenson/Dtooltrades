@@ -7,10 +7,11 @@ import { AccountDetails } from "@/components/account/account-details"
 import { StatementList } from "@/components/account/statement-list"
 import { ProfitReport } from "@/components/account/profit-report"
 import { AccountAnalytics } from "@/components/account/account-analytics"
+import { PerformanceJourney } from "@/components/account/performance-journey"
 import { DerivAuth } from "@/components/deriv-auth"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { User, ReceiptText, BarChart3, PieChart, ShieldCheck, ArrowLeft, Home } from "lucide-react"
+import { User, ReceiptText, BarChart3, PieChart, ShieldCheck, ArrowLeft, Home, TrendingUp } from "lucide-react"
 import Link from "next/link"
 
 export default function AccountPage() {
@@ -103,6 +104,11 @@ export default function AccountPage() {
                                 <span className="hidden sm:inline">Profit Reports</span>
                                 <span className="sm:hidden">Reports</span>
                             </TabsTrigger>
+                            <TabsTrigger value="performance" className="rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 font-bold text-xs gap-2 transition-all">
+                                <TrendingUp className="h-4 w-4" />
+                                <span className="hidden sm:inline">Performance Journey</span>
+                                <span className="sm:hidden">Journey</span>
+                            </TabsTrigger>
                             <TabsTrigger value="analytics" className="rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 font-bold text-xs gap-2 transition-all">
                                 <PieChart className="h-4 w-4" />
                                 <span className="hidden sm:inline">Strategy Analytics</span>
@@ -122,6 +128,10 @@ export default function AccountPage() {
 
                         <TabsContent value="reports" className="mt-0 focus-visible:outline-none">
                             <ProfitReport theme="dark" />
+                        </TabsContent>
+
+                        <TabsContent value="performance" className="mt-0 focus-visible:outline-none">
+                            <PerformanceJourney theme="dark" />
                         </TabsContent>
 
                         <TabsContent value="analytics" className="mt-0 focus-visible:outline-none">
