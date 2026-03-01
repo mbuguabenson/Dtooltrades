@@ -3,28 +3,28 @@ import Link from 'next/link';
 import type { DerivSymbol } from "@/hooks/use-deriv"
 import { DERIV_CONFIG } from "@/lib/deriv-config"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
-import { 
-  LineChart, 
-  Wallet, 
-  Settings, 
-  History, 
-  TrendingUp, 
-  Zap, 
-  Play, 
-  Square, 
-  ChevronDown, 
-  Info, 
-  AlertCircle, 
-  Target, 
-  ArrowUpCircle, 
-  ArrowDownCircle, 
-  CheckCircle2, 
-  XCircle,
-  BarChart2,
-  Cpu,
-  ShieldCheck,
-  Pause,
-  RotateCcw
+import {
+    LineChart,
+    Wallet,
+    Settings,
+    History,
+    TrendingUp,
+    Zap,
+    Play,
+    Square,
+    ChevronDown,
+    Info,
+    AlertCircle,
+    Target,
+    ArrowUpCircle,
+    ArrowDownCircle,
+    CheckCircle2,
+    XCircle,
+    BarChart2,
+    Cpu,
+    ShieldCheck,
+    Pause,
+    RotateCcw
 } from 'lucide-react';
 
 // --- Configuration ---
@@ -54,27 +54,27 @@ const IconArrowRight = () => (<svg className="w-4 h-4" fill="none" stroke="curre
 
 // --- Interfaces ---
 interface CustomSelectProps {
-  label: string
-  value: string | number
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void
-  children: React.ReactNode
-  labelClass?: string
-  name: string
-  disabled?: boolean
+    label: string
+    value: string | number
+    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void
+    children: React.ReactNode
+    labelClass?: string
+    name: string
+    disabled?: boolean
 }
 
 interface CustomInputProps {
-  label: string
-  value: string | number
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  type?: string
-  step?: string | number
-  min?: number
-  max?: number
-  name?: string
-  placeholder?: string
-  labelClass?: string
-  readOnly?: boolean
+    label: string
+    value: string | number
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+    type?: string
+    step?: string | number
+    min?: number
+    max?: number
+    name?: string
+    placeholder?: string
+    labelClass?: string
+    readOnly?: boolean
 }
 
 // --- Custom Input/Select Components ---
@@ -167,22 +167,22 @@ export default function TradingBotSlider() {
     const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
     // --- Dynamic Market/Contract State ---
-    const [markets, setMarkets] = useState<Market[]>([]); 
-    const [activeContracts, setActiveContracts] = useState<Record<string, ContractGroup>>({}); 
+    const [markets, setMarkets] = useState<Market[]>([]);
+    const [activeContracts, setActiveContracts] = useState<Record<string, ContractGroup>>({});
 
     // --- Bot Configuration State ---
     const [formState, setFormState] = useState({
         symbol: 'R_100', // Default to Volatility 100 Index
         tradeTypeCategory: 'Up/Down',
         contractType: 'CALL',
-        prediction: 3, 
+        prediction: 3,
         stake: 0.35, // Base stake
         ticks: 5,
         marginle: 1.5, // Martingale Multiplier
         takeProfit: 2, // Stop condition
         stopLoss: 0.35, // Stop condition
     });
-    
+
     // --- Trading Logic State ---
     const [currentStake, setCurrentStake] = useState(0); // Stake that is actually used for the next trade
 
@@ -190,7 +190,7 @@ export default function TradingBotSlider() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const initialHistory: HistoryItem[] = [{
         id: 'N/A',
-        ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', 
+        ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT',
         text: 'System Initialized. Attempting to connect to the Deriv API...',
         accType: 'N/A',
         stake: 0.00,
@@ -210,33 +210,33 @@ export default function TradingBotSlider() {
         manager.send(message);
     }, [manager]);
 
-    const handleMockApiResponse = useCallback((response: any) => {
+    const handleApiResponse = useCallback((response: any) => {
         // DerivWebSocketManager passes the raw data, but if this is an Event, we parse it
         const data = response.data ? JSON.parse(response.data) : response;
         const now = new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT';
-        
+
         // Handle Active Symbols (Market Data)
         if (data.msg_type === 'active_symbols' && data.active_symbols) {
             const symbols = data.active_symbols
                 .filter((s: any) => s.market !== 'random_index' && s.is_trading_supported)
                 .map((s: any) => ({ name: s.display_name, symbol: s.symbol, market: s.market }));
-            
+
             setMarkets(symbols);
 
             if (symbols.length > 0) {
                 const initialSymbol = symbols.find((s: any) => s.symbol === formState.symbol)?.symbol || symbols[0].symbol;
                 setFormState(prev => ({ ...prev, symbol: initialSymbol }));
-                safeSend({ contracts_for: initialSymbol }); 
-                setHistory(h => [{id: 'N/A', ts: now, text: `Markets loaded. Selected: ${initialSymbol}. Requesting contracts...`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+                safeSend({ contracts_for: initialSymbol });
+                setHistory(h => [{ id: 'N/A', ts: now, text: `Markets loaded. Selected: ${initialSymbol}. Requesting contracts...`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
             }
-        
+
         } else if (data.msg_type === 'contracts_for' && data.contracts_for) {
             const availableContracts = data.contracts_for.available;
             const groupedContracts = availableContracts.reduce((acc: Record<string, ContractGroup>, contract: any) => {
                 const category = CONTRACT_GROUPS[contract.contract_type as keyof typeof CONTRACT_GROUPS] || 'Others';
                 if (!acc[category]) acc[category] = { types: [], details: {} };
                 const predictionRequired = contract.barrier_category?.includes('digit') || contract.contract_type.startsWith('DIGIT');
-                
+
                 acc[category].types.push({
                     text: contract.contract_display,
                     value: contract.contract_type,
@@ -247,9 +247,9 @@ export default function TradingBotSlider() {
                 });
                 return acc;
             }, {});
-            
+
             setActiveContracts(groupedContracts);
-            setHistory(h => [{id: 'N/A', ts: now, text: `Contracts loaded for ${formState.symbol}. Ready to trade.`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+            setHistory(h => [{ id: 'N/A', ts: now, text: `Contracts loaded for ${formState.symbol}. Ready to trade.`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
 
         } else if (data.msg_type === 'balance' && data.balance) {
             setAccountInfo(prev => ({ ...prev, balance: data.balance.balance }));
@@ -262,83 +262,91 @@ export default function TradingBotSlider() {
                 setProposal(data.proposal);
                 setProposalError(null);
             }
-            
+
         } else if (data.msg_type === 'proposal' && data.error) {
             setProposal(null);
             setProposalError(data.error.message);
-        
-        } else if (data.msg_type === 'buy' && data.buy) {
+
+        } else if (data.msg_type === 'buy') {
             setIsAwaitingTrade(false);
-            const contractId = data.buy.contract_id;
-            const entryPrice = data.buy.buy_price;
+            if (data.buy) {
+                const contractId = data.buy.contract_id;
+                const entryPrice = data.buy.buy_price;
 
-            setHistory(h => [{id: String(contractId), ts: now, text: `Contract purchased @ ${entryPrice} for $${Number(currentStake).toFixed(2)}.`, accType: accountInfo.type, stake: currentStake, pnl: 0, entrySpot: entryPrice, exitSpot: 'N/A'}, ...h]);
-            
-            const currentContractDetails = activeContracts[formState.tradeTypeCategory]?.types.find(c => c.value === formState.contractType);
-            const duration = currentContractDetails?.durationUnit === 't' ? formState.ticks : 5;
-            
-            setTimeout(() => {
-                const isWin = Math.random() > 0.5;
-                const exitPrice = (Number(entryPrice) + (isWin ? 0.05 : -0.05)).toFixed(2);
-                const payout = data.buy.payout || (Number(currentStake) * 1.8);
-                const pnl = isWin ? payout - data.buy.buy_price : -data.buy.buy_price;
-                const result = isWin ? 'Profit' : 'Loss';
+                setHistory(h => [{ id: String(contractId), ts: now, text: `Contract purchased @ ${entryPrice} for $${Number(currentStake).toFixed(2)}. Waiting for settlement...`, accType: accountInfo.type, stake: currentStake, pnl: 0, entrySpot: entryPrice, exitSpot: 'N/A' }, ...h]);
 
-                setAccountInfo(prev => ({ ...prev, balance: prev.balance + pnl }));
+                // Subscribe to the newly opened contract to track its real settlement
+                safeSend({ proposal_open_contract: 1, contract_id: contractId, subscribe: 1 });
+            } else if (data.error) {
+                setHistory(h => [{ id: 'N/A', ts: now, text: `Trade failed: ${data.error.message}`, accType: accountInfo.type, stake: currentStake, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
+            }
 
-                let stopReason: string | null = null;
+        } else if (data.msg_type === 'proposal_open_contract' && data.proposal_open_contract) {
+            const contract = data.proposal_open_contract;
+
+            // Check if the contract is sold/settled
+            if (contract.is_sold) {
+                const contractId = contract.contract_id;
+                const entryPrice = contract.buy_price;
+                const exitPrice = contract.sell_price || contract.current_spot;
+                const pnl = contract.profit;
+                const result = pnl > 0 ? 'Profit' : 'Loss';
+
+                // Prevent duplicate processing
                 setTransactions(t => {
+                    const alreadyProcessed = t.some(txn => txn.id === String(contractId));
+                    if (alreadyProcessed) return t;
+
                     const transaction: Transaction = {
                         id: String(contractId),
                         type: formState.contractType,
                         entry: Number(entryPrice).toFixed(2),
-                        exit: Number(exitPrice).toFixed(2),
+                        exit: exitPrice ? Number(exitPrice).toFixed(2) : '---',
                         stake: Number(currentStake).toFixed(2),
                         result: result,
                         pnl: pnl,
                     };
-                    
+
                     const updatedTransactions = [transaction, ...t];
                     const newTotalPL = calculateTotalPL(updatedTransactions);
-                    
-                    if (isWin) {
+
+                    setAccountInfo(prev => ({ ...prev, balance: prev.balance + pnl }));
+
+                    if (pnl > 0) {
                         setCurrentStake(Number(formState.stake));
-                        setHistory(h => [{id: 'N/A', ts: now, text: `Win! Stake reset to $${Number(formState.stake).toFixed(2)}.`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+                        setHistory(h => [{ id: 'N/A', ts: now, text: `Win! Stake reset to $${Number(formState.stake).toFixed(2)}.`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
                     } else {
                         const nextStake = Number((currentStake * Number(formState.marginle)).toFixed(2));
                         setCurrentStake(nextStake);
-                        setHistory(h => [{id: 'N/A', ts: now, text: `Loss. Stake increased to $${nextStake.toFixed(2)}.`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+                        setHistory(h => [{ id: 'N/A', ts: now, text: `Loss. Stake increased to $${nextStake.toFixed(2)}.`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
                     }
-                    
-                    if (isRunning) { 
+
+                    let stopReason: string | null = null;
+                    if (isRunning) {
                         if (newTotalPL >= Number(formState.takeProfit)) {
                             stopReason = `*** BOT STOPPED *** Take Profit hit! P&L: $${newTotalPL.toFixed(2)}`;
                         } else if (newTotalPL <= -Number(formState.stopLoss)) {
                             stopReason = `*** BOT STOPPED *** Stop Loss hit! P&L: $${newTotalPL.toFixed(2)}`;
                         }
                     }
+
+                    if (stopReason) {
+                        setIsRunning(false);
+                        setHistory(h => [{ id: 'N/A', ts: now, text: stopReason as string, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
+                    }
+
+                    setHistory(h => [{ id: String(contractId), ts: now, text: `Contract settled: ${result} of ${pnl.toFixed(2)} USD`, accType: accountInfo.type, stake: currentStake, pnl: pnl, entrySpot: entryPrice, exitSpot: exitPrice ? exitPrice : 'N/A' }, ...h]);
+
                     return updatedTransactions;
                 });
-                
-                if (stopReason) {
-                    setIsRunning(false);
-                    setHistory(h => [{id: 'N/A', ts: now, text: stopReason as string, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
-                }
-                
-                setHistory(h => [{id: String(contractId), ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', text: `Contract settled: ${result} of ${pnl.toFixed(2)} USD`, accType: accountInfo.type, stake: currentStake, pnl: pnl, entrySpot: entryPrice, exitSpot: exitPrice}, ...h]);
-
-            }, duration * 1000 + 1000); 
-
-        } else if (data.msg_type === 'buy' && data.error) {
-            setIsAwaitingTrade(false);
-            setHistory(h => [{id: 'N/A', ts: now, text: `Trade failed: ${data.error.message}`, accType: accountInfo.type, stake: currentStake, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+            }
         } else if (data.error && data.error.message) {
             console.error('API Error:', data.error.message);
-            setHistory(h => [{id: 'N/A', ts: now, text: `API Error: ${data.error.message}`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+            setHistory(h => [{ id: 'N/A', ts: now, text: `API Error: ${data.error.message}`, accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
         }
 
-    }, [formState.symbol, formState.stake, formState.ticks, formState.contractType, formState.marginle, formState.takeProfit, formState.stopLoss, formState.tradeTypeCategory, accountInfo.type, activeContracts, currentStake, isRunning, transactions, calculateTotalPL, manager, safeSend]);
-    
+    }, [formState.symbol, formState.stake, formState.ticks, formState.contractType, formState.marginle, formState.takeProfit, formState.stopLoss, formState.tradeTypeCategory, accountInfo.type, formState.prediction, activeContracts, currentStake, isRunning, transactions, calculateTotalPL, manager, safeSend]);
+
     // Initialize/Reset currentStake when base stake changes
     useEffect(() => {
         setCurrentStake(Number(formState.stake));
@@ -352,9 +360,8 @@ export default function TradingBotSlider() {
             try {
                 await manager.connect();
                 setConnectionStatus('Connected');
-                setAccountInfo({ type: 'Demo', balance: 5000.00 }); 
                 manager.send({ balance: 1, subscribe: 1 });
-                manager.send({ active_symbols: 'brief', product_type: 'basic' }); 
+                manager.send({ active_symbols: 'brief', product_type: 'basic' });
                 manager.subscribeTicks(formState.symbol, (tick) => setRealtimePrice(tick.quote));
             } catch (err) {
                 setConnectionStatus('Error');
@@ -363,18 +370,18 @@ export default function TradingBotSlider() {
 
         const timer = setTimeout(initConnection, 1000);
 
-        manager.on('*', handleMockApiResponse);
+        manager.on('*', handleApiResponse);
         return () => {
             clearTimeout(timer);
-            manager.off('*', handleMockApiResponse);
+            manager.off('*', handleApiResponse);
         };
-    }, [reconnectAttempt, handleMockApiResponse, manager, formState.symbol, connectionStatus]);
+    }, [reconnectAttempt, handleApiResponse, manager, formState.symbol, connectionStatus]);
 
 
     // --- Proposal Request useEffect (runs when config changes) ---
     const currentContract = activeContracts[formState.tradeTypeCategory]?.types.find(c => c.value === formState.contractType);
-    const durationUnit = currentContract?.durationUnit || 't'; 
-    
+    const durationUnit = currentContract?.durationUnit || 't';
+
     useEffect(() => {
         // Only send proposal request if connected and not waiting for a trade
         if (connectionStatus !== 'Connected' || isAwaitingTrade || !formState.contractType) return;
@@ -395,27 +402,27 @@ export default function TradingBotSlider() {
         const proposalRequest: ProposalRequest = {
             proposal: 1,
             // CRITICAL: Use currentStake for the proposal amount
-            amount: Number(currentStake) > 0 ? Number(currentStake) : Number(formState.stake), 
+            amount: Number(currentStake) > 0 ? Number(currentStake) : Number(formState.stake),
             basis: 'stake',
             contract_type: formState.contractType,
             currency: 'USD',
             duration: formState.ticks,
-            duration_unit: durationUnit, 
+            duration_unit: durationUnit,
             symbol: formState.symbol,
         };
 
         // Add prediction (barrier) for relevant contract types
         if (currentContract?.predictionRequired || formState.contractType.startsWith('DIGIT')) {
-             proposalRequest.barrier = formState.prediction;
+            proposalRequest.barrier = formState.prediction;
         }
 
         // Debounce proposal request
-        const debounce = setTimeout(()=> {
+        const debounce = setTimeout(() => {
             safeSend(proposalRequest);
         }, 500);
 
         return () => clearTimeout(debounce);
-        
+
     }, [formState.stake, formState.contractType, formState.ticks, formState.prediction, formState.symbol, connectionStatus, isAwaitingTrade, safeSend, durationUnit, currentContract?.predictionRequired, currentStake]);
 
 
@@ -423,10 +430,10 @@ export default function TradingBotSlider() {
     const executeTrade = useCallback(() => {
         if (!isRunning || !proposal || isAwaitingTrade || !currentContract || connectionStatus !== 'Connected') return;
 
-        const tradeAmount = currentStake; 
-        
+        const tradeAmount = currentStake;
+
         setIsAwaitingTrade(true);
-        setHistory(h => [{id: 'N/A', ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', text: `Attempting to buy contract with stake $${Number(tradeAmount).toFixed(2)}...`, accType: accountInfo.type, stake: tradeAmount, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+        setHistory(h => [{ id: 'N/A', ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', text: `Attempting to buy contract with stake $${Number(tradeAmount).toFixed(2)}...`, accType: accountInfo.type, stake: tradeAmount, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
 
         // Use safeSend to ensure the buy request is queued if the connection is briefly interrupted
         safeSend({ buy: proposal.id, price: proposal.ask_price });
@@ -440,7 +447,7 @@ export default function TradingBotSlider() {
         }
     }, [isRunning, proposal, executeTrade, isAwaitingTrade, connectionStatus]);
 
-    
+
     // --- State Change Handlers ---
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -457,42 +464,42 @@ export default function TradingBotSlider() {
                 safeSend({ contracts_for: value });
                 manager.subscribeTicks(value, (tick) => setRealtimePrice(tick.quote));
             }
-            
+
             return newState;
         });
     };
-    
+
     const resetAll = () => {
         setTransactions([]);
         setHistory(initialHistory);
         // Reset to mock initial balance
-        setAccountInfo(prev => ({ ...prev, balance: 5000.00 })); 
+        setAccountInfo(prev => ({ ...prev, balance: 5000.00 }));
         setIsRunning(false);
         setCurrentStake(Number(formState.stake)); // Reset stake on full reset
     };
-    
+
     const toggleRun = () => {
         // Can only run if connected and proposal exists
         if (connectionStatus !== 'Connected' || !proposal) return;
 
-        if(isRunning) {
+        if (isRunning) {
             setIsRunning(false);
-            setHistory(h => [{id: 'N/A', ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', text: 'Bot manually stopped.', accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+            setHistory(h => [{ id: 'N/A', ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', text: 'Bot manually stopped.', accType: accountInfo.type, stake: 0, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
         } else {
             // START: Reset stake and stats before starting a new run
             setCurrentStake(Number(formState.stake));
             setIsRunning(true);
-            setHistory(h => [{id: 'N/A', ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', text: `Bot started on ${formState.symbol} with base stake $${Number(formState.stake).toFixed(2)}.`, accType: accountInfo.type, stake: formState.stake, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A'}, ...h]);
+            setHistory(h => [{ id: 'N/A', ts: new Date().toISOString().replace('T', ' | ').split('.')[0] + ' GMT', text: `Bot started on ${formState.symbol} with base stake $${Number(formState.stake).toFixed(2)}.`, accType: accountInfo.type, stake: formState.stake, pnl: 0, entrySpot: 'N/A', exitSpot: 'N/A' }, ...h]);
         }
     };
-    
+
     // --- Derived UI Data ---
     const currentSymbol = markets.find(s => s.symbol === formState.symbol);
     const availableMarkets = Array.from(new Set(markets.map(s => s.market)));
     const availableSymbols = markets.filter(s => s.market === currentSymbol?.market);
     const availableTradeCategories = Object.keys(activeContracts);
     const contractOptions = activeContracts[formState.tradeTypeCategory]?.types || [];
-    
+
     const showPrediction = currentContract?.predictionRequired || false;
     const durationLabel = durationUnit === 't' ? 'Duration (Ticks)' : durationUnit === 'm' ? 'Duration (Minutes)' : durationUnit === 'h' ? 'Duration (Hours)' : 'Duration';
 
@@ -508,15 +515,15 @@ export default function TradingBotSlider() {
         return acc;
     }, { stake: 0, payout: 0, runs: 0, lost: 0, won: 0, profitLoss: 0 });
 
-    const TabButton = ({i,label}: {i: number, label: string})=> (
-        <button onClick={()=>setIndex(i)} className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${index===i? 'gradient-blue-indigo text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-          {label}
+    const TabButton = ({ i, label }: { i: number, label: string }) => (
+        <button onClick={() => setIndex(i)} className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${index === i ? 'gradient-blue-indigo text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+            {label}
         </button>
-      )
-    
-    const apiStatusColor = connectionStatus === 'Connected' ? 'text-green-400' : 
-                          connectionStatus === 'Error' ? 'text-red-400' : 'text-yellow-400';
-    
+    )
+
+    const apiStatusColor = connectionStatus === 'Connected' ? 'text-green-400' :
+        connectionStatus === 'Error' ? 'text-red-400' : 'text-yellow-400';
+
     const currentPriceText = realtimePrice ? Number(realtimePrice).toFixed(currentSymbol?.symbol.includes('frx') ? 5 : 2) : '---';
 
     return (
@@ -529,7 +536,7 @@ export default function TradingBotSlider() {
                 {isSliderVisible ? <IconArrowRight /> : <IconArrowLeft />}
             </button>
 
-            <div 
+            <div
                 className={`w-full max-w-md transition-transform duration-300 ease-in-out ${isSliderVisible ? 'translate-x-0' : 'translate-x-[150%]'} `}
             >
                 <div className="relative">
@@ -567,230 +574,230 @@ export default function TradingBotSlider() {
 
                         {/* --- Slider Content --- */}
                         <div className="overflow-hidden">
-                            <div className="flex transition-transform duration-300 ease-in-out" style={{transform: `translateX(${ -index * 100 }%)`}}>
-                            
-                            {/* === Panel 1: Bot Configuration === */}
-                            <div className="w-full shrink-0">
-                                <div className="space-y-3">
-                                    
-                                    {/* Markets */}
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <CustomSelect 
-                                            label="Market" 
-                                            name="market" 
-                                            value={currentSymbol?.market || ''} 
-                                            onChange={() => {}} 
-                                            disabled={connectionStatus !== 'Connected' || markets.length === 0}
-                                        >
-                                            {availableMarkets.map(m => <option key={m}>{m}</option>)}
-                                        </CustomSelect>
-                                        <CustomSelect 
-                                            label="Symbol" 
-                                            name="symbol" 
-                                            value={formState.symbol} 
-                                            onChange={handleFormChange} 
-                                            disabled={connectionStatus !== 'Connected' || markets.length === 0}
-                                            labelClass="text-white"
-                                        >
-                                            {/* Ensure 'loading' state if markets are empty */}
-                                            {markets.length === 0 && <option value="">Loading Markets...</option>}
-                                            {availableSymbols.map(s => <option key={s.symbol} value={s.symbol}>{s.name}</option>)}
-                                        </CustomSelect>
-                                        <CustomInput label="Price" value={currentPriceText} type="text" labelClass="text-transparent" readOnly={true} />
-                                    </div>
+                            <div className="flex transition-transform duration-300 ease-in-out" style={{ transform: `translateX(${-index * 100}%)` }}>
 
-                                    {/* Trade Type and Contract */}
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <CustomSelect 
-                                            label="Trade Category" 
-                                            name="tradeTypeCategory" 
-                                            value={formState.tradeTypeCategory} 
-                                            onChange={handleFormChange}
-                                            disabled={connectionStatus !== 'Connected' || availableTradeCategories.length === 0}
-                                        >
-                                            {/* Ensure 'loading' state if contracts are empty */}
-                                            {availableTradeCategories.length === 0 && <option value="">Loading Contracts...</option>}
-                                            {availableTradeCategories.map(t => <option key={t}>{t}</option>)}
-                                        </CustomSelect>
-                                        <CustomSelect 
-                                            label="Contract" 
-                                            name="contractType" 
-                                            value={formState.contractType} 
-                                            onChange={handleFormChange}
-                                            disabled={connectionStatus !== 'Connected' || contractOptions.length === 0}
-                                            labelClass="text-white"
-                                        >
-                                            {contractOptions.map(c => <option key={c.value} value={c.value}>{c.text}</option>)}
-                                        </CustomSelect>
-                                        
-                                        {/* Conditional Prediction Field */}
-                                        {showPrediction ? (
-                                            <CustomInput label="Barrier/Prediction" name="prediction" value={formState.prediction} onChange={handleFormChange} min={0} max={9} step={1} />
-                                        ) : (
-                                            <div className="flex flex-col gap-1.5">
-                                                <label className="text-sm font-medium text-gray-600">Barrier/Prediction</label>
-                                                <div className="bg-[#2a3441]/50 border border-[#455263]/50 text-gray-500 text-sm rounded-md px-3 py-1.5 h-[35px] flex items-center">
-                                                    N/A
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Financial Config (Base Stake) */}
-                                    <div className="grid grid-cols-3 gap-3 pt-2">
-                                        <CustomInput label="Base Stake" name="stake" value={formState.stake} onChange={handleFormChange} />
-                                        <CustomInput label={durationLabel} name="ticks" value={formState.ticks} onChange={handleFormChange} min={1} step={durationUnit === 't' ? 1 : 0.01} />
-                                        <CustomInput label="Martingale Multiplier" name="marginle" value={formState.marginle} onChange={handleFormChange} step={0.1} min={1.1} />
-                                    </div>
-                                    
-                                    {/* Stop Conditions */}
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <CustomInput label="Take Profit ($)" name="takeProfit" value={formState.takeProfit} onChange={handleFormChange} min={0.01} />
-                                        <CustomInput label="Stop Loss ($)" name="stopLoss" value={formState.stopLoss} onChange={handleFormChange} min={0.01} />
-                                        <CustomInput label="Current Stake" name="currentStake" value={Number(currentStake).toFixed(2)} type="text" readOnly={true} labelClass="text-cyan-300" />
-                                    </div>
+                                {/* === Panel 1: Bot Configuration === */}
+                                <div className="w-full shrink-0">
+                                    <div className="space-y-3">
 
-                                <div className="pt-4 space-y-3">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-400 truncate pr-2">Symbol: **{currentSymbol?.name || 'N/A'}**</span>
-                                        <span className="text-gray-400 truncate text-right pl-2">Contract: **{currentContract?.text || 'N/A'}**</span>
-                                    </div>
-                                    
-                                    {proposalError && <div className="text-red-500 text-xs italic">Proposal Error: {proposalError}</div>}
-                                    
-                                    <div className="grid grid-cols-2 gap-3 text-sm border-t border-gray-700 pt-3">
-                                        <div>
-                                            <div className="text-gray-400">Potential Profit</div>
-                                            <div className="font-semibold text-green-500">
-                                                {proposal ? `+${(proposal.payout - proposal.ask_price).toFixed(2)}` : '---'}
-                                            </div>
+                                        {/* Markets */}
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <CustomSelect
+                                                label="Market"
+                                                name="market"
+                                                value={currentSymbol?.market || ''}
+                                                onChange={() => { }}
+                                                disabled={connectionStatus !== 'Connected' || markets.length === 0}
+                                            >
+                                                {availableMarkets.map(m => <option key={m}>{m}</option>)}
+                                            </CustomSelect>
+                                            <CustomSelect
+                                                label="Symbol"
+                                                name="symbol"
+                                                value={formState.symbol}
+                                                onChange={handleFormChange}
+                                                disabled={connectionStatus !== 'Connected' || markets.length === 0}
+                                                labelClass="text-white"
+                                            >
+                                                {/* Ensure 'loading' state if markets are empty */}
+                                                {markets.length === 0 && <option value="">Loading Markets...</option>}
+                                                {availableSymbols.map(s => <option key={s.symbol} value={s.symbol}>{s.name}</option>)}
+                                            </CustomSelect>
+                                            <CustomInput label="Price" value={currentPriceText} type="text" labelClass="text-transparent" readOnly={true} />
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-gray-400">Contract Value (Cost)</div>
-                                            <div className="font-semibold text-white">{proposal ? Number(proposal.ask_price).toFixed(2) : '---'}</div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div className="mt-4 flex items-center gap-3">
-                                    <button 
-                                        onClick={toggleRun} 
-                                        disabled={connectionStatus !== 'Connected' || isAwaitingTrade || !proposal}
-                                        className={`px-6 py-3 rounded-full font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all w-2/5 shadow-lg
-                                        ${isRunning ? 'gradient-red-crimson text-white hover:shadow-red-500/30' : 'gradient-teal-green text-white hover:shadow-teal-500/30 hover:scale-105 active:scale-95'} 
-                                        ${(connectionStatus !== 'Connected' || isAwaitingTrade || !proposal) ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
-                                    >
-                                        <IconPlay />
-                                        {isRunning ? 'STOP BOT' : 'RUN BOT'}
-                                    </button>
-                                    <div className="flex-1 h-10 bg-[#2a3441] border border-[#455263] rounded-md relative overflow-hidden">
-                                        <div className="absolute left-0 top-0 h-full bg-[#00a79c]/30" style={{width: isRunning ? '60%' : '10%'}}></div>
-                                        <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-                                            {isRunning ? (isAwaitingTrade ? 'Awaiting Contract...' : 'Bot Running') : 'Bot Paused'}
-                                        </div>
-                                    </div>
-                                </div>
+                                        {/* Trade Type and Contract */}
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <CustomSelect
+                                                label="Trade Category"
+                                                name="tradeTypeCategory"
+                                                value={formState.tradeTypeCategory}
+                                                onChange={handleFormChange}
+                                                disabled={connectionStatus !== 'Connected' || availableTradeCategories.length === 0}
+                                            >
+                                                {/* Ensure 'loading' state if contracts are empty */}
+                                                {availableTradeCategories.length === 0 && <option value="">Loading Contracts...</option>}
+                                                {availableTradeCategories.map(t => <option key={t}>{t}</option>)}
+                                            </CustomSelect>
+                                            <CustomSelect
+                                                label="Contract"
+                                                name="contractType"
+                                                value={formState.contractType}
+                                                onChange={handleFormChange}
+                                                disabled={connectionStatus !== 'Connected' || contractOptions.length === 0}
+                                                labelClass="text-white"
+                                            >
+                                                {contractOptions.map(c => <option key={c.value} value={c.value}>{c.text}</option>)}
+                                            </CustomSelect>
 
-                                </div>
-                            </div>
-
-                            {/* === Panel 2: Transactions === */}
-                            <div className="w-full shrink-0">
-                                <div className="space-y-2">
-                                    <div className="mb-3 grid grid-cols-3 gap-2 text-sm text-cyan-300 font-semibold">
-                                        <div>ID/Type</div>
-                                        <div>Entry/Exit Spot</div>
-                                        <div className="text-right">Stake/P&L</div>
-                                    </div>
-
-                                    <div className="space-y-2 max-h-[360px] overflow-auto">
-                                        {transactions.map(t=> (
-                                        <div key={t.id} className="grid grid-cols-3 gap-2 items-center text-sm border-b border-gray-700/50 pb-2">
-                                            <div className="flex flex-col gap-0.5">
-                                                <span className="font-semibold text-xs truncate">{t.id}</span>
-                                                <div className="flex items-center text-xs gap-1">
-                                                    {t.result === 'Profit' ? <IconRise /> : <IconFall />}
-                                                    <span>{t.type}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="text-white text-xs">
-                                                <div>Entry: {t.entry}</div>
-                                                <div>Exit: {t.exit}</div>
-                                            </div>
-                                            
-                                            <div className="text-right">
-                                                <div className="font-semibold text-xs">{Number(t.stake).toFixed(2)} USD</div>
-                                                <div className={`font-medium text-sm ${t.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                                    {t.pnl >= 0 ? '+' : ''}{Number(t.pnl).toFixed(2)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        ))}
-                                        {transactions.length === 0 && <div className="text-center text-gray-500 py-10">No transactions recorded yet.</div>}
-                                    </div>
-
-                                    <div className="pt-4 grid grid-cols-3 gap-3 text-sm border-t border-gray-700/50">
-                                        <div>
-                                            <div className="text-gray-400">Total stake</div>
-                                            <div className="text-white font-semibold">{totalStats.stake.toFixed(2)} USD</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-gray-400">Contracts won</div>
-                                            <div className="text-green-500 font-semibold">{totalStats.won}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-gray-400">Total profit/loss</div>
-                                            <div className={`font-semibold ${totalStats.profitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                                {totalStats.profitLoss >= 0 ? '+' : ''}{totalStats.profitLoss.toFixed(2)} USD
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4">
-                                        <button onClick={resetAll} className="w-full py-2.5 bg-transparent border border-[#00a79c] text-[#00a79c] rounded-md font-semibold hover:bg-[#00a79c]/10 transition-colors">
-                                            Reset Transactions & History
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* === Panel 3: History (Restructured) === */}
-                            <div className="w-full shrink-0">
-                                <div className="space-y-4">
-                                    <div className="space-y-2 max-h-[420px] overflow-auto">
-                                        {history.map((h,i)=> (
-                                        <div key={i} className="bg-[#2a3441] p-3 rounded-md text-sm">
-                                            <div className="text-gray-300">{h.text}</div>
-                                            <div className="text-xs text-gray-400 mt-1.5">{h.ts}</div>
-                                            
-                                            {h.id !== 'N/A' && (
-                                                <div className="mt-2 pt-2 border-t border-gray-500/30 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                                                    <div>
-                                                        <span className="text-gray-400">ID: </span>
-                                                        <span className="text-white truncate">{h.id}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-400">Acct: </span>
-                                                        <span className="text-white">{h.accType}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-400">P/L: </span>
-                                                        <span className={h.pnl >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                            {h.pnl >= 0 ? '+' : ''}{Number(h.pnl).toFixed(2)}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-400">Entry: </span>
-                                                        <span className="text-white">{h.entrySpot}</span>
+                                            {/* Conditional Prediction Field */}
+                                            {showPrediction ? (
+                                                <CustomInput label="Barrier/Prediction" name="prediction" value={formState.prediction} onChange={handleFormChange} min={0} max={9} step={1} />
+                                            ) : (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-sm font-medium text-gray-600">Barrier/Prediction</label>
+                                                    <div className="bg-[#2a3441]/50 border border-[#455263]/50 text-gray-500 text-sm rounded-md px-3 py-1.5 h-[35px] flex items-center">
+                                                        N/A
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
-                                        )).reverse()}
+
+                                        {/* Financial Config (Base Stake) */}
+                                        <div className="grid grid-cols-3 gap-3 pt-2">
+                                            <CustomInput label="Base Stake" name="stake" value={formState.stake} onChange={handleFormChange} />
+                                            <CustomInput label={durationLabel} name="ticks" value={formState.ticks} onChange={handleFormChange} min={1} step={durationUnit === 't' ? 1 : 0.01} />
+                                            <CustomInput label="Martingale Multiplier" name="marginle" value={formState.marginle} onChange={handleFormChange} step={0.1} min={1.1} />
+                                        </div>
+
+                                        {/* Stop Conditions */}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <CustomInput label="Take Profit ($)" name="takeProfit" value={formState.takeProfit} onChange={handleFormChange} min={0.01} />
+                                            <CustomInput label="Stop Loss ($)" name="stopLoss" value={formState.stopLoss} onChange={handleFormChange} min={0.01} />
+                                            <CustomInput label="Current Stake" name="currentStake" value={Number(currentStake).toFixed(2)} type="text" readOnly={true} labelClass="text-cyan-300" />
+                                        </div>
+
+                                        <div className="pt-4 space-y-3">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-400 truncate pr-2">Symbol: **{currentSymbol?.name || 'N/A'}**</span>
+                                                <span className="text-gray-400 truncate text-right pl-2">Contract: **{currentContract?.text || 'N/A'}**</span>
+                                            </div>
+
+                                            {proposalError && <div className="text-red-500 text-xs italic">Proposal Error: {proposalError}</div>}
+
+                                            <div className="grid grid-cols-2 gap-3 text-sm border-t border-gray-700 pt-3">
+                                                <div>
+                                                    <div className="text-gray-400">Potential Profit</div>
+                                                    <div className="font-semibold text-green-500">
+                                                        {proposal ? `+${(proposal.payout - proposal.ask_price).toFixed(2)}` : '---'}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-gray-400">Contract Value (Cost)</div>
+                                                    <div className="font-semibold text-white">{proposal ? Number(proposal.ask_price).toFixed(2) : '---'}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 flex items-center gap-3">
+                                            <button
+                                                onClick={toggleRun}
+                                                disabled={connectionStatus !== 'Connected' || isAwaitingTrade || !proposal}
+                                                className={`px-6 py-3 rounded-full font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all w-2/5 shadow-lg
+                                        ${isRunning ? 'gradient-red-crimson text-white hover:shadow-red-500/30' : 'gradient-teal-green text-white hover:shadow-teal-500/30 hover:scale-105 active:scale-95'} 
+                                        ${(connectionStatus !== 'Connected' || isAwaitingTrade || !proposal) ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                            >
+                                                <IconPlay />
+                                                {isRunning ? 'STOP BOT' : 'RUN BOT'}
+                                            </button>
+                                            <div className="flex-1 h-10 bg-[#2a3441] border border-[#455263] rounded-md relative overflow-hidden">
+                                                <div className="absolute left-0 top-0 h-full bg-[#00a79c]/30" style={{ width: isRunning ? '60%' : '10%' }}></div>
+                                                <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+                                                    {isRunning ? (isAwaitingTrade ? 'Awaiting Contract...' : 'Bot Running') : 'Bot Paused'}
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
-                            </div>
+
+                                {/* === Panel 2: Transactions === */}
+                                <div className="w-full shrink-0">
+                                    <div className="space-y-2">
+                                        <div className="mb-3 grid grid-cols-3 gap-2 text-sm text-cyan-300 font-semibold">
+                                            <div>ID/Type</div>
+                                            <div>Entry/Exit Spot</div>
+                                            <div className="text-right">Stake/P&L</div>
+                                        </div>
+
+                                        <div className="space-y-2 max-h-[360px] overflow-auto">
+                                            {transactions.map(t => (
+                                                <div key={t.id} className="grid grid-cols-3 gap-2 items-center text-sm border-b border-gray-700/50 pb-2">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="font-semibold text-xs truncate">{t.id}</span>
+                                                        <div className="flex items-center text-xs gap-1">
+                                                            {t.result === 'Profit' ? <IconRise /> : <IconFall />}
+                                                            <span>{t.type}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-white text-xs">
+                                                        <div>Entry: {t.entry}</div>
+                                                        <div>Exit: {t.exit}</div>
+                                                    </div>
+
+                                                    <div className="text-right">
+                                                        <div className="font-semibold text-xs">{Number(t.stake).toFixed(2)} USD</div>
+                                                        <div className={`font-medium text-sm ${t.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                            {t.pnl >= 0 ? '+' : ''}{Number(t.pnl).toFixed(2)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {transactions.length === 0 && <div className="text-center text-gray-500 py-10">No transactions recorded yet.</div>}
+                                        </div>
+
+                                        <div className="pt-4 grid grid-cols-3 gap-3 text-sm border-t border-gray-700/50">
+                                            <div>
+                                                <div className="text-gray-400">Total stake</div>
+                                                <div className="text-white font-semibold">{totalStats.stake.toFixed(2)} USD</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-gray-400">Contracts won</div>
+                                                <div className="text-green-500 font-semibold">{totalStats.won}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-gray-400">Total profit/loss</div>
+                                                <div className={`font-semibold ${totalStats.profitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                    {totalStats.profitLoss >= 0 ? '+' : ''}{totalStats.profitLoss.toFixed(2)} USD
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4">
+                                            <button onClick={resetAll} className="w-full py-2.5 bg-transparent border border-[#00a79c] text-[#00a79c] rounded-md font-semibold hover:bg-[#00a79c]/10 transition-colors">
+                                                Reset Transactions & History
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* === Panel 3: History (Restructured) === */}
+                                <div className="w-full shrink-0">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2 max-h-[420px] overflow-auto">
+                                            {history.map((h, i) => (
+                                                <div key={i} className="bg-[#2a3441] p-3 rounded-md text-sm">
+                                                    <div className="text-gray-300">{h.text}</div>
+                                                    <div className="text-xs text-gray-400 mt-1.5">{h.ts}</div>
+
+                                                    {h.id !== 'N/A' && (
+                                                        <div className="mt-2 pt-2 border-t border-gray-500/30 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                                                            <div>
+                                                                <span className="text-gray-400">ID: </span>
+                                                                <span className="text-white truncate">{h.id}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-gray-400">Acct: </span>
+                                                                <span className="text-white">{h.accType}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-gray-400">P/L: </span>
+                                                                <span className={h.pnl >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                                    {h.pnl >= 0 ? '+' : ''}{Number(h.pnl).toFixed(2)}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-gray-400">Entry: </span>
+                                                                <span className="text-white">{h.entrySpot}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )).reverse()}
+                                        </div>
+                                    </div>
+                                </div>
 
                             </div>
                         </div>

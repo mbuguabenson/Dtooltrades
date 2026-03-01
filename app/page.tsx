@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Moon, Sun, Home } from 'lucide-react'
+import { Moon, Sun, Home, User, Settings } from 'lucide-react'
+import Link from 'next/link'
 import { MarketSelector } from "@/components/market-selector"
 import { DigitDistribution } from "@/components/digit-distribution"
 import { SignalsTab } from "@/components/tabs/signals-tab"
@@ -184,6 +185,23 @@ export default function DerivAnalysisApp() {
 
               {/* Auth & Theme */}
               <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
+                <Link href="/account" className="hidden sm:block">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
+                      ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
+                      : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
+                  >
+                    <User className="h-4 w-4" />
+                    Account
+                  </Button>
+                </Link>
+                <Link href="/account" className="sm:hidden">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-800/50 text-slate-300">
+                    <User className="h-4 w-4" />
+                  </Button>
+                </Link>
                 <DerivAuth theme={theme} />
                 <Button
                   variant="ghost"

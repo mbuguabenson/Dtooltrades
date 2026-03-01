@@ -85,6 +85,48 @@ export interface TickHistoryResponse {
   times: number[]
 }
 
+export interface StatementTransaction {
+  action_type: string
+  amount: number
+  app_id: number
+  balance_after: number
+  contract_id?: number
+  display_name: string
+  longcode: string
+  payout?: number
+  purchase_time?: number
+  reference_id: number
+  shortcode?: string
+  transaction_id: number
+  transaction_time: number
+}
+
+export interface StatementResponse {
+  count: number
+  transactions: StatementTransaction[]
+}
+
+export interface ProfitTableTransaction {
+  app_id: number
+  buy_price: number
+  contract_id: number
+  contract_type: string
+  display_name: string
+  longcode: string
+  payout: number
+  profit_loss: number
+  purchase_time: number
+  sell_price: number
+  sell_time: number
+  shortcode: string
+  transaction_id: number
+}
+
+export interface ProfitTableResponse {
+  count: number
+  transactions: ProfitTableTransaction[]
+}
+
 import { DerivWebSocketManager } from "./deriv-websocket-manager"
 
 export class DerivAPIClient {
@@ -284,6 +326,26 @@ export class DerivAPIClient {
       console.error("[v0] ❌ Buy execution failed:", err)
       throw err
     }
+  }
+
+  async getStatement(limit = 100, offset = 0): Promise<StatementResponse> {
+    const response = await this.send({
+      statement: 1,
+      description: 1,
+      limit,
+      offset,
+    })
+    return response.statement
+  }
+
+  async getProfitTable(limit = 100, offset = 0): Promise<ProfitTableResponse> {
+    const response = await this.send({
+      profit_table: 1,
+      description: 1,
+      limit,
+      offset,
+    })
+    return response.profit_table
   }
 
   async subscribeBalance(callback: (balance: number, currency: string) => void): Promise<string> {
