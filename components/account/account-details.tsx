@@ -1,9 +1,10 @@
-"use client"
-
+import { useState, useEffect } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { User, CreditCard, ShieldCheck } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { User, CreditCard, ShieldCheck, Camera, Edit2, Check, X } from "lucide-react"
 
 interface AccountDetailsProps {
     theme?: "light" | "dark"
@@ -11,41 +12,103 @@ interface AccountDetailsProps {
 
 export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
     const { activeLoginId, accountType, balance, accounts } = useDerivAPI()
+    const [username, setUsername] = useState("")
+    const [profileImage, setProfileImage] = useState("")
+    const [isEditingUsername, setIsEditingUsername] = useState(false)
+    const [tempUsername, setTempUsername] = useState("")
+
+    useEffect(() => {
+        // Load custom profile from localStorage
+        const savedUsername = localStorage.getItem(`dtool_username_${activeLoginId}`)
+        const savedImage = localStorage.getItem(`dtool_avatar_${activeLoginId}`)
+        if (savedUsername) setUsername(savedUsername)
+        if (savedImage) setProfileImage(savedImage)
+    }, [activeLoginId])
+
+    const saveUsername = () => {
+        setUsername(tempUsername)
+        localStorage.setItem(`dtool_username_${activeLoginId}`, tempUsername)
+        setIsEditingUsername(false)
+    }
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                const base64 = reader.result as string
+                setProfileImage(base64)
+                localStorage.setItem(`dtool_avatar_${activeLoginId}`, base64)
+            }
+            reader.readAsDataURL(file)
+        }
+    }
 
     const currentAccount = accounts.find(acc => acc.id === activeLoginId)
 
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className={`${theme === "dark" ? "bg-slate-900/50 border-slate-800" : "bg-white"}`}>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <User className="h-5 w-5 text-blue-500" />
-                            Profile Information
-                        </CardTitle>
-                        <CardDescription>Your account identification details</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
-                            <span className="text-slate-400 text-sm">Login ID</span>
-                            <span className="font-mono font-bold">{activeLoginId || "N/A"}</span>
+                <Card className={`${theme === "dark" ? "bg-slate-900/50 border-slate-800" : "bg-white"} overflow-hidden`}>
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center gap-4">
+                            <div className="relative group">
+                                <Avatar className="h-20 w-20 border-2 border-blue-500/20 shadow-lg">
+                                    <AvatarImage src={profileImage} className="object-cover" />
+                                    <AvatarFallback className="bg-slate-800 text-blue-400 text-2xl font-black">
+                                        {(username || activeLoginId || "U").charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+                                    <Camera className="h-6 w-6 text-white" />
+                                    <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+                                </label>
+                            </div>
+                            <div className="space-y-1 flex-1">
+                                {isEditingUsername ? (
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            value={tempUsername}
+                                            onChange={(e) => setTempUsername(e.target.value)}
+                                            className="h-8 bg-slate-950 border-slate-700 text-sm"
+                                            placeholder="Enter username"
+                                            autoFocus
+                                        />
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-400" onClick={saveUsername}><Check className="h-4 w-4" /></Button>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-400" onClick={() => setIsEditingUsername(false)}><X className="h-4 w-4" /></Button>
+                                    </div>
+                                ) : (
+                                    <CardTitle className="flex items-center gap-2 text-xl font-black group">
+                                        {username || "Trader Profile"}
+                                        <button
+                                            onClick={() => { setTempUsername(username); setIsEditingUsername(true); }}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                        >
+                                            <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                                        </button>
+                                    </CardTitle>
+                                )}
+                                <CardDescription className="text-xs font-mono text-slate-500">{activeLoginId || "Deriv Member"}</CardDescription>
+                            </div>
                         </div>
-                        <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-4 border-t border-slate-800/50">
+                        <div className="flex justify-between items-center py-1">
+                            <span className="text-slate-400 text-sm">Account Status</span>
+                            <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-lg">
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                Verified
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center py-1">
                             <span className="text-slate-400 text-sm">Account Type</span>
                             <Badge variant={accountType === "Real" ? "default" : "secondary"} className={accountType === "Real" ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
                                 {accountType || "Unknown"}
                             </Badge>
                         </div>
-                        <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
-                            <span className="text-slate-400 text-sm">Currency</span>
-                            <span className="font-bold">{balance?.currency || "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-2">
-                            <span className="text-slate-400 text-sm">Status</span>
-                            <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
-                                <ShieldCheck className="h-4 w-4" />
-                                Verified
-                            </div>
+                        <div className="flex justify-between items-center py-1">
+                            <span className="text-slate-400 text-sm">Main Currency</span>
+                            <span className="font-bold text-slate-200">{balance?.currency || "N/A"}</span>
                         </div>
                     </CardContent>
                 </Card>

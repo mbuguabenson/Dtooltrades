@@ -328,22 +328,26 @@ export class DerivAPIClient {
     }
   }
 
-  async getStatement(limit = 100, offset = 0): Promise<StatementResponse> {
+  async getStatement(limit = 100, offset = 0, date_from?: number, date_to?: number): Promise<StatementResponse> {
     const response = await this.send({
       statement: 1,
       description: 1,
       limit,
       offset,
+      ...(date_from && { date_from }),
+      ...(date_to && { date_to }),
     })
     return response.statement
   }
 
-  async getProfitTable(limit = 100, offset = 0): Promise<ProfitTableResponse> {
+  async getProfitTable(limit = 100, offset = 0, date_from?: number, date_to?: number): Promise<ProfitTableResponse> {
     const response = await this.send({
       profit_table: 1,
       description: 1,
       limit,
       offset,
+      ...(date_from && { date_from }),
+      ...(date_to && { date_to }),
     })
     return response.profit_table
   }

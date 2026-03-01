@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RefreshCcw, TrendingUp, TrendingDown, BarChart3, Filter, Calendar, Target } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { RefreshCcw, TrendingUp, TrendingDown, BarChart3, Filter, Calendar, Target, ChevronDown } from "lucide-react"
+import { format } from "date-fns"
 
 interface ProfitTableTransaction {
     app_id: number
@@ -38,6 +41,10 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
     // Filter states
     const [typeFilter, setTypeFilter] = useState<string>("all")
     const [durationFilter, setDurationFilter] = useState<string>("all")
+    const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+        from: undefined,
+        to: undefined
+    })
 
     const fetchProfitTable = useCallback(async () => {
         if (!apiClient || !isAuthorized) return
@@ -45,7 +52,22 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await apiClient.getProfitTable(100)
+            const params: any = { limit: 100 }
+
+            if (durationFilter === "custom" && customRange.from && customRange.to) {
+                params.date_from = Math.floor(customRange.from.getTime() / 1000)
+                params.date_to = Math.floor(customRange.to.getTime() / 1000) + 86399 // End of day
+            } else if (durationFilter !== "all" && durationFilter !== "custom") {
+                const now = Math.floor(Date.now() / 1000)
+                const durations: Record<string, number> = {
+                    "24h": 24 * 60 * 60,
+                    "7d": 7 * 24 * 60 * 60,
+                    "30d": 30 * 24 * 60 * 60
+                }
+                params.date_from = now - (durations[durationFilter] || 0)
+            }
+
+            const response = await apiClient.getProfitTable(params.limit, 0, params.date_from, params.date_to)
             if (response && response.transactions) {
                 setProfitTable(response.transactions)
             } else {
@@ -57,7 +79,7 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
         } finally {
             setIsLoading(false)
         }
-    }, [apiClient, isAuthorized])
+    }, [apiClient, isAuthorized, durationFilter, customRange])
 
     useEffect(() => {
         fetchProfitTable()
@@ -149,9 +171,48 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
                                 <SelectItem value="24h">Last 24 Hours</SelectItem>
                                 <SelectItem value="7d">Last 7 Days</SelectItem>
                                 <SelectItem value="30d">Last 30 Days</SelectItem>
+                                <SelectItem value="custom">Custom Range</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
+
+                    {durationFilter === "custom" && (
+                        <div className="flex items-center gap-2">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9 px-3 bg-slate-800/50 border-slate-700/50 text-xs gap-2 rounded-xl">
+                                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                        {customRange.from ? format(customRange.from, "PP") : "Start Date"}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start">
+                                    <CalendarComponent
+                                        mode="single"
+                                        selected={customRange.from}
+                                        onSelect={(date) => setCustomRange(prev => ({ ...prev, from: date }))}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            <span className="text-slate-600">to</span>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9 px-3 bg-slate-800/50 border-slate-700/50 text-xs gap-2 rounded-xl">
+                                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                        {customRange.to ? format(customRange.to, "PP") : "End Date"}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start">
+                                    <CalendarComponent
+                                        mode="single"
+                                        selected={customRange.to}
+                                        onSelect={(date) => setCustomRange(prev => ({ ...prev, to: date }))}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    )}
 
                     <Button
                         variant="ghost"
