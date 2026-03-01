@@ -122,6 +122,11 @@ export default function AdminLayout({
                                 <span className="text-white font-bold">Financial History</span>
                                 <CommandShortcut className="text-gray-600 font-mono">G T</CommandShortcut>
                             </CommandItem>
+                            <CommandItem onSelect={() => { router.push("/admin#trading-console"); setOpen(false) }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer group">
+                                <Zap className="h-4 w-4 text-yellow-500" />
+                                <span className="text-white font-bold">Admin Trading Console</span>
+                                <CommandShortcut className="text-gray-600 font-mono">G X</CommandShortcut>
+                            </CommandItem>
                         </CommandGroup>
                         <CommandSeparator className="bg-white/5" />
                         <CommandGroup heading="Settings" className="text-gray-500 px-2 py-3">

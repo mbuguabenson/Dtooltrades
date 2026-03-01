@@ -26,6 +26,7 @@ export interface UserRecord {
     country: string
     city: string
     userAgent: string
+    activeDevices: string[] // List of unique user agents used by this user
     isNew: boolean       // true if registered within last 24h
     pageViews: number    // heartbeat count as proxy for page views
 }
@@ -132,12 +133,20 @@ export function upsertLiveUser(data: Omit<UserRecord, "firstSeen" | "flag" | "ba
     const firstSeen = existing?.firstSeen ?? data.firstSeen ?? Math.floor(Date.now() / 1000)
     const isNew = (Math.floor(Date.now() / 1000) - firstSeen) < 86400  // new if < 24h old
 
+    // Device tracking
+    const activeDevices = existing?.activeDevices ?? []
+    if (data.userAgent && !activeDevices.includes(data.userAgent)) {
+        activeDevices.push(data.userAgent)
+        if (activeDevices.length > 5) activeDevices.shift() // Keep last 5 unique devices
+    }
+
     store.set(data.loginId, {
         ...data,
         flag: existing?.flag ?? "none",
         balanceHistory,
         firstSeen,
         isNew,
+        activeDevices,
         // Preserve existing geo/agent if new heartbeat didn't include them
         ip: data.ip || existing?.ip || "unknown",
         country: data.country || existing?.country || "Unknown",
@@ -171,14 +180,20 @@ export function isUserBlocked(loginId: string): boolean {
     return userStore().get(loginId)?.flag === "blocked"
 }
 
-export function getPlatformStats() {
+export function getPlatformStats(filters?: { type?: "Real" | "Demo"; pnl?: "Profits" | "Losses" }) {
     const now = Math.floor(Date.now() / 1000)
     // Auto-mark stale as offline
     userStore().forEach((u, id) => {
         if (u.status === "online" && now - u.lastSeen > 90) setUserOffline(id)
     })
-    const users = getAllLiveUsers()
-    const trades = tradeStore()
+    const allUsers = getAllLiveUsers()
+    const trades = tradeStore().filter(t => {
+        const u = getUser(t.loginId)
+        if (filters?.type && u?.type !== filters.type) return false
+        if (filters?.pnl === "Profits" && t.profit <= 0) return false
+        if (filters?.pnl === "Losses" && t.profit >= 0) return false
+        return true
+    })
 
     // Calculate chart data for activity (last 20 trades)
     const chartData = trades.slice(-20).map(t => ({
@@ -214,10 +229,10 @@ export function getPlatformStats() {
         .slice(0, 5)
 
     return {
-        totalUsers: users.length,
-        onlineUsers: users.filter(u => u.status === "online").length,
-        totalRealBalance: users.filter(u => u.type === "Real").reduce((s, u) => s + u.balance, 0),
-        totalDemoBalance: users.filter(u => u.type === "Demo").reduce((s, u) => s + u.balance, 0),
+        totalUsers: allUsers.length,
+        onlineUsers: allUsers.filter((u: UserRecord) => u.status === "online").length,
+        totalRealBalance: allUsers.filter((u: UserRecord) => u.type === "Real").reduce((s: number, u: UserRecord) => s + u.balance, 0),
+        totalDemoBalance: allUsers.filter((u: UserRecord) => u.type === "Demo").reduce((s: number, u: UserRecord) => s + u.balance, 0),
         totalTrades: trades.length,
         netPerformance: trades.reduce((s, t) => s + t.profit, 0),
         totalVolume: trades.reduce((s, t) => s + t.stake, 0),

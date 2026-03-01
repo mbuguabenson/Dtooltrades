@@ -47,6 +47,7 @@ export default function DerivAnalysisApp() {
   const [isLoading, setIsLoading] = useState(true)
   const [initError, setInitError] = useState<string | null>(null)
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
+  const [siteConfig, setSiteConfig] = useState<any>(null)
   const globalContext = useGlobalTradingContext()
 
   const {
@@ -86,6 +87,12 @@ export default function DerivAnalysisApp() {
       console.error("[v0] Initialization error:", error)
       setInitError(error instanceof Error ? error.message : "Unknown error")
     }
+
+    // Fetch site config
+    fetch("/api/admin/site-config")
+      .then(r => r.json())
+      .then(setSiteConfig)
+      .catch(console.error)
   }, [])
 
   const recentDigits = getRecentDigits(20)
@@ -129,101 +136,103 @@ export default function DerivAnalysisApp() {
       className={`min-h-screen flex flex-col ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col relative">
-        <header
-          className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
-            ? "bg-[#050505]/90 border-white/5"
-            : "bg-white/95 border-gray-100"
-            } backdrop-blur-xl`}
-        >
-          <div className="mx-auto w-full px-2 sm:px-6">
-            <div className="flex flex-row items-center py-1.5 sm:h-14 gap-1.5 sm:gap-4 w-full justify-between">
+        {!siteConfig?.headerHidden && (
+          <header
+            className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
+              ? "bg-[#050505]/90 border-white/5"
+              : "bg-white/95 border-gray-100"
+              } backdrop-blur-xl`}
+          >
+            <div className="mx-auto w-full px-2 sm:px-6">
+              <div className="flex flex-row items-center py-1.5 sm:h-14 gap-1.5 sm:gap-4 w-full justify-between">
 
-              {/* Brand */}
-              <div className="flex items-center shrink-0">
-                <h1 className="text-sm sm:text-xl font-bold tracking-tight flex items-center gap-0.5 sm:gap-1">
-                  <span className={theme === "dark" ? "text-white" : "text-slate-900"}>PROFIT</span>
-                  <span className={`hidden sm:inline ${theme === "dark" ? "text-slate-400 font-medium" : "text-slate-500 font-medium"}`}>HUB</span>
-                </h1>
-              </div>
+                {/* Brand */}
+                <div className="flex items-center shrink-0">
+                  <h1 className="text-sm sm:text-xl font-bold tracking-tight flex items-center gap-0.5 sm:gap-1">
+                    <span className={theme === "dark" ? "text-white" : "text-slate-900"}>PROFIT</span>
+                    <span className={`hidden sm:inline ${theme === "dark" ? "text-slate-400 font-medium" : "text-slate-500 font-medium"}`}>HUB</span>
+                  </h1>
+                </div>
 
-              {/* Ticker (flex-1) */}
-              <div className="flex-1 flex justify-center sm:justify-end items-center min-w-0 max-w-2xl px-1 sm:px-0">
-              </div>
+                {/* Ticker (flex-1) */}
+                <div className="flex-1 flex justify-center sm:justify-end items-center min-w-0 max-w-2xl px-1 sm:px-0">
+                </div>
 
-              {/* Auth & Theme */}
-              <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
-                <Link href="/account" className="hidden sm:block">
+                {/* Auth & Theme */}
+                <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
+                  <Link href="/account" className="hidden sm:block">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
+                        ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
+                        : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
+                    >
+                      <User className="h-4 w-4" />
+                      Account
+                    </Button>
+                  </Link>
+                  <Link href="/account" className="sm:hidden">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-800/50 text-slate-300">
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <DerivAuth theme={theme} />
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
-                      ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
-                      : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
-                  >
-                    <User className="h-4 w-4" />
-                    Account
-                  </Button>
-                </Link>
-                <Link href="/account" className="sm:hidden">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-800/50 text-slate-300">
-                    <User className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <DerivAuth theme={theme} />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleTheme}
-                  className={`h-7 w-7 sm:h-9 sm:w-9 rounded-lg transition-all ${theme === "dark"
-                    ? "bg-white/5 text-yellow-500 hover:bg-white/10"
-                    : "bg-black/5 text-slate-700 hover:bg-black/10"
-                    }`}
-                >
-                  {theme === "dark" ? <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                </Button>
-              </div>
-            </div>
-
-            {/* Elegant Navigation Row within Header */}
-            <div className="mt-1 pb-1 sm:pb-2 px-1 sm:px-4">
-              <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
-                {[
-                  "smart-adaptive",
-                  "smart-analysis",
-                  "smartauto24",
-                  "autobot",
-                  "automated",
-                  "signals",
-                  "pro-signals",
-                  "super-signals",
-                  "even-odd",
-                  "over-under",
-                  "advanced-over-under",
-                  "matches",
-                  "differs",
-                  "rise-fall",
-                  "ai-analysis",
-                  "tools-info",
-                ].map((tab) => (
-                  <TabsTrigger
-                    key={tab}
-                    value={tab}
-                    className={`shrink-0 rounded-full text-[10px] sm:text-[12px] px-3 sm:px-4 py-1.5 sm:py-2 mx-0.5 whitespace-nowrap transition-all duration-200 capitalize font-medium tracking-wide ${activeTab === tab
-                      ? theme === "dark"
-                        ? "bg-white/10 text-white"
-                        : "bg-black/5 text-black"
-                      : theme === "dark"
-                        ? "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-                        : "text-gray-500 hover:text-gray-700 hover:bg-black/[0.03]"
+                    size="icon"
+                    onClick={toggleTheme}
+                    className={`h-7 w-7 sm:h-9 sm:w-9 rounded-lg transition-all ${theme === "dark"
+                      ? "bg-white/5 text-yellow-500 hover:bg-white/10"
+                      : "bg-black/5 text-slate-700 hover:bg-black/10"
                       }`}
                   >
-                    {tab === "autobot" ? "Autobot 🤖" : tab === "automated" ? "Autotrader 🚀" : tab.replace("-", " ")}
-                  </TabsTrigger>
-                ))}
-              </ResponsiveTabs>
+                    {theme === "dark" ? <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Elegant Navigation Row within Header */}
+              <div className="mt-1 pb-1 sm:pb-2 px-1 sm:px-4">
+                <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
+                  {[
+                    "smart-adaptive",
+                    "smart-analysis",
+                    "smartauto24",
+                    "autobot",
+                    "automated",
+                    "signals",
+                    "pro-signals",
+                    "super-signals",
+                    "even-odd",
+                    "over-under",
+                    "advanced-over-under",
+                    "matches",
+                    "differs",
+                    "rise-fall",
+                    "ai-analysis",
+                    "tools-info",
+                  ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => (
+                    <TabsTrigger
+                      key={tab}
+                      value={tab}
+                      className={`shrink-0 rounded-full text-[10px] sm:text-[12px] px-3 sm:px-4 py-1.5 sm:py-2 mx-0.5 whitespace-nowrap transition-all duration-200 capitalize font-medium tracking-wide ${activeTab === tab
+                        ? theme === "dark"
+                          ? "bg-white/10 text-white"
+                          : "bg-black/5 text-black"
+                        : theme === "dark"
+                          ? "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-black/[0.03]"
+                        }`}
+                    >
+                      {tab === "autobot" ? "Autobot 🤖" : tab === "automated" ? "Autotrader 🚀" : tab.replace("-", " ")}
+                    </TabsTrigger>
+                  ))}
+                </ResponsiveTabs>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         <main className="flex-1 pt-[100px] sm:pt-[110px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
           {connectionStatus !== "connected" ? (
@@ -514,40 +523,42 @@ export default function DerivAnalysisApp() {
         </main>
       </Tabs>
 
-      <footer
-        className={`border-t mt-4 py-4 transition-all duration-300 ${theme === "dark"
-          ? "bg-[#050505] border-white/5"
-          : "bg-white border-gray-100"
-          }`}
-      >
-        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className={`font-bold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                PROFIT<span className="text-blue-500">HUB</span>
-              </span>
-              <span className="text-gray-500">•</span>
-              <span className="text-gray-500">Quantum Trading Terminal</span>
-            </div>
+      {!siteConfig?.footerHidden && (
+        <footer
+          className={`border-t mt-4 py-4 transition-all duration-300 ${theme === "dark"
+            ? "bg-[#050505] border-white/5"
+            : "bg-white border-gray-100"
+            }`}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className={`font-bold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                  PROFIT<span className="text-blue-500">HUB</span>
+                </span>
+                <span className="text-gray-500">•</span>
+                <span className="text-gray-500">Quantum Trading Terminal</span>
+              </div>
 
-            <div className="flex items-center gap-4 text-gray-500">
-              <button
-                onClick={() => setIsDisclaimerOpen(true)}
-                className="hover:text-blue-500 transition-colors font-medium border border-gray-500/20 px-2 py-0.5 rounded-md hover:border-blue-500/30"
-              >
-                Risk Disclaimer
-              </button>
-              <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-blue-500 transition-colors">Terms</a>
-              <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
-            </div>
+              <div className="flex items-center gap-4 text-gray-500">
+                <button
+                  onClick={() => setIsDisclaimerOpen(true)}
+                  className="hover:text-blue-500 transition-colors font-medium border border-gray-500/20 px-2 py-0.5 rounded-md hover:border-blue-500/30"
+                >
+                  Risk Disclaimer
+                </button>
+                <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
+                <a href="#" className="hover:text-blue-500 transition-colors">Terms</a>
+                <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
+              </div>
 
-            <div className="text-gray-600">
-              © 2026 Profit Hub. All rights reserved.
+              <div className="text-gray-600">
+                © 2026 Profit Hub. All rights reserved.
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       <Dialog open={isDisclaimerOpen} onOpenChange={setIsDisclaimerOpen}>
         <DialogContent className={`${theme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : "bg-white"} sm:max-w-2xl`}>

@@ -28,14 +28,16 @@ export default function AdminTransactionsPage() {
                 const res = await fetch("/api/admin/transactions")
                 const data = await res.json()
                 const formatted = (data.transactions || []).map((t: any) => ({
-                    id: `TX_${t.id}`,
+                    id: t.id,
                     user: t.loginId,
-                    type: t.profitLoss >= 0 ? "Trade Win" : "Trade Loss",
-                    amount: Math.abs(t.profitLoss || t.stake),
-                    currency: "USD",
-                    method: t.market,
-                    status: t.status === "Completed" ? "Completed" : "Failed",
-                    date: new Date(t.createdAt * 1000).toLocaleString()
+                    type: t.type,
+                    amount: t.amount,
+                    currency: t.currency || "USD",
+                    method: t.method || t.market,
+                    status: t.status,
+                    strategy: t.strategy,
+                    stake: t.stake,
+                    date: new Date(t.timestamp * 1000).toLocaleString()
                 }))
                 setTransactions(formatted)
             } catch (err) {
@@ -123,9 +125,10 @@ export default function AdminTransactionsPage() {
                             <tr className="border-b border-white/5 bg-white/[0.02]">
                                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Transaction ID</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">User</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Strategy</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Type</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Amount</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Method</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Stake</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Profit/Loss</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Date</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Status</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">Action</th>
@@ -142,33 +145,37 @@ export default function AdminTransactionsPage() {
                                         <p className="text-[9px] text-gray-500 uppercase tracking-wider">Verified User</p>
                                     </td>
                                     <td className="px-6 py-5">
+                                        <span className="text-xs font-medium text-gray-400">{tx.strategy}</span>
+                                    </td>
+                                    <td className="px-6 py-5">
                                         <div className="flex items-center gap-2">
                                             {tx.type === "Deposit" ? (
-                                                <ArrowDownRight className="h-4 w-4 text-emerald-500" />
+                                                <ArrowDownRight className="h-4 w-4 text-emerald-400" />
                                             ) : (
-                                                <ArrowUpRight className="h-4 w-4 text-orange-500" />
+                                                <ArrowUpRight className="h-4 w-4 text-orange-400" />
                                             )
                                             }
-                                            <span className={`text-xs font-bold ${tx.type === "Deposit" ? "text-emerald-500" : "text-orange-500"}`}>{tx.type}</span>
+                                            <span className={`text-xs font-bold ${tx.type === "Deposit" ? "text-emerald-400" : "text-orange-400"}`}>{tx.type}</span>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <span className="text-sm font-black text-white">${(tx.stake || 0).toFixed(2)}</span>
                                     </td>
                                     <td className="px-6 py-5">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-black text-white">${tx.amount.toFixed(2)}</span>
-                                            <span className="text-[10px] text-gray-500 font-medium font-mono uppercase">{tx.currency}</span>
+                                            <span className={`text-sm font-black ${tx.type === "Deposit" ? "text-emerald-400" : "text-rose-400"}`}>
+                                                {tx.type === "Deposit" ? "+" : "-"}${tx.amount.toFixed(2)}
+                                            </span>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className="text-xs font-medium text-gray-400">{tx.method}</span>
                                     </td>
                                     <td className="px-6 py-5">
                                         <span className="text-xs font-medium text-gray-400">{tx.date}</span>
                                     </td>
                                     <td className="px-6 py-5">
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${tx.status === "Completed" ? "bg-emerald-500/10 text-emerald-500" :
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${tx.status === "Completed" || tx.status === "completed" ? "bg-emerald-500/10 text-emerald-500" :
                                             tx.status === "Pending" ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500"
                                             }`}>
-                                            {tx.status === "Completed" && <CheckCircle2 className="h-3 w-3" />}
+                                            {(tx.status === "Completed" || tx.status === "completed") && <CheckCircle2 className="h-3 w-3" />}
                                             {tx.status === "Pending" && <Clock className="h-3 w-3 animate-pulse" />}
                                             {tx.status === "Failed" && <XCircle className="h-3 w-3" />}
                                             {tx.status}

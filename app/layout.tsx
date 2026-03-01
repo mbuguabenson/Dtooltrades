@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 
 import { HeartbeatManager } from "@/components/heartbeat-manager"
 import { LiveChat } from "@/components/live-chat"
+import { MaintenanceGuard } from "@/components/maintenance-guard"
 
 export default function RootLayout({
   children,
@@ -27,9 +28,11 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`} suppressHydrationWarning>
         <ThemeProviderAdvanced defaultTheme="dark">
           <DerivAPIProvider>
-            <HeartbeatManager />
-            <Suspense fallback={null}>{children}</Suspense>
-            <LiveChat />
+            <MaintenanceGuard>
+              <HeartbeatManager />
+              <Suspense fallback={null}>{children}</Suspense>
+              <LiveChat />
+            </MaintenanceGuard>
           </DerivAPIProvider>
         </ThemeProviderAdvanced>
         <Analytics />

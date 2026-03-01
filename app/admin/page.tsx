@@ -17,15 +17,19 @@ import {
 import { AdminStatsCard } from "@/components/admin/admin-stats-card"
 import { AdminLiveFeed } from "@/components/admin/admin-live-feed"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { AdminTradingConsole } from "@/components/admin/admin-trading-console"
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [filterType, setFilterType] = useState<"All" | "Real" | "Demo">("All")
+  const [filterPnL, setFilterPnL] = useState<"All" | "Profits" | "Losses">("All")
+  const [curveType, setCurveType] = useState<"monotone" | "linear" | "step">("monotone")
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch("/api/admin/overview")
+        const res = await fetch(`/api/admin/overview?type=${filterType}&pnl=${filterPnL}`)
         const data = await res.json()
         setStats(data)
       } catch (err) {
@@ -35,9 +39,9 @@ export default function AdminDashboard() {
       }
     }
     fetchStats()
-    const interval = setInterval(fetchStats, 30000) // Refresh every 30s
+    const interval = setInterval(fetchStats, 5000) // Fast refresh for live feel
     return () => clearInterval(interval)
-  }, [])
+  }, [filterType, filterPnL])
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -92,10 +96,43 @@ export default function AdminDashboard() {
               <h3 className="text-xl font-bold text-white">Platform Performance</h3>
               <p className="text-xs text-gray-500">Global trading activity overview</p>
             </div>
-            <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-              {["1D", "1W", "1M", "1Y"].map(t => (
-                <button key={t} className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${t === "1Y" ? "bg-blue-600 text-white shadow-lg" : "text-gray-500 hover:text-white"}`}>{t}</button>
-              ))}
+            <div className="flex flex-wrap gap-4 items-center">
+              {/* Demo/Real Filter */}
+              <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
+                {(["All", "Real", "Demo"] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilterType(f)}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${filterType === f ? "bg-blue-600 text-white shadow-lg" : "text-gray-500 hover:text-white"}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              {/* Profit/Loss Filter */}
+              <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
+                {(["All", "Profits", "Losses"] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilterPnL(f)}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${filterPnL === f ? "bg-purple-600 text-white shadow-lg" : "text-gray-500 hover:text-white"}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              {/* Curve Control */}
+              <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
+                {(["monotone", "linear", "step"] as const).map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setCurveType(c)}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${curveType === c ? "bg-emerald-600 text-white shadow-lg" : "text-gray-500 hover:text-white"}`}
+                  >
+                    {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -122,7 +159,7 @@ export default function AdminDashboard() {
                     formatter={(v: any, name: any) => [typeof v === "number" ? v.toFixed(2) : v || "0.00", name === "profit" ? "P/L" : name]}
                   />
                   <Area
-                    type="monotone"
+                    type={curveType}
                     dataKey="profit"
                     stroke="#3b82f6"
                     fillOpacity={1}
@@ -172,6 +209,9 @@ export default function AdminDashboard() {
         {/* Sidebar for Live Feed */}
         <AdminLiveFeed />
       </div>
+
+      {/* Trading Console */}
+      <AdminTradingConsole />
 
       {/* Bottom Section: Top Traders & Wallet Snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-8">

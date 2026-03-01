@@ -7,11 +7,13 @@ export async function GET() {
         const transactions = trades.map((t: any) => ({
             id: t.id,
             loginId: t.loginId,
-            type: t.profit >= 0 ? "deposit" : "withdrawal", // Represent P/L as movements
-            amount: Math.abs(t.profit),
+            type: t.profit >= 0 ? "Deposit" : "Withdrawal", // Consistent casing for UI mapping
+            amount: Math.abs(t.profit || t.stake),
             currency: "USD",
             method: t.market,
-            status: "completed",
+            status: "Completed", // Hardcoded for now as tradeStore only has closed trades
+            strategy: t.strategy || "Unknown",
+            stake: t.stake || 0,
             timestamp: t.ts
         }))
         return NextResponse.json({ transactions })
