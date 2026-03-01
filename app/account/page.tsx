@@ -88,7 +88,7 @@ export default function AccountPage() {
             <div className="bg-slate-950/30 rounded-3xl p-1 sm:p-2 border border-slate-800/50">
                 <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <div className="flex justify-center mb-8">
-                        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full md:w-[640px] h-14 bg-slate-900/80 border border-slate-800/50 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl">
+                        <TabsList className="grid grid-cols-2 lg:grid-cols-5 w-full lg:w-[850px] h-14 bg-slate-900/80 border border-slate-800/50 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl">
                             <TabsTrigger value="details" className="rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 font-bold text-xs gap-2 transition-all">
                                 <User className="h-4 w-4" />
                                 <span className="hidden sm:inline">User Details</span>

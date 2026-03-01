@@ -91,12 +91,20 @@ export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) 
     }, [events])
 
     const chartData = useMemo(() => {
-        return events.map((e, i) => ({
-            name: new Date(e.time * 1000).toLocaleDateString(),
-            balance: e.balance,
-            amount: e.amount,
-            type: e.type
-        }))
+        let cumulativeProfit = 0
+        return events.map((e, i) => {
+            // Only trades contribute to the "Profitability" line
+            if (e.type === "trade_win" || e.type === "trade_loss") {
+                cumulativeProfit += e.amount
+            }
+            return {
+                name: new Date(e.time * 1000).toLocaleDateString(),
+                balance: e.balance,
+                profit: Number(cumulativeProfit.toFixed(2)),
+                amount: e.amount,
+                type: e.type
+            }
+        })
     }, [events])
 
     return (
@@ -171,9 +179,9 @@ export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) 
                                 <ResponsiveContainer width="100%" height="100%">
                                     <ComposedChart data={chartData}>
                                         <defs>
-                                            <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                            <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
@@ -189,11 +197,11 @@ export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) 
                                             itemStyle={{ fontWeight: "800" }}
                                             formatter={(value: any, name: any) => {
                                                 const val = Number(value) || 0
-                                                const label = name === "balance" ? "Balance" : "Change"
+                                                const label = name === "profit" ? "Net Profit" : "Transaction"
                                                 return [`$${val.toFixed(2)}`, label]
                                             }}
                                         />
-                                        <Area type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#balanceGradient)" />
+                                        <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#profitGradient)" />
                                         <Bar dataKey="amount" barSize={10}>
                                             {chartData.map((entry, index) => (
                                                 <Cell
