@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { upsertLiveUser, setUserOffline } from "@/lib/user-store"
 
 export async function POST(request: NextRequest) {
     try {
@@ -9,8 +10,21 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "loginId is required" }, { status: 400 })
         }
 
-        // Bypassing SQLite for Vercel deployment to prevent global 500 crashes
-        console.log(`[Heartbeat API] Mock update for User: ${loginId} | Status: ${status}`)
+        const now = Math.floor(Date.now() / 1000)
+
+        if (status === "offline") {
+            setUserOffline(loginId)
+        } else {
+            upsertLiveUser({
+                loginId,
+                name: name || "Deriv User",
+                type: type as "Real" | "Demo",
+                currency: currency || "USD",
+                balance: balance || 0,
+                status: "online",
+                lastSeen: now,
+            })
+        }
 
         return NextResponse.json({ success: true })
     } catch (error) {

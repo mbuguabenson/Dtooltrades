@@ -29,6 +29,7 @@ export function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
     const navItems = [
         { label: "GENERAL", type: "header" },
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin", active: pathname === "/admin" },
+        { label: "Users", icon: Users, href: "/admin/users", active: pathname === "/admin/users" },
         { label: "Portfolio", icon: BarChart3, href: "/admin/portfolio", active: pathname === "/admin/portfolio" },
         { label: "Market Data", icon: TrendingUp, href: "/admin/market", active: pathname === "/admin/market" },
         { label: "Trading", icon: TrendingUp, href: "/admin/trading", active: pathname === "/admin/trading" },
@@ -75,8 +76,8 @@ export function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
                             key={idx}
                             href={item.href!}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${item.active
-                                    ? "bg-white/5 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
-                                    : "text-gray-400 hover:text-white hover:bg-white/[0.03]"
+                                ? "bg-white/5 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                                : "text-gray-400 hover:text-white hover:bg-white/[0.03]"
                                 }`}
                         >
                             {item.active && (
