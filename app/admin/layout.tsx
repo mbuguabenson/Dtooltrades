@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { useTheme } from "@/lib/theme-provider-advanced"
 import { Bell, Search, User, LogOut } from "lucide-react"
 
 export default function AdminLayout({
@@ -11,7 +10,6 @@ export default function AdminLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { currentTheme } = useTheme()
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const router = useRouter()
     const pathname = usePathname()
