@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Bot } from "lucide-react"
 import { useDerivAuth } from "@/hooks/use-deriv-auth"
+import { DERIV_CONFIG } from "@/lib/deriv-config"
 import Link from "next/link"
 
 interface DerivPlatformsProps {
@@ -50,7 +51,7 @@ export default function DerivPlatforms({ derivToken, theme = "dark" }: DerivPlat
               <p className={`mb-6 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
                 Click below to launch DBot trading platform
               </p>
-              <Link href="/dbot">
+              <Link href={`https://app.deriv.com/bot?app_id=${DERIV_CONFIG.APP_ID}`}>
                 <Button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl shadow-md transition-all hover:scale-105 bg-blue-600 hover:bg-blue-700 text-white">
                   <Bot size={18} />
                   Launch DBot Platform

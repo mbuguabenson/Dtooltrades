@@ -408,6 +408,14 @@ export function getAdminsCount(): number {
   return result.count
 }
 
+// Auto-initialize the database when the module is imported
+const DEFAULT_DB_PATH = path.join(process.cwd(), "trading.db")
+try {
+  initializeDatabase(DEFAULT_DB_PATH)
+} catch (error) {
+  console.error("[DB] Failed to auto-initialize database:", error)
+}
+
 export function closeDatabase(): void {
   if (dbInstance) {
     dbInstance.close()
