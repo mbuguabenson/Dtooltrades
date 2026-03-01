@@ -1,0 +1,88 @@
+﻿51d82a4 HEAD@{0}: commit: fix(auth/ws): Resolve Admin Login 401 error and suppress harmless WS timeout warnings
+664196c HEAD@{1}: commit: feat(AnalysisEngine): Overhaul O/U and Differs prediction logic based on precise group power ranking
+e644acf HEAD@{2}: commit: fix(SmartAuto24): Enforce selected strategy and 15 tick analysis minimum for instant signals
+653e96b HEAD@{3}: commit: feat(SmartAuto24): Replace time-based analysis with instant real-time unified signals
+e29bb3c HEAD@{4}: commit: feat: implement SmartAuto24 24h AutoPilot, auto-market switch, and fix admin login
+176cd20 HEAD@{5}: commit: feat: implement 24h AutoPilot, fix Admin page 500 error, and refine Smart Adaptive Trading UI
+34d94e9 HEAD@{6}: commit: fix: make ThemeProviderAdvanced SSR-compatible to resolve prerender error
+6bdb01d HEAD@{7}: commit: chore: update pnpm-lock.yaml to match package.json
+3fba18b HEAD@{8}: commit: Fix OverUnderTab freezing, double trades, and optimize strategy thresholds
+542dd8b HEAD@{9}: commit: Fix: tickCount ReferenceError in OverUnderTab
+57c5e40 HEAD@{10}: reset: moving to 57c5e40
+2562691 HEAD@{11}: reset: moving to 2562691
+2562691 HEAD@{12}: commit: Refactor: Move platform to /platform and add premium landing page at root
+97b43f5 HEAD@{13}: commit: Admin enhancements: filters, transaction fixes, security tracking, and trading console
+312bea6 HEAD@{14}: commit: fix: standardize trade reporting across engines and optimize admin dashboard for real-time updates
+813215e HEAD@{15}: commit: Optimize Admin Dashboard: connect real-time analytics, add command palette, fix APIs, and restore account UIs with date ranges
+ffc6e7c HEAD@{16}: commit: Enhance admin user management: IP/geo tracking, profile panel, balance sparkline, flag controls
+e041f3c HEAD@{17}: commit: Fix balances & enhance account tabs: 2yr date range, trade journal, strategy analytics, performance scorecards+pie
+c4e4936 HEAD@{18}: commit: Redesign account UI: premium gradient hero card, stat cards, equity curve, donut chart
+62a671e HEAD@{19}: commit: Add image and document attachment support to live chat
+f81d920 HEAD@{20}: commit: Major feature expansion: user management, chat, analytics, markets, settings, notifications
+b185b0f HEAD@{21}: commit: Add real-time authorized user tracking to admin dashboard
+a9d1b32 HEAD@{22}: commit: Remove useTheme from admin layout to fix Vercel prerender error
+9b56613 HEAD@{23}: commit: Remove stale pnpm-lock.yaml to fix Vercel build dependency error
+4c45e9c HEAD@{24}: commit: Allow case-insensitive admin login and trim trailing spaces
+a67b3f4 HEAD@{25}: commit: Bypass SQLite in heartbeat API to fix global app crash
+dfb5fcd HEAD@{26}: commit: Bypass SQLite on Vercel to fix Admin Dashboard 500 error
+d021163 HEAD@{27}: commit: Force vercel rebuild for ReferenceError fix
+cf9b82d HEAD@{28}: commit: Admin dashboard security, live data integration, and centralized authentication. Cleanup of redundant bot routes.
+57c5e40 HEAD@{29}: commit: Finalize Admin Security and Real Data integration for all pages
+aedb59c HEAD@{30}: commit: Fix type errors and add better-sqlite3 types
+748fd6d HEAD@{31}: commit: Integrate real data and heartbeat tracking into Admin Dashboard
+8aa4eda HEAD@{32}: commit: Implement full Admin Dashboard with portfolio, trading, finances, logs, and settings
+90262ff HEAD@{33}: commit: Fix tickCount ReferenceError, z-index layering, and implement account image/username display
+295ff59 HEAD@{34}: commit: fix: resolve client-side crashes by fixing NaN in API calls and improving type safety
+34c1e85 HEAD@{35}: commit: fix: remove redundant local filtering in profit report causing 0 totals
+1c75ea7 HEAD@{36}: commit: feat: add user profile customization and custom date range filtering
+9164f5b HEAD@{37}: commit: style: refine account tab layout and profitability journey visualization
+7f965ec HEAD@{38}: commit: fix: resolve chart lint errors and finalize performance journey integration
+160e2e7 HEAD@{39}: commit: feat: implement performance journey and account journal
+4cd04dd HEAD@{40}: commit: feat: add advanced filtering and totals to account statement and profit reports
+7cdad58 HEAD@{41}: commit: fix: restore missing openTokenSettings property to auth hook
+5db4b4d HEAD@{42}: commit: fix: resolve typescript interface errors in Deriv API context
+9fdc45a HEAD@{43}: commit: fix: resolve persistent logout issue and finalize Account Hub stability
+15e79e9 HEAD@{44}: commit: fix: resolve client-side crash in Account Hub by fixing component collisions and adding null checks
+bf35ea6 HEAD@{45}: commit: feat: integrate Account dashboard with analytics and statement reports
+cc1d9b2 HEAD@{46}: commit: feat: move Ticks dropdown to TabMarketBar and fix USD account display
+d0e9558 HEAD@{47}: commit: feat: integrate TabMarketBar into all tabs
+01d996b HEAD@{48}: commit: feat: move market selector from header to individual tabs
+f615a22 HEAD@{49}: commit: UI updates
+eef1a90 HEAD@{50}: commit: UI: Refine and redesign header and tabs layout to be clean and compact
+74448e8 HEAD@{51}: commit: Iteration 5: Refined header sizing, fixed sticky persistence, and restored Autobot/Autotrader tabs
+97ac664 HEAD@{52}: commit: Iteration 4: Integrated navigation in header and restored Autotrader
+3ac6c40 HEAD@{53}: commit: Iteration 3: Slot-based responsive header and layout fixes
+b1a2962 HEAD@{54}: commit: Iteration 2: Floating header, unsqueezed market card, and relocated depth selector
+c962a9c HEAD@{55}: commit: Enhance header UI, clean up tabs, and update SmartAuto24 with live price and 15-digit history
+f2b8c8a HEAD@{56}: commit: Fix duplicate declaration of 'strat' and restore missing strategy logic in SmartAuto24Tab
+71e8aa9 HEAD@{57}: commit: Refactor SmartAuto24 for real-time entry, add Market Readiness UI, and reduce logo size
+4f835cc HEAD@{58}: commit: Refine SmartAuto24 strategies, fix mobile visibility, and optimize UI display
+64019b9 HEAD@{59}: commit: Add MACD and Donchian Channels with multi-pane chart support
+d4e2ca8 HEAD@{60}: commit: Enhance Trading View with candlesticks, indicators, timeframes, and fix WebSocket subscription loop
+703d5e2 HEAD@{61}: commit: Integrated Digit Distribution into Trading View tab and enhanced Pattern Recognition UI
+92427c7 HEAD@{62}: commit: Added advanced reversal pattern detection to Trading View tab - includes Double Top/Bottom, Head & Shoulders, Triple patterns, and Wedges with real-time monitoring
+85c2d5e HEAD@{63}: commit: Fixed Super Signals tab - removed unnecessary authorization check for public tick data
+6eb0350 HEAD@{64}: commit: Enhanced Digit Distribution with frequency-based color coding, analysis depth selector, and fixed WebSocket subscription issues
+4bc0596 HEAD@{65}: commit: Fix SpeedBot trade execution and digit logic
+eaafe51 HEAD@{66}: commit: Redesign Digits Distribution with circular power indicators
+9d1b312 HEAD@{67}: commit: Optimize AutoBot by switching to live tick subscriptions to resolve rate limits
+9e7f530 HEAD@{68}: commit: Fix stake decimal place error and enhance connection re-authorization
+0a3cd8f HEAD@{69}: commit: Fix WebSocket subscription timeouts, AlreadySubscribed errors, and ping noise
+f18ed44 HEAD@{70}: commit: Unify trading logic across all tabs using AnalysisEngine and fix UI bugs
+45aed01 HEAD@{71}: commit: fix: resolve race conditions and memory leaks in WebSocket subscription manager
+60c8f6b HEAD@{72}: commit: fix: resolve subscription reference counting and redundant ghost triggers
+a402ae4 HEAD@{73}: commit: fix: resolve WebSocket flooding in SmartAuto24 and recover ghost subscriptions
+f7dea54 HEAD@{74}: commit: fix: implement advanced WebSocket resilience and debug logging
+b047d83 HEAD@{75}: commit: feat: migrate SmartAuto24 to shared AnalysisEngine and fix WebSocket timeout
+f8ec5ec HEAD@{76}: commit: Fix: Session limits blocking manual trades - added bypass for manual execution and resetSession method
+83cdd94 HEAD@{77}: commit: UI Overhaul: New Quantum Loader, Glassmorphic Header, Compact Footer, and Premium Color Palette
+b706908 HEAD@{78}: commit: Upgrade SmartAuto24 strategies with trend detection and strict wait/trade thresholds
+e291fc7 HEAD@{79}: commit: Fixed SmartAuto24 retry logic and switched AutoBot to real-time subscription
+195d384 HEAD@{80}: commit: Redesigned UI with Modern Loader, Floating Header, and Compact Footer
+9bbab6f HEAD@{81}: commit: Refactor SmartAuto24 strategies with advanced trend detection and wait thresholds
+f2fb918 HEAD@{82}: commit: Fix trade execution issues, resolve req_id coercion bugs, and update adaptive trading hook sync
+fa8853e HEAD@{83}: commit: Refine Smart Adaptive: Remove Matches, add strategy selector & manual trade buttons
+fcf9480 HEAD@{84}: commit: Refactor useDerivAuth for stable WebSocket listeners and reliable balance updates
+310c94d HEAD@{85}: commit: Fix balance display at the top and improve account authorization sync
+da75860 HEAD@{86}: commit: Redesign Smart Adaptive UI and fix reliability issues including balance display
+38cf44a HEAD@{87}: clone: from https://github.com/mbuguabenson/Dtooltrades.git

@@ -54,7 +54,6 @@ export function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
         { label: "Notifications", icon: ShieldAlert, href: "/admin/notifications", active: pathname === "/admin/notifications" },
         { label: "Settings", icon: Settings, href: "/admin/settings", active: pathname === "/admin/settings" },
         { label: "SITE", type: "header", className: "mt-6" },
-        { label: "View Platform", icon: Globe, href: "/platform", active: pathname === "/platform" },
         { label: "Live Site", icon: Globe, href: "/", active: pathname === "/" },
     ]
 

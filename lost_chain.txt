@@ -1,0 +1,17 @@
+﻿2562691 Refactor: Move platform to /platform and add premium landing page at root
+97b43f5 Admin enhancements: filters, transaction fixes, security tracking, and trading console
+312bea6 fix: standardize trade reporting across engines and optimize admin dashboard for real-time updates
+813215e Optimize Admin Dashboard: connect real-time analytics, add command palette, fix APIs, and restore account UIs with date ranges
+ffc6e7c Enhance admin user management: IP/geo tracking, profile panel, balance sparkline, flag controls
+e041f3c Fix balances & enhance account tabs: 2yr date range, trade journal, strategy analytics, performance scorecards+pie
+c4e4936 Redesign account UI: premium gradient hero card, stat cards, equity curve, donut chart
+62a671e Add image and document attachment support to live chat
+f81d920 Major feature expansion: user management, chat, analytics, markets, settings, notifications
+b185b0f Add real-time authorized user tracking to admin dashboard
+a9d1b32 Remove useTheme from admin layout to fix Vercel prerender error
+9b56613 Remove stale pnpm-lock.yaml to fix Vercel build dependency error
+4c45e9c Allow case-insensitive admin login and trim trailing spaces
+a67b3f4 Bypass SQLite in heartbeat API to fix global app crash
+dfb5fcd Bypass SQLite on Vercel to fix Admin Dashboard 500 error
+d021163 Force vercel rebuild for ReferenceError fix
+cf9b82d Admin dashboard security, live data integration, and centralized authentication. Cleanup of redundant bot routes.

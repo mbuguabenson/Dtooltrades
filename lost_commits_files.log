@@ -1,0 +1,78 @@
+﻿commit c4e4936bd78582613a9d3412b86e60d5eccf7308
+Author: benso@Benadesigns <mbuguabenson2020@gmail.com>
+Date:   Sun Mar 1 16:13:20 2026 +0300
+
+    Redesign account UI: premium gradient hero card, stat cards, equity curve, donut chart
+
+components/account/account-analytics.tsx
+components/account/account-details.tsx
+
+commit e041f3cb4a4a342f9a36a2a91344975b672f3c9a
+Author: benso@Benadesigns <mbuguabenson2020@gmail.com>
+Date:   Sun Mar 1 16:39:44 2026 +0300
+
+    Fix balances & enhance account tabs: 2yr date range, trade journal, strategy analytics, performance scorecards+pie
+
+components/account/account-analytics.tsx
+components/account/account-details.tsx
+components/account/performance-journey.tsx
+components/account/profit-report.tsx
+components/account/statement-list.tsx
+
+commit ffc6e7c464dee0bba5af4e0fc006321ba8c3233a
+Author: benso@Benadesigns <mbuguabenson2020@gmail.com>
+Date:   Sun Mar 1 16:49:31 2026 +0300
+
+    Enhance admin user management: IP/geo tracking, profile panel, balance sparkline, flag controls
+
+app/admin/users/page.tsx
+app/api/user/heartbeat/route.ts
+lib/user-store.ts
+
+commit 813215eeb7d952bf9b906d9e20b9ab98cef7b9f4
+Author: benso@Benadesigns <mbuguabenson2020@gmail.com>
+Date:   Sun Mar 1 17:07:45 2026 +0300
+
+    Optimize Admin Dashboard: connect real-time analytics, add command palette, fix APIs, and restore account UIs with date ranges
+
+app/admin/layout.tsx
+app/admin/page.tsx
+app/admin/transactions/page.tsx
+app/api/admin/trades/route.ts
+app/api/admin/transactions/route.ts
+components/account/profit-report.tsx
+components/account/statement-list.tsx
+lib/user-store.ts
+
+commit 312bea6037f2ed530cd57edb0b47f6685572d4de
+Author: benso@Benadesigns <mbuguabenson2020@gmail.com>
+Date:   Sun Mar 1 17:19:50 2026 +0300
+
+    fix: standardize trade reporting across engines and optimize admin dashboard for real-time updates
+
+hooks/use-unified-engine.ts
+lib/autobots.ts
+lib/core-analytics-engine.ts
+lib/deriv-real-trader.ts
+lib/trade-execution-engine.ts
+lib/trade-reporting.ts
+lib/trading/trading-manager.ts
+lib/unified-trading-engine.ts
+
+commit 97b43f50181851636194d828bcf5bf07698e6491
+Author: benso@Benadesigns <mbuguabenson2020@gmail.com>
+Date:   Sun Mar 1 17:41:30 2026 +0300
+
+    Admin enhancements: filters, transaction fixes, security tracking, and trading console
+
+app/admin/layout.tsx
+app/admin/page.tsx
+app/admin/transactions/page.tsx
+app/api/admin/execute-trade/route.ts
+app/api/admin/overview/route.ts
+app/api/admin/transactions/route.ts
+app/layout.tsx
+app/page.tsx
+components/admin/admin-trading-console.tsx
+components/maintenance-guard.tsx
+lib/user-store.ts

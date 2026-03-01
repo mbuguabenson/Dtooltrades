@@ -1,164 +1,594 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import Link from "next/link"
-import { ArrowRight, BarChart3, ShieldCheck, Zap, TrendingUp, Globe, MousePointer2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useDeriv } from "@/hooks/use-deriv"
+import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Moon, Sun, User } from 'lucide-react'
+import Link from 'next/link'
+import { DigitDistribution } from "@/components/digit-distribution"
+import { SignalsTab } from "@/components/tabs/signals-tab"
+import { ProSignalsTab } from "@/components/tabs/pro-signals-tab"
+import { EvenOddTab } from "@/components/tabs/even-odd-tab"
+import { OverUnderTab } from "@/components/tabs/over-under-tab"
+import { TabMarketBar } from "@/components/tab-market-bar"
+import { MatchesTab } from "@/components/tabs/matches-tab"
+import { DiffersTab } from "@/components/tabs/differs-tab"
+import { RiseFallTab } from "@/components/tabs/rise-fall-tab"
+import { StatisticalAnalysis } from "@/components/statistical-analysis"
+import { LastDigitsChart } from "@/components/charts/last-digits-chart"
+import { LastDigitsLineChart } from "@/components/charts/last-digits-line-chart"
+import { AIAnalysisTab } from "@/components/tabs/ai-analysis-tab"
+import { SuperSignalsTab } from "@/components/tabs/super-signals-tab"
+import { LoadingScreen } from "@/components/loading-screen"
+import { DerivAuth } from "@/components/deriv-auth"
+import { AutoBotTab } from "@/components/tabs/autobot-tab"
+import { AutomatedTab } from "@/components/tabs/automated-tab"
+import { SmartAuto24Tab } from "@/components/tabs/smartauto24-tab"
+import { useGlobalTradingContext } from "@/hooks/use-global-trading-context"
+import { verifier } from "@/lib/system-verifier"
+import { ResponsiveTabs } from "@/components/responsive-tabs"
+import { MoneyMakerTab } from "@/components/tabs/money-maker-tab"
+import { ToolsInfoTab } from "@/components/tabs/tools-info-tab"
+import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
-export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(false)
+export default function DerivAnalysisApp() {
+  const [theme, setTheme] = useState<"light" | "dark">("dark")
+  const [activeTab, setActiveTab] = useState("smart-analysis")
+  const [isLoading, setIsLoading] = useState(true)
+  const [initError, setInitError] = useState<string | null>(null)
+  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
+  const [siteConfig, setSiteConfig] = useState<any>(null)
+  const globalContext = useGlobalTradingContext()
+
+  const {
+    connectionStatus,
+    currentPrice,
+    currentDigit,
+    tickCount,
+    analysis,
+    signals,
+    proSignals,
+    symbol,
+    maxTicks,
+    availableSymbols,
+    connectionLogs,
+    changeSymbol,
+    changeMaxTicks,
+    getRecentDigits,
+  } = useDeriv()
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light"
+    setTheme(newTheme)
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
+  }
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+    try {
+      document.documentElement.classList.add("dark")
+      console.log("[v0] App initialization started")
+      verifier.markComplete("Core System")
+      console.log("[v0] App initialization completed successfully")
+    } catch (error) {
+      console.error("[v0] Initialization error:", error)
+      setInitError(error instanceof Error ? error.message : "Unknown error")
+    }
+
+    // Fetch site config
+    fetch("/api/admin/site-config")
+      .then(r => r.json())
+      .then(setSiteConfig)
+      .catch(console.error)
   }, [])
 
+  const recentDigits = getRecentDigits(20)
+  const recent40Digits = getRecentDigits(40)
+  const recent50Digits = getRecentDigits(50)
+  const recent100Digits = getRecentDigits(100)
+
+  const activeSignals = (signals || []).filter((s) => s.status !== "NEUTRAL")
+  const powerfulSignalsCount = activeSignals.filter((s) => s.status === "TRADE NOW").length
+
+  if (initError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-red-900 to-red-950">
+        <div className="text-center p-8 bg-red-800/50 rounded-xl border border-red-500 max-w-md">
+          <h2 className="text-2xl font-bold text-white mb-4">Initialization Error</h2>
+          <p className="text-red-200 mb-6">{initError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <LoadingScreen
+        onComplete={() => {
+          console.log("[v0] Loading screen completed, showing main app")
+          setIsLoading(false)
+        }}
+      />
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-[#020202] text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
-      {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${scrolled ? "bg-[#050505]/80 backdrop-blur-xl border-white/5 py-3" : "bg-transparent border-transparent py-6"}`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20">
-              <TrendingUp className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-black tracking-tighter">PROFIT<span className="text-blue-500">HUB</span></span>
-          </div>
+    <div
+      className={`min-h-screen flex flex-col ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
+    >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col relative">
+        {!siteConfig?.headerHidden && (
+          <header
+            className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
+              ? "bg-[#050505]/90 border-white/5"
+              : "bg-white/95 border-gray-100"
+              } backdrop-blur-xl`}
+          >
+            <div className="mx-auto w-full px-2 sm:px-6">
+              <div className="flex flex-row items-center py-1.5 sm:h-14 gap-1.5 sm:gap-4 w-full justify-between">
 
-          <div className="hidden md:flex items-center gap-8">
-            {["Platform", "Markets", "Analytics", "About"].map(item => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest">{item}</a>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Link href="/admin">
-              <Button variant="ghost" className="text-xs font-bold uppercase tracking-widest hover:bg-white/5">Console</Button>
-            </Link>
-            <Link href="/platform">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest px-6 rounded-full shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
-                Launch Terminal
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-600/10 blur-[150px] rounded-full -z-10 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 blur-[150px] rounded-full -z-10"></div>
-
-        <div className="max-w-5xl mx-auto text-center space-y-8 relative">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full animate-bounce">
-            <Zap className="h-3.5 w-3.5 text-blue-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Next-Gen Quantum Trading Engine</span>
-          </div>
-
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] text-white">
-            Precision Trading <br />
-            <span className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-500 bg-clip-text text-transparent">Reimagined.</span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-gray-400 text-lg md:text-xl font-medium leading-relaxed">
-            Experience the ultimate trading terminal equipped with real-time analytics, automated bots, and professional-grade signaling. Built for the modern trader.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-10">
-            <Link href="/platform">
-              <Button className="h-16 px-10 bg-white text-black hover:bg-gray-200 font-black text-sm uppercase tracking-widest rounded-2xl flex items-center gap-3 transition-all hover:scale-[1.03] active:scale-95 shadow-2xl shadow-white/10 group">
-                Start Trading Now
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <button className="h-16 px-10 bg-white/5 border border-white/10 text-white hover:bg-white/10 font-black text-sm uppercase tracking-widest rounded-2xl flex items-center gap-3 transition-all">
-              View Markets
-              <Globe className="h-5 w-5 text-blue-500" />
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-20 border-t border-white/5 mt-20">
-            {[
-              { label: "Execution Speed", value: "24ms" },
-              { label: "Global Users", value: "12K+" },
-              { label: "Assets Tracked", value: "150+" },
-              { label: "Uptime", value: "99.9%" }
-            ].map(stat => (
-              <div key={stat.label} className="text-center">
-                <p className="text-3xl font-black text-white mb-1">{stat.value}</p>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Feature Highlights */}
-      <section id="platform" className="py-24 px-6 relative">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Zap className="h-8 w-8 text-blue-500" />,
-                title: "Real-time Analytics",
-                desc: "Proprietary algorithms scanning market shifts with millisecond precision."
-              },
-              {
-                icon: <ShieldCheck className="h-8 w-8 text-emerald-500" />,
-                title: "Safe & Secure",
-                desc: "End-to-end encryption with decentralized security protocols for every trade."
-              },
-              {
-                icon: <BarChart3 className="h-8 w-8 text-purple-500" />,
-                title: "Visual Intelligence",
-                desc: "Transform complex data into actionable insights through stunning interactive charts."
-              }
-            ].map((feature, i) => (
-              <div key={i} className="p-10 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all group">
-                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                  {feature.icon}
+                {/* Brand */}
+                <div className="flex items-center shrink-0">
+                  <h1 className="text-sm sm:text-xl font-bold tracking-tight flex items-center gap-0.5 sm:gap-1">
+                    <span className={theme === "dark" ? "text-white" : "text-slate-900"}>PROFIT</span>
+                    <span className={`hidden sm:inline ${theme === "dark" ? "text-slate-400 font-medium" : "text-slate-500 font-medium"}`}>HUB</span>
+                  </h1>
                 </div>
-                <h3 className="text-2xl font-black text-white mb-4">{feature.title}</h3>
-                <p className="text-gray-500 font-medium leading-relaxed">{feature.desc}</p>
+
+                {/* Ticker (flex-1) */}
+                <div className="flex-1 flex justify-center sm:justify-end items-center min-w-0 max-w-2xl px-1 sm:px-0">
+                </div>
+
+                {/* Auth & Theme */}
+                <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
+                  <Link href="/account" className="hidden sm:block">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
+                        ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
+                        : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
+                    >
+                      <User className="h-4 w-4" />
+                      Account
+                    </Button>
+                  </Link>
+                  <Link href="/account" className="sm:hidden">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-800/50 text-slate-300">
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <DerivAuth theme={theme} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleTheme}
+                    className={`h-7 w-7 sm:h-9 sm:w-9 rounded-lg transition-all ${theme === "dark"
+                      ? "bg-white/5 text-yellow-500 hover:bg-white/10"
+                      : "bg-black/5 text-slate-700 hover:bg-black/10"
+                      }`}
+                  >
+                    {theme === "dark" ? <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                  </Button>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-20 md:py-40 px-6">
-        <div className="max-w-4xl mx-auto rounded-[3rem] bg-gradient-to-br from-blue-600 to-indigo-800 p-12 md:p-24 text-center relative overflow-hidden shadow-2xl shadow-blue-500/20">
-          <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-          <div className="relative z-10 space-y-8">
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-white">Ready to join the elite?</h2>
-            <p className="text-blue-100 text-lg max-w-xl mx-auto">Take control of your financial journey with the most advanced trading platform on the market.</p>
-            <Link href="/platform">
-              <Button className="h-16 px-12 bg-white text-black hover:bg-gray-100 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95">
-                Enter Trading Floor
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+              {/* Elegant Navigation Row within Header */}
+              <div className="mt-1 pb-1 sm:pb-2 px-1 sm:px-4">
+                <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
+                  {[
+                    "smart-adaptive",
+                    "smart-analysis",
+                    "smartauto24",
+                    "autobot",
+                    "automated",
+                    "signals",
+                    "pro-signals",
+                    "super-signals",
+                    "even-odd",
+                    "over-under",
+                    "advanced-over-under",
+                    "matches",
+                    "differs",
+                    "rise-fall",
+                    "ai-analysis",
+                    "tools-info",
+                  ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => (
+                    <TabsTrigger
+                      key={tab}
+                      value={tab}
+                      className={`shrink-0 rounded-full text-[10px] sm:text-[12px] px-3 sm:px-4 py-1.5 sm:py-2 mx-0.5 whitespace-nowrap transition-all duration-200 capitalize font-medium tracking-wide ${activeTab === tab
+                        ? theme === "dark"
+                          ? "bg-white/10 text-white"
+                          : "bg-black/5 text-black"
+                        : theme === "dark"
+                          ? "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-black/[0.03]"
+                        }`}
+                    >
+                      {tab === "autobot" ? "Autobot 🤖" : tab === "automated" ? "Autotrader 🚀" : tab.replace("-", " ")}
+                    </TabsTrigger>
+                  ))}
+                </ResponsiveTabs>
+              </div>
+            </div>
+          </header>
+        )}
 
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-white/5">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-blue-500" />
-            <span className="text-lg font-black tracking-tighter">PROFIT<span className="text-blue-500">HUB</span></span>
+        <main className="flex-1 pt-[100px] sm:pt-[110px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
+          {connectionStatus !== "connected" ? (
+            <div className="text-center py-12 sm:py-20 md:py-32">
+              <h2
+                className={`text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+              >
+                {connectionStatus === "reconnecting" ? "Connecting to Deriv API" : "Connection Failed"}
+              </h2>
+              <p className={`text-sm sm:text-base md:text-lg ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                {connectionStatus === "reconnecting"
+                  ? `Establishing connection for ${symbol}...`
+                  : `Unable to connect. Please check your internet connection and refresh the page.`}
+              </p>
+              {connectionStatus === "reconnecting" && (
+                <div className="mt-6 flex justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400"></div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <TabsContent value="smart-analysis" className="mt-0 space-y-2 sm:space-y-3 md:space-y-4">
+                <TabMarketBar
+                  symbol={symbol}
+                  availableSymbols={availableSymbols}
+                  onSymbolChange={changeSymbol}
+                  currentPrice={currentPrice}
+                  currentDigit={currentDigit}
+                  tickCount={tickCount}
+                  theme={theme}
+                />
+                <div
+                  className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                >
+                  <div className="flex items-center gap-3 sm:gap-6">
+                    <div className="flex flex-col items-start">
+                      <div className={`text-[8px] uppercase tracking-wider ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                        Digit
+                      </div>
+                      <div className={`text-xl sm:text-3xl font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+                        {currentDigit !== null ? currentDigit : "0"}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-start pl-2">
+                      <div className={`text-[8px] uppercase tracking-wider ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                        Price
+                      </div>
+                      <div
+                        className={`text-sm sm:text-base font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                      >
+                        {currentPrice?.toFixed(5) || "---"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse`} />
+                    <span className={`text-[10px] font-bold uppercase ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>Live</span>
+                  </div>
+                </div>
+
+                {analysis && analysis.digitFrequencies && (
+                  <div
+                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                  >
+                    <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-3">
+                      <h3
+                        className={`text-sm sm:text-lg md:text-2xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                      >
+                        Digits Distribution
+                      </h3>
+                    </div>
+
+                    <DigitDistribution
+                      frequencies={analysis.digitFrequencies}
+                      currentDigit={currentDigit}
+                      theme={theme}
+                    />
+                  </div>
+                )}
+
+                {analysis && recent100Digits.length > 0 && recentDigits.length > 0 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-4">
+                    <div
+                      className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                    >
+                      <h3
+                        className={`text-sm sm:text-base md:text-lg font-bold mb-3 sm:mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                      >
+                        Last Digits Line Chart
+                      </h3>
+                      <LastDigitsLineChart digits={recentDigits.slice(-10)} />
+                    </div>
+
+                    <div
+                      className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                    >
+                      <StatisticalAnalysis analysis={analysis} recentDigits={recent100Digits} theme={theme} />
+                    </div>
+                  </div>
+                )}
+
+                {recentDigits.length > 0 && (
+                  <div
+                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
+                  >
+                    <h3
+                      className={`text-sm sm:text-base md:text-lg font-bold mb-3 sm:mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                    >
+                      Last 20 Digits Chart
+                    </h3>
+                    <LastDigitsChart digits={recentDigits} />
+                  </div>
+                )}
+
+                {analysis && analysis.digitFrequencies && analysis.powerIndex && (
+                  <div
+                    className={`rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border ${theme === "dark" ? "bg-linear-to-br from-green-500/10 to-green-500/10 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]" : "bg-green-50 border-green-200 shadow-lg"}`}
+                  >
+                    <h3
+                      className={`text-sm sm:text-base md:text-lg font-bold mb-3 sm:mb-4 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                    >
+                      Frequency Analysis
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                      <div
+                        className={`text-center rounded-lg p-2 sm:p-3 md:p-4 border ${theme === "dark" ? "bg-blue-500/10" : "bg-blue-50"}`}
+                      >
+                        <div
+                          className={`text-xs sm:text-sm mb-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
+                        >
+                          Most Frequent
+                        </div>
+                        <div
+                          className={`text-xl sm:text-2xl md:text-3xl font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}
+                        >
+                          {analysis.powerIndex.strongest}
+                        </div>
+                        <div
+                          className={`mt-1 text-xs sm:text-sm md:text-base font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}
+                        >
+                          {analysis.digitFrequencies[analysis.powerIndex.strongest]?.percentage.toFixed(1)}%
+                        </div>
+                      </div>
+                      <div
+                        className={`text-center rounded-lg p-2 sm:p-3 md:p-4 border ${theme === "dark" ? "bg-red-500/10" : "bg-red-50"}`}
+                      >
+                        <div
+                          className={`text-xs sm:text-sm mb-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
+                        >
+                          Least Frequent
+                        </div>
+                        <div
+                          className={`text-xl sm:text-2xl md:text-3xl font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}
+                        >
+                          {analysis.powerIndex.weakest}
+                        </div>
+                        <div
+                          className={`mt-1 text-xs sm:text-sm md:text-base font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}
+                        >
+                          {analysis.digitFrequencies[analysis.powerIndex.weakest]?.percentage.toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="signals" className="mt-0">
+                {analysis && <SignalsTab signals={signals} proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />}
+              </TabsContent>
+
+              <TabsContent value="pro-signals" className="mt-0">
+                {analysis && <ProSignalsTab proSignals={proSignals} analysis={analysis} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />}
+              </TabsContent>
+
+              <TabsContent value="super-signals" className="mt-0">
+                <SuperSignalsTab theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />
+              </TabsContent>
+
+              <TabsContent value="even-odd" className="mt-0">
+                {analysis && (
+                  <EvenOddTab
+                    analysis={analysis}
+                    signals={signals}
+                    currentDigit={currentDigit}
+                    currentPrice={currentPrice}
+                    recentDigits={recent40Digits}
+                    theme={theme}
+                    symbol={symbol}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
+                    tickCount={tickCount}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="over-under" className="mt-0">
+                {analysis && (
+                  <OverUnderTab
+                    analysis={analysis}
+                    signals={signals}
+                    currentDigit={currentDigit}
+                    currentPrice={currentPrice}
+                    recentDigits={recent50Digits}
+                    theme={theme}
+                    symbol={symbol}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
+                    tickCount={tickCount}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="advanced-over-under" className="mt-0">
+                {analysis && <MoneyMakerTab theme={theme} recentDigits={recent50Digits} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} />}
+              </TabsContent>
+
+              <TabsContent value="matches" className="mt-0">
+                {analysis && (
+                  <MatchesTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="differs" className="mt-0">
+                {analysis && (
+                  <DiffersTab analysis={analysis} signals={signals} recentDigits={recentDigits} theme={theme} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} maxTicks={maxTicks} onMaxTicksChange={changeMaxTicks} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="rise-fall" className="mt-0">
+                {analysis && (
+                  <RiseFallTab
+                    analysis={analysis}
+                    signals={signals}
+                    currentPrice={currentPrice}
+                    recentDigits={recent40Digits}
+                    theme={theme}
+                    symbol={symbol}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
+                    currentDigit={currentDigit}
+                    tickCount={tickCount}
+                    maxTicks={maxTicks}
+                    onMaxTicksChange={changeMaxTicks}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="ai-analysis" className="mt-0">
+                {analysis && (
+                  <AIAnalysisTab
+                    analysis={analysis}
+                    currentDigit={currentDigit}
+                    currentPrice={currentPrice}
+                    symbol={symbol}
+                    theme={theme}
+                    availableSymbols={availableSymbols}
+                    onSymbolChange={changeSymbol}
+                  />
+                )}
+              </TabsContent>
+
+
+              <TabsContent value="autobot" className="mt-0">
+                <AutoBotTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} availableSymbols={availableSymbols} />
+              </TabsContent>
+
+              <TabsContent value="automated" className="mt-0">
+                <AutomatedTab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} availableSymbols={availableSymbols} />
+              </TabsContent>
+
+              <TabsContent value="smartauto24" className="mt-0">
+                <SmartAuto24Tab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} availableSymbols={availableSymbols} />
+              </TabsContent>
+
+              <TabsContent value="smart-adaptive" className="mt-0">
+                {analysis && <SmartAdaptiveTradingTab signals={signals} analysis={analysis} symbol={symbol} availableSymbols={availableSymbols} onSymbolChange={changeSymbol} theme={theme} currentPrice={currentPrice} currentDigit={currentDigit} tickCount={tickCount} />}
+              </TabsContent>
+
+              <TabsContent value="tools-info" className="mt-0">
+                <ToolsInfoTab theme={theme} connectionLogs={connectionLogs} />
+              </TabsContent>
+            </>
+          )}
+        </main>
+      </Tabs>
+
+      {!siteConfig?.footerHidden && (
+        <footer
+          className={`border-t mt-4 py-4 transition-all duration-300 ${theme === "dark"
+            ? "bg-[#050505] border-white/5"
+            : "bg-white border-gray-100"
+            }`}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className={`font-bold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                  PROFIT<span className="text-blue-500">HUB</span>
+                </span>
+                <span className="text-gray-500">•</span>
+                <span className="text-gray-500">Quantum Trading Terminal</span>
+              </div>
+
+              <div className="flex items-center gap-4 text-gray-500">
+                <button
+                  onClick={() => setIsDisclaimerOpen(true)}
+                  className="hover:text-blue-500 transition-colors font-medium border border-gray-500/20 px-2 py-0.5 rounded-md hover:border-blue-500/30"
+                >
+                  Risk Disclaimer
+                </button>
+                <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
+                <a href="#" className="hover:text-blue-500 transition-colors">Terms</a>
+                <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
+              </div>
+
+              <div className="text-gray-600">
+                © 2026 Profit Hub. All rights reserved.
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest">© 2026 Profit Hub Quantum Terminal. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            {["Twitter", "Discord", "Telegram"].map(social => (
-              <a key={social} href="#" className="text-gray-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">{social}</a>
-            ))}
-          </div>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      )}
+
+      <Dialog open={isDisclaimerOpen} onOpenChange={setIsDisclaimerOpen}>
+        <DialogContent className={`${theme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : "bg-white"} sm:max-w-2xl`}>
+          <DialogHeader>
+            <DialogTitle className={`text-xl font-bold mb-2 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+              Risk Disclaimer
+            </DialogTitle>
+            <DialogDescription className={`${theme === "dark" ? "text-gray-300" : "text-gray-700"} text-sm leading-relaxed space-y-4`}>
+              <p>
+                Deriv offers complex derivatives, such as options and contracts for difference (&quot;CFDs&quot;). These products may not be suitable for all clients, and trading them puts you at risk.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsDisclaimerOpen(false)}
+              className={theme === "dark" ? "border-gray-500 text-gray-300 hover:bg-gray-800" : ""}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => setIsDisclaimerOpen(false)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Accept
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div >
   )
 }
