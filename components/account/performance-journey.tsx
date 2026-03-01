@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    AreaChart, Area, ComposedChart, Bar, Line
+    AreaChart, Area, ComposedChart, Bar, Line, Cell
 } from "recharts"
 import {
     TrendingUp, TrendingDown, Wallet, ArrowDownCircle, ArrowUpCircle,
@@ -187,7 +187,11 @@ export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) 
                                         <Tooltip
                                             contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.4)" }}
                                             itemStyle={{ fontWeight: "800" }}
-                                            formatter={(value: any, name: string) => [`$${value.toFixed(2)}`, name === "balance" ? "Balance" : "Change"]}
+                                            formatter={(value: any, name: any) => {
+                                                const val = Number(value) || 0
+                                                const label = name === "balance" ? "Balance" : "Change"
+                                                return [`$${val.toFixed(2)}`, label]
+                                            }}
                                         />
                                         <Area type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#balanceGradient)" />
                                         <Bar dataKey="amount" barSize={10}>
@@ -237,9 +241,9 @@ export function PerformanceJourney({ theme = "dark" }: PerformanceJourneyProps) 
                                 [...events].reverse().slice(0, 20).map((event, idx) => (
                                     <div key={idx} className="flex gap-4 p-3 rounded-2xl border border-slate-800/50 bg-slate-900/20 hover:bg-slate-800/40 transition-colors relative group">
                                         <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center border ${event.type === 'deposit' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                                event.type === 'withdrawal' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
-                                                    event.type === 'trade_win' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                                                        'bg-slate-500/10 border-slate-500/20 text-slate-500'
+                                            event.type === 'withdrawal' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+                                                event.type === 'trade_win' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                                                    'bg-slate-500/10 border-slate-500/20 text-slate-500'
                                             }`}>
                                             {event.type === 'deposit' ? <ArrowDownCircle className="h-5 w-5" /> :
                                                 event.type === 'withdrawal' ? <ArrowUpCircle className="h-5 w-5" /> :
