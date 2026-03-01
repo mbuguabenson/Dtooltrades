@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { RefreshCcw, ArrowUpRight, ArrowDownLeft, Wallet, ReceiptText } from "lucide-react"
+import { RefreshCcw, ArrowUpRight, ArrowDownLeft, ReceiptText } from "lucide-react"
 
 interface StatementTransaction {
     action_type: string
@@ -55,10 +54,12 @@ export function StatementList({ theme = "dark" }: StatementListProps) {
     }, [fetchStatement, activeLoginId])
 
     const formatDate = (timestamp: number) => {
+        if (!timestamp) return "N/A"
         return new Date(timestamp * 1000).toLocaleString()
     }
 
     const getActionColor = (action: string) => {
+        if (!action) return "text-slate-300"
         switch (action.toLowerCase()) {
             case "buy": return "text-blue-400"
             case "sell": return "text-emerald-400"
@@ -148,10 +149,10 @@ export function StatementList({ theme = "dark" }: StatementListProps) {
                                         {tx.transaction_id}
                                     </TableCell>
                                     <TableCell className={`text-right font-bold ${getAmountColor(tx.amount)}`}>
-                                        {tx.amount > 0 ? "+" : ""}{tx.amount.toFixed(2)}
+                                        {tx.amount > 0 ? "+" : ""}{(tx.amount || 0).toFixed(2)}
                                     </TableCell>
                                     <TableCell className="text-right font-bold text-slate-200">
-                                        {tx.balance_after.toFixed(2)}
+                                        {(tx.balance_after || 0).toFixed(2)}
                                     </TableCell>
                                 </TableRow>
                             ))

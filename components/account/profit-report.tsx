@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { RefreshCcw, TrendingUp, TrendingDown, Gavel, BarChart3 } from "lucide-react"
+import { RefreshCcw, TrendingUp, TrendingDown, BarChart3 } from "lucide-react"
 
 interface ProfitTableTransaction {
     app_id: number
@@ -59,15 +59,19 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
     }, [fetchProfitTable, activeLoginId])
 
     const formatDate = (timestamp: number) => {
+        if (!timestamp) return "N/A"
         return new Date(timestamp * 1000).toLocaleString()
     }
 
     const getContractTypeBadge = (type: string) => {
+        if (!type) return "bg-slate-700/20 text-slate-400 border-slate-700/30"
         if (type.includes("CALL")) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
         if (type.includes("PUT")) return "bg-rose-500/20 text-rose-400 border-rose-500/30"
         if (type.includes("DIGIT")) return "bg-blue-500/20 text-blue-400 border-blue-500/30"
         return "bg-slate-700/20 text-slate-400 border-slate-700/30"
     }
+
+    const totalProfit = profitTable.reduce((acc, tx) => acc + (tx.profit_loss || 0), 0)
 
     return (
         <div className="space-y-4">
@@ -95,15 +99,15 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
                 </div>
                 <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800">
                     <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Total Profit</div>
-                    <div className={`text-xl font-black ${profitTable.reduce((acc, tx) => acc + tx.profit_loss, 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                        {profitTable.reduce((acc, tx) => acc + tx.profit_loss, 0).toFixed(2)}
+                    <div className={`text-xl font-black ${totalProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        {totalProfit.toFixed(2)}
                     </div>
                 </div>
                 <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800">
                     <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Win Rate</div>
                     <div className="text-xl font-black text-blue-400">
                         {profitTable.length > 0
-                            ? `${((profitTable.filter(tx => tx.profit_loss > 0).length / profitTable.length) * 100).toFixed(1)}%`
+                            ? `${((profitTable.filter(tx => (tx.profit_loss || 0) > 0).length / profitTable.length) * 100).toFixed(1)}%`
                             : "0%"}
                     </div>
                 </div>
@@ -111,7 +115,7 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
                     <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Average Profit</div>
                     <div className="text-xl font-black">
                         {profitTable.length > 0
-                            ? (profitTable.reduce((acc, tx) => acc + tx.profit_loss, 0) / profitTable.length).toFixed(2)
+                            ? (totalProfit / profitTable.length).toFixed(2)
                             : "0.00"}
                     </div>
                 </div>
@@ -158,19 +162,19 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className={`text-[10px] px-2 py-0 h-5 font-bold whitespace-nowrap ${getContractTypeBadge(tx.contract_type)}`}>
-                                            {tx.contract_type.replace(/_/g, " ")}
+                                            {(tx.contract_type || "UNKNOWN").replace(/_/g, " ")}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right text-xs font-mono text-slate-400">
-                                        {tx.buy_price.toFixed(2)}
+                                        {(tx.buy_price || 0).toFixed(2)}
                                     </TableCell>
                                     <TableCell className="text-right text-xs font-mono text-slate-400">
-                                        {tx.sell_price.toFixed(2)}
+                                        {(tx.sell_price || 0).toFixed(2)}
                                     </TableCell>
-                                    <TableCell className={`text-right font-black ${tx.profit_loss >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                    <TableCell className={`text-right font-black ${(tx.profit_loss || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                                         <div className="flex items-center justify-end gap-1">
-                                            {tx.profit_loss >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                                            {tx.profit_loss.toFixed(2)}
+                                            {(tx.profit_loss || 0) >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                                            {(tx.profit_loss || 0).toFixed(2)}
                                         </div>
                                     </TableCell>
                                 </TableRow>

@@ -64,7 +64,7 @@ export default function AccountPage() {
                             {accountType === "Real" ? (
                                 <ShieldCheck className="h-8 w-8 text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
                             ) : (
-                                <div className="text-[10px] bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20 font-black uppercase tracking-widest">Demo</div>
+                                <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 font-black uppercase tracking-widest text-[10px]">Demo</Badge>
                             )}
                         </h1>
                     </div>

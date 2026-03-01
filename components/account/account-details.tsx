@@ -3,7 +3,7 @@
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { User, Mail, CreditCard, ShieldCheck } from "lucide-react"
+import { User, CreditCard, ShieldCheck } from "lucide-react"
 
 interface AccountDetailsProps {
     theme?: "light" | "dark"
@@ -60,7 +60,7 @@ export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center py-6">
                         <div className="text-4xl font-black tracking-tighter mb-1">
-                            {balance ? `${Number(balance.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "0.00"}
+                            {balance ? `${Number(balance.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "0.00"}
                             <span className="ml-2 text-xl text-slate-500 font-medium">{balance?.currency}</span>
                         </div>
                         <p className="text-slate-400 text-sm">Total Equity</p>
@@ -68,7 +68,7 @@ export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
                         <div className="mt-8 w-full grid grid-cols-2 gap-4">
                             <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 text-center">
                                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">Accounts</div>
-                                <div className="text-lg font-bold">{accounts.length}</div>
+                                <div className="text-lg font-bold">{accounts?.length || 0}</div>
                             </div>
                             <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 text-center">
                                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">Active Trading</div>
@@ -86,12 +86,12 @@ export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-3">
-                        {accounts.map((acc) => (
+                        {accounts?.map((acc) => (
                             <div
                                 key={acc.id}
                                 className={`flex items-center justify-between p-4 rounded-xl border transition-all ${acc.id === activeLoginId
-                                        ? "bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/20"
-                                        : "bg-slate-800/20 border-slate-800 hover:border-slate-700"
+                                    ? "bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/20"
+                                    : "bg-slate-800/20 border-slate-800 hover:border-slate-700"
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
@@ -110,10 +110,10 @@ export function AccountDetails({ theme = "dark" }: AccountDetailsProps) {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-bold">{acc.balance.toFixed(2)} {acc.currency}</div>
+                                    <div className="font-bold">{(acc.balance || 0).toFixed(2)} {acc.currency}</div>
                                 </div>
                             </div>
-                        ))}
+                        )) || <div className="text-center py-8 text-slate-500">No accounts found</div>}
                     </div>
                 </CardContent>
             </Card>

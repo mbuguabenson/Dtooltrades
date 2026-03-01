@@ -1,14 +1,12 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    PieChart, Pie, Cell, AreaChart, Area
 } from "recharts"
 import { BarChart3, TrendingUp, TrendingDown, Target, Zap, ArrowRightLeft } from "lucide-react"
 
@@ -30,50 +28,52 @@ interface AccountAnalyticsProps {
 }
 
 export function AccountAnalytics({ theme = "dark" }: AccountAnalyticsProps) {
-    const { apiClient, isAuthorized, activeLoginId, accountType, accounts, switchAccount } = useDerivAPI()
+    const { apiClient, isAuthorized, accountType, accounts, switchAccount, activeLoginId } = useDerivAPI()
     const [data, setData] = useState<AnalyticsData | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [viewType, setViewType] = useState<"Demo" | "Real">(accountType || "Demo")
 
     const fetchData = useCallback(async () => {
         if (!apiClient || !isAuthorized) return
-
-        // Only fetch if the current authorized account matches the viewed type
-        // (In a more advanced version, we'd handle background auth for the other type)
         if (accountType !== viewType) return
 
         setIsLoading(true)
         try {
             const response = await apiClient.getProfitTable(100)
             if (response && response.transactions) {
-                const txs = response.transactions
-                const wins = txs.filter(t => t.profit_loss > 0)
-                const losses = txs.filter(t => t.profit_loss <= 0)
+                const txs = [...response.transactions]
+                const wins = txs.filter(t => (t.profit_loss || 0) > 0)
+                const losses = txs.filter(t => (t.profit_loss || 0) <= 0)
 
                 let currentEquity = 0
                 const curve = txs.reverse().map((t, i) => {
-                    currentEquity += t.profit_loss
+                    currentEquity += (t.profit_loss || 0)
                     return { name: `T${i + 1}`, value: Number(currentEquity.toFixed(2)) }
                 })
+
+                const totalProfitSum = txs.reduce((acc, t) => acc + (t.profit_loss || 0), 0)
 
                 setData({
                     totalTrades: txs.length,
                     wins: wins.length,
                     losses: losses.length,
                     winRate: txs.length > 0 ? (wins.length / txs.length) * 100 : 0,
-                    totalProfit: txs.reduce((acc, t) => acc + t.profit_loss, 0),
-                    avgProfit: txs.length > 0 ? txs.reduce((acc, t) => acc + t.profit_loss, 0) / txs.length : 0,
-                    maxWin: Math.max(...txs.map(t => t.profit_loss), 0),
-                    maxLoss: Math.min(...txs.map(t => t.profit_loss), 0),
+                    totalProfit: totalProfitSum,
+                    avgProfit: txs.length > 0 ? totalProfitSum / txs.length : 0,
+                    maxWin: Math.max(...txs.map(t => (t.profit_loss || 0)), 0),
+                    maxLoss: Math.min(...txs.map(t => (t.profit_loss || 0)), 0),
                     equityCurve: curve,
                     distribution: [
                         { name: "Wins", value: wins.length, color: "#10b981" },
                         { name: "Losses", value: losses.length, color: "#f43f5e" }
                     ]
                 })
+            } else {
+                setData(null)
             }
         } catch (err) {
             console.error("[v0] Analytics fetch error:", err)
+            setData(null)
         } finally {
             setIsLoading(false)
         }
@@ -197,7 +197,7 @@ export function AccountAnalytics({ theme = "dark" }: AccountAnalyticsProps) {
                                     </div>
                                 </div>
                                 <div className="mt-6 text-center">
-                                    <div className="text-3xl font-black text-blue-400">{data.winRate.toFixed(1)}%</div>
+                                    <div className="text-3xl font-black text-blue-400">{(data.winRate || 0).toFixed(1)}%</div>
                                     <div className="text-[10px] uppercase font-bold text-slate-500 tracking-tighter">Overall Win Rate</div>
                                 </div>
                             </CardContent>
@@ -208,23 +208,23 @@ export function AccountAnalytics({ theme = "dark" }: AccountAnalyticsProps) {
                         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 group hover:border-blue-500/30 transition-all">
                             <Zap className="h-4 w-4 text-yellow-400 mb-2" />
                             <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Max Win</div>
-                            <div className="text-lg font-black text-emerald-400">${data.maxWin.toFixed(2)}</div>
+                            <div className="text-lg font-black text-emerald-400">${(data.maxWin || 0).toFixed(2)}</div>
                         </div>
                         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 group hover:border-blue-500/30 transition-all">
                             <TrendingDown className="h-4 w-4 text-rose-400 mb-2" />
                             <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Max Loss</div>
-                            <div className="text-lg font-black text-rose-400">${data.maxLoss.toFixed(2)}</div>
+                            <div className="text-lg font-black text-rose-400">${(data.maxLoss || 0).toFixed(2)}</div>
                         </div>
                         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 group hover:border-blue-500/30 transition-all">
                             <BarChart3 className="h-4 w-4 text-purple-400 mb-2" />
                             <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Avg Profit</div>
-                            <div className="text-lg font-black text-blue-400">${data.avgProfit.toFixed(2)}</div>
+                            <div className="text-lg font-black text-blue-400">${(data.avgProfit || 0).toFixed(2)}</div>
                         </div>
                         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 group hover:border-blue-500/30 transition-all">
                             <TrendingUp className="h-4 w-4 text-blue-400 mb-2" />
                             <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Total Net</div>
-                            <div className={`text-lg font-black ${data.totalProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                ${data.totalProfit.toFixed(2)}
+                            <div className={`text-lg font-black ${(data.totalProfit || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                ${(data.totalProfit || 0).toFixed(2)}
                             </div>
                         </div>
                     </div>
