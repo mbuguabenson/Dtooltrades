@@ -288,7 +288,11 @@ export class DerivWebSocketManager {
           } else if (message.error?.code === 'AlreadySubscribed') {
             console.log(`[v0] Confirmed AlreadySubscribed via late response for req_id ${req_id}`);
           } else {
-            console.warn(`[v0] Received response for unknown/timed-out req_id ${req_id}`);
+            // Suppress warnings for early initialization requests (e.g., pings, time checks)
+            // that commonly arrive slightly after their timeout.
+            if (req_id > 1010) {
+              console.warn(`[v0] Received response for unknown/timed-out req_id ${req_id}`);
+            }
           }
         }
       } else if (message.subscription) {

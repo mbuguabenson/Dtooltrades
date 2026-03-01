@@ -463,7 +463,7 @@ export function verifyAdmin(username: string, password: string): any {
   if (!db) {
     // Vercel / Production Bypass Fallback
     const fallbackUsername = process.env.ADMIN_USERNAME || 'admin'
-    const fallbackPassword = process.env.ADMIN_PASSWORD || 'admin'
+    const fallbackPassword = process.env.ADMIN_PASSWORD || 'Dtool@2026'
 
     if (username === fallbackUsername && password === fallbackPassword) {
       return { id: 1, username: fallbackUsername, role: 'superadmin' }
