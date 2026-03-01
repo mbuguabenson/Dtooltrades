@@ -40,7 +40,22 @@ export function StatementList({ theme = "dark" }: StatementListProps) {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await apiClient.getStatement(100) // Increased to 100 for better filtering scope
+            const params: any = { limit: 100 }
+
+            if (durationFilter !== "all") {
+                const now = Math.floor(Date.now() / 1000)
+                const durations: Record<string, number> = {
+                    "24h": 24 * 60 * 60,
+                    "7d": 7 * 24 * 60 * 60,
+                    "30d": 30 * 24 * 60 * 60
+                }
+                const secs = durations[durationFilter]
+                if (secs) {
+                    params.date_from = now - secs
+                }
+            }
+
+            const response = await apiClient.getStatement(params.limit, 0, params.date_from, params.date_to)
             if (response && response.transactions) {
                 setStatement(response.transactions)
             } else {
@@ -52,7 +67,7 @@ export function StatementList({ theme = "dark" }: StatementListProps) {
         } finally {
             setIsLoading(false)
         }
-    }, [apiClient, isAuthorized])
+    }, [apiClient, isAuthorized, durationFilter])
 
     useEffect(() => {
         fetchStatement()
@@ -64,27 +79,15 @@ export function StatementList({ theme = "dark" }: StatementListProps) {
     }
 
     const filteredStatement = useMemo(() => {
-        const now = Math.floor(Date.now() / 1000)
         let filtered = [...statement]
 
         // Type filtering
         if (typeFilter !== "all") {
-            filtered = filtered.filter(tx => tx.action_type.toLowerCase() === typeFilter.toLowerCase())
-        }
-
-        // Duration filtering
-        if (durationFilter !== "all") {
-            const durationSecs = {
-                "24h": 24 * 60 * 60,
-                "7d": 7 * 24 * 60 * 60,
-                "30d": 30 * 24 * 60 * 60
-            }[durationFilter] || 0
-
-            filtered = filtered.filter(tx => tx.transaction_time >= (now - durationSecs))
+            filtered = filtered.filter(tx => (tx.action_type || "").toLowerCase() === typeFilter.toLowerCase())
         }
 
         return filtered
-    }, [statement, typeFilter, durationFilter])
+    }, [statement, typeFilter])
 
     const totals = useMemo(() => {
         const credit = filteredStatement.filter(tx => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0)

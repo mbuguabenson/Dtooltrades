@@ -64,7 +64,10 @@ export function ProfitReport({ theme = "dark" }: ProfitReportProps) {
                     "7d": 7 * 24 * 60 * 60,
                     "30d": 30 * 24 * 60 * 60
                 }
-                params.date_from = now - (durations[durationFilter] || 0)
+                const durationSecs = durations[durationFilter]
+                if (durationSecs) {
+                    params.date_from = now - durationSecs
+                }
             }
 
             const response = await apiClient.getProfitTable(params.limit, 0, params.date_from, params.date_to)
