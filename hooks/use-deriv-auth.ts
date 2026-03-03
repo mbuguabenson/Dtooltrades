@@ -236,6 +236,8 @@ export function useDerivAuth() {
     localStorage.setItem("deriv_api_token", targetToken)
     localStorage.setItem("active_login_id", loginId)
     setToken(targetToken)
+    balanceSubscribedRef.current = false
+    setBalanceSubscribed(false)
     manager.send({ authorize: targetToken })
   }
 

@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { upsertLiveUser, setUserOffline } from "@/lib/user-store"
+import { supabaseAdmin } from "@/lib/supabase"
 
-// Simple free IP geo-lookup (no key needed)
 async function getGeoFromIP(ip: string): Promise<{ country: string; city: string }> {
     if (!ip || ip === "unknown" || ip === "::1" || ip.startsWith("127.") || ip.startsWith("192.168.") || ip.startsWith("10.")) {
         return { country: "Local", city: "Localhost" }
@@ -32,21 +31,13 @@ export async function POST(request: NextRequest) {
         const now = Math.floor(Date.now() / 1000)
 
         if (status === "offline") {
-            setUserOffline(loginId)
+            await supabaseAdmin.from("users").update({ status: "offline", lastSeen: now }).eq("loginId", loginId)
         } else {
-            // Extract real IP (handles Vercel/Cloudflare proxies)
-            const ip =
-                request.headers.get("x-real-ip") ||
-                request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-                request.headers.get("cf-connecting-ip") ||
-                "unknown"
-
+            const ip = request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("cf-connecting-ip") || "unknown"
             const userAgent = request.headers.get("user-agent") || ""
-
-            // Geo-lookup (async, best-effort — don't block heartbeat on error)
             const geo = await getGeoFromIP(ip)
 
-            upsertLiveUser({
+            await supabaseAdmin.from("users").upsert({
                 loginId,
                 name: name || "Deriv User",
                 type: type as "Real" | "Demo",
@@ -57,10 +48,8 @@ export async function POST(request: NextRequest) {
                 ip,
                 country: geo.country,
                 city: geo.city,
-                userAgent,
-                isNew: false, // computed in upsertLiveUser
-                pageViews: 0, // incremented in upsertLiveUser
-            })
+                userAgent
+            }, { onConflict: "loginId" })
         }
 
         return NextResponse.json({ success: true })

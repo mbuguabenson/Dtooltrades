@@ -1,10 +1,19 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { tradeStore } from "@/lib/user-store"
+import { NextResponse } from "next/server"
+import { supabaseAdmin } from "@/lib/supabase"
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
-        const trades = tradeStore().slice(-50).reverse() // Last 50 trades
-        return NextResponse.json({ trades })
+        const { data: trades, error } = await supabaseAdmin
+            .from("trades")
+            .select("id, loginId, stake, status, createdAt")
+            .order("createdAt", { ascending: false })
+            .limit(50)
+
+        if (error) throw error
+
+        return NextResponse.json({ trades: trades || [] })
     } catch (error) {
         console.error("[Admin API] Error fetching trades:", error)
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })

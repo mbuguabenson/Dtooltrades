@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { recordTrade, getTradesByFilter } from "@/lib/user-store"
+import { supabaseAdmin } from "@/lib/supabase"
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
     try {
@@ -7,16 +9,27 @@ export async function POST(request: NextRequest) {
         if (!loginId || !strategy) {
             return NextResponse.json({ error: "loginId and strategy required" }, { status: 400 })
         }
-        recordTrade({
+
+        const { error } = await supabaseAdmin.from("trades").insert({
             loginId,
-            strategy,
+            contractType: strategy,
             market: market || "Unknown",
-            profit: Number(profit) || 0,
+            profitLoss: Number(profit) || 0,
             stake: Number(stake) || 0,
-            ts: Math.floor(Date.now() / 1000),
+            createdAt: Math.floor(Date.now() / 1000),
+            status: "closed",
+            entryPrice: 0,
+            entryTime: 0
         })
+
+        if (error) {
+            console.error("[Trade API] Supabase Insert Error:", error)
+            throw error
+        }
+
         return NextResponse.json({ success: true })
     } catch (error) {
+        console.error("[Trade API] Report error:", error)
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }
@@ -35,29 +48,45 @@ export async function GET(request: NextRequest) {
     }
     const since = periodMap[period] ?? periodMap.daily
 
-    const trades = getTradesByFilter(since)
+    try {
+        const { data: trades, error } = await supabaseAdmin
+            .from("trades")
+            .select("contractType, profitLoss, status, createdAt")
+            .gte("createdAt", since)
+            .eq("status", "closed")
 
-    // Group by strategy
-    const byStrategy: Record<string, { wins: number; losses: number; totalProfit: number; totalLoss: number; totalTrades: number }> = {}
-    trades.forEach(t => {
-        const s = t.strategy || "Unknown"
-        if (!byStrategy[s]) byStrategy[s] = { wins: 0, losses: 0, totalProfit: 0, totalLoss: 0, totalTrades: 0 }
-        byStrategy[s].totalTrades++
-        if (t.profit >= 0) {
-            byStrategy[s].wins++
-            byStrategy[s].totalProfit += t.profit
-        } else {
-            byStrategy[s].losses++
-            byStrategy[s].totalLoss += Math.abs(t.profit)
-        }
-    })
+        if (error) throw error
 
-    const strategies = Object.entries(byStrategy).map(([name, data]) => ({
-        name,
-        ...data,
-        winRate: data.totalTrades > 0 ? ((data.wins / data.totalTrades) * 100).toFixed(1) : "0.0",
-        netPnl: (data.totalProfit - data.totalLoss).toFixed(2),
-    }))
+        const allTrades = trades || []
 
-    return NextResponse.json({ strategies, period, totalTrades: trades.length })
+        // Group by strategy
+        const byStrategy: Record<string, { wins: number; losses: number; totalProfit: number; totalLoss: number; totalTrades: number }> = {}
+        allTrades.forEach(t => {
+            const s = t.contractType || "Unknown"
+            if (!byStrategy[s]) byStrategy[s] = { wins: 0, losses: 0, totalProfit: 0, totalLoss: 0, totalTrades: 0 }
+
+            byStrategy[s].totalTrades++
+            const profit = t.profitLoss || 0
+
+            if (profit >= 0) {
+                byStrategy[s].wins++
+                byStrategy[s].totalProfit += profit
+            } else {
+                byStrategy[s].losses++
+                byStrategy[s].totalLoss += Math.abs(profit)
+            }
+        })
+
+        const strategies = Object.entries(byStrategy).map(([name, data]) => ({
+            name,
+            ...data,
+            winRate: data.totalTrades > 0 ? ((data.wins / data.totalTrades) * 100).toFixed(1) : "0.0",
+            netPnl: (data.totalProfit - data.totalLoss).toFixed(2),
+        }))
+
+        return NextResponse.json({ strategies, period, totalTrades: allTrades.length })
+    } catch (error) {
+        console.error("[Trade API] Get error:", error)
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    }
 }

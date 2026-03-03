@@ -16,20 +16,21 @@ export function HeartbeatManager() {
             return
         }
 
-        const sendHeartbeat = async () => {
+        const sendHeartbeat = async (currentStatus: string = "online") => {
             try {
-                const activeAccount = accounts.find(a => a.id === activeLoginId)
+                // Don't sync if balance is not yet loaded to avoid showing $0 in admin
+                if (currentStatus === "online" && (!balance || balance.amount === undefined)) return
 
                 await fetch("/api/user/heartbeat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         loginId: activeLoginId,
-                        name: "Deriv User", // Deriv API doesn't always provide name in authorize
+                        name: "Deriv User",
                         type: accountType,
                         currency: balance?.currency || "USD",
                         balance: balance?.amount || 0,
-                        status: "online"
+                        status: currentStatus
                     }),
                 })
             } catch (error) {
@@ -37,19 +38,19 @@ export function HeartbeatManager() {
             }
         }
 
-        // Send immediately on login
-        sendHeartbeat()
+        // Sync immediately on login or account switch
+        sendHeartbeat("online")
 
-        // Then every 30 seconds
-        intervalRef.current = setInterval(sendHeartbeat, 30000)
+        // Then sync every 30 seconds (steady pulse)
+        if (intervalRef.current) clearInterval(intervalRef.current)
+        intervalRef.current = setInterval(() => sendHeartbeat("online"), 30000)
 
-        // Send offline status on unmount/logout
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current)
                 intervalRef.current = null
             }
-
+            // Send offline status on logout/unmount
             if (activeLoginId) {
                 fetch("/api/user/heartbeat", {
                     method: "POST",
@@ -61,7 +62,7 @@ export function HeartbeatManager() {
                 }).catch(() => { })
             }
         }
-    }, [isLoggedIn, activeLoginId, balance, accountType, accounts])
+    }, [isLoggedIn, activeLoginId]) // Only re-run when session identity changes, not on every balance tick
 
     return null
 }
