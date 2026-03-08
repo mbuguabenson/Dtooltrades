@@ -114,6 +114,11 @@ export default function AccountPage() {
                                 <span className="hidden sm:inline">Strategy Analytics</span>
                                 <span className="sm:hidden">Analytics</span>
                             </TabsTrigger>
+                            <TabsTrigger value="security" className="rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 font-bold text-xs gap-2 transition-all">
+                                <ShieldCheck className="h-4 w-4" />
+                                <span className="hidden sm:inline">Security Hub</span>
+                                <span className="sm:hidden">Security</span>
+                            </TabsTrigger>
                         </TabsList>
                     </div>
 
@@ -136,6 +141,28 @@ export default function AccountPage() {
 
                         <TabsContent value="analytics" className="mt-0 focus-visible:outline-none">
                             <AccountAnalytics theme="dark" />
+                        </TabsContent>
+
+                        <TabsContent value="security" className="mt-0 focus-visible:outline-none">
+                            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-12 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500">
+                                <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20">
+                                    <ShieldCheck className="h-10 w-10 text-blue-500" />
+                                </div>
+                                <h3 className="text-2xl font-black text-white mb-2">Security Hub</h3>
+                                <p className="text-gray-500 max-w-sm mb-8">Manage your account security, two-factor authentication, and active sessions in one secure location.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl text-left">
+                                    <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all group">
+                                        <p className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-1">Coming Soon</p>
+                                        <h4 className="text-lg font-bold text-white mb-1">Two-Factor Auth</h4>
+                                        <p className="text-xs text-gray-600">Add an extra layer of protection to your trading account.</p>
+                                    </div>
+                                    <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all group">
+                                        <p className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Coming Soon</p>
+                                        <h4 className="text-lg font-bold text-white mb-1">Session Manager</h4>
+                                        <p className="text-xs text-gray-600">View and manage all your active platform sessions and devices.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </TabsContent>
                     </div>
                 </Tabs>

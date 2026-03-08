@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { Search, Wifi, WifiOff, Globe, TrendingUp, Layers } from "lucide-react"
+import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
 
 interface Symbol {
     symbol: string
@@ -32,23 +33,36 @@ export default function AdminMarketPage() {
     const [markets, setMarkets] = useState<string[]>([])
 
     useEffect(() => {
-        const ws = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1")
-        ws.onopen = () => {
-            ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }))
-        }
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data)
-            if (data.active_symbols) {
-                const syms: Symbol[] = data.active_symbols
-                setSymbols(syms)
-                const mNames = [...new Set(syms.map((s: Symbol) => s.market))] as string[]
-                setMarkets(mNames)
+        const manager = DerivWebSocketManager.getInstance()
+        let isCancelled = false
+
+        const init = async () => {
+            try {
+                await manager.connect()
+                if (isCancelled) return
+
+                const reqId = manager.getNextReqId()
+                const handleActiveSymbols = (data: any) => {
+                    if (data.req_id === reqId && data.active_symbols) {
+                        const syms: Symbol[] = data.active_symbols
+                        setSymbols(syms)
+                        const mNames = [...new Set(syms.map((s: Symbol) => s.market))] as string[]
+                        setMarkets(mNames)
+                        setLoading(false)
+                        manager.off("active_symbols", handleActiveSymbols)
+                    }
+                }
+
+                manager.on("active_symbols", handleActiveSymbols)
+                manager.send({ active_symbols: "brief", product_type: "basic", req_id: reqId })
+            } catch (err) {
+                console.error("Failed to load symbols:", err)
                 setLoading(false)
-                ws.close()
             }
         }
-        ws.onerror = () => setLoading(false)
-        return () => ws.close()
+
+        init()
+        return () => { isCancelled = true }
     }, [])
 
     const filtered = symbols.filter(s => {

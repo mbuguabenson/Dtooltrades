@@ -17,7 +17,7 @@ interface ConnectionLog {
   timestamp: Date
 }
 
-import { DERIV_CONFIG } from "./deriv-config"
+import { DERIV_CONFIG, DERIV_API } from "./deriv-config"
 
 // ... imports
 
@@ -50,7 +50,7 @@ export class DerivWebSocketManager {
   private connectionLogs: ConnectionLog[] = []
   private maxLogs = 100
   private readonly appId = DERIV_CONFIG.APP_ID
-  private readonly wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${DERIV_CONFIG.APP_ID}`
+  private readonly wsUrl = `${DERIV_API.WEBSOCKET}?app_id=${DERIV_CONFIG.APP_ID}`
 
   private tickCallbacks: Map<string, Set<(tick: TickData) => void>> = new Map()
 
@@ -195,10 +195,10 @@ export class DerivWebSocketManager {
     this.heartbeatInterval = setInterval(() => {
       const timeSinceLastMessage = Date.now() - this.lastMessageTime
 
-      // Increase threshold to 45s (3x ping interval) to allow for network jitter
-      if (timeSinceLastMessage > 45000) {
+      // Increase threshold to 60s (2x ping interval) to allow for network jitter
+      if (timeSinceLastMessage > 60000) {
         console.warn(`[v0] No messages received for ${Math.round(timeSinceLastMessage / 1000)}s, reconnecting...`)
-        this.log("warning", "No messages for 45s, reconnecting")
+        this.log("warning", "No messages for 60s, reconnecting")
         this.ws?.close()
         return
       }
@@ -206,13 +206,14 @@ export class DerivWebSocketManager {
       if (this.ws?.readyState === WebSocket.OPEN) {
         try {
           // Send ping to keep connection alive and update lastMessageTime on response
+          // Using official ping: 1 pattern
           this.ws.send(JSON.stringify({ ping: 1, req_id: this.getNextReqId() }))
         } catch (error) {
           console.error("[v0] Heartbeat ping failed:", error)
           this.log("error", `Heartbeat ping failed: ${error}`)
         }
       }
-    }, 15000)
+    }, 30000) // 30s heartbeat interval is more standard
   }
 
   private stopHeartbeat() {

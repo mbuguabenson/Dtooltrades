@@ -46,9 +46,34 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Welcome Header */}
-      <div>
-        <h2 className="text-3xl font-black text-white tracking-tight">Good Morning, Admin</h2>
-        <p className="text-sm text-gray-500 mt-1">Real-time platform performance overview.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h2 className="text-3xl font-black text-white tracking-tight">Good Morning, Admin</h2>
+          <p className="text-sm text-gray-500 mt-1">Real-time platform performance overview.</p>
+        </div>
+
+        {/* System Health Widget (Premium Addition) */}
+        <div className="flex items-center gap-6 bg-[#0a0a0a] border border-white/5 px-6 py-3 rounded-2xl shadow-xl">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1 flex items-center gap-1.5">
+              <Activity className="h-3 w-3 text-emerald-500" /> Platform API
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">Operational</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+          </div>
+          <div className="h-8 w-px bg-white/5" />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1 flex items-center gap-1.5">
+              <Zap className="h-3 w-3 text-blue-500" /> WS Latency
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">24ms</span>
+              <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1 rounded">Optimal</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}

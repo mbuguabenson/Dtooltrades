@@ -127,6 +127,21 @@ export interface ProfitTableResponse {
   transactions: ProfitTableTransaction[]
 }
 
+export interface PortfolioContract {
+  contract_id: number
+  contract_type: string
+  currency: string
+  buy_price: number
+  payout: number
+  symbol?: string
+  longcode?: string
+  purchase_time?: number
+}
+
+export interface PortfolioResponse {
+  contracts: PortfolioContract[]
+}
+
 import { DerivWebSocketManager } from "./deriv-websocket-manager"
 
 export class DerivAPIClient {
@@ -420,6 +435,27 @@ export class DerivAPIClient {
       console.error(`[v0] Failed to subscribe to ${symbol}:`, errorDetail)
       throw error
     }
+  }
+
+  async getPortfolio(): Promise<PortfolioResponse> {
+    const response = await this.send({ portfolio: 1 })
+    if (response.error) {
+      throw new Error(response.error.message || "Portfolio fetch failed")
+    }
+    return response.portfolio
+  }
+
+  async subscribePortfolio(callback: (portfolio: PortfolioResponse) => void): Promise<string> {
+    const response = await this.send({ portfolio: 1, subscribe: 1 })
+    const subscriptionId = response.subscription.id
+
+    this.subscriptions.set(subscriptionId, (data) => {
+      if (data.portfolio) {
+        callback(data.portfolio)
+      }
+    })
+
+    return subscriptionId
   }
 
   private async clearZombieSubscriptions(symbol: string): Promise<void> {

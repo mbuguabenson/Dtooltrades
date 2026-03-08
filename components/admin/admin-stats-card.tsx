@@ -30,16 +30,17 @@ export function AdminStatsCard({ label, value, subValue, icon: Icon, trend, colo
             {/* Background Decor */}
             <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-5 group-hover:opacity-10 transition-opacity bg-gradient-to-br ${colorMap[color].split(' ').filter(c => c.startsWith('from-') || c.startsWith('to-')).join(' ')}`} />
 
-            <div className="flex justify-between items-start mb-4 relative z-10 transition-transform duration-300 group-hover:scale-105">
+            <div className="flex justify-between items-start mb-4 relative z-10 transition-transform duration-300 group-hover:scale-[1.02]">
                 <div>
                     <p className="text-xs font-bold tracking-widest text-gray-500 uppercase mb-1">{label}</p>
-                    <h3 className="text-2xl font-black text-white tracking-tight">{value}</h3>
+                    <h3 className="text-3xl font-black text-white tracking-tighter tabular-nums group-hover:text-blue-400 transition-colors duration-500">{value}</h3>
                     {subValue && (
-                        <p className="text-[10px] text-gray-400 mt-1 font-mono uppercase tracking-widest">{subValue}</p>
+                        <p className="text-[10px] text-gray-400 mt-1 font-mono uppercase tracking-[0.15em] opacity-80">{subValue}</p>
                     )}
                 </div>
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${colorMap[color].split(' ').filter(c => c.startsWith('from-') || c.startsWith('to-')).join(' ')} shadow-lg`}>
-                    <Icon className="h-5 w-5 text-white" />
+                <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${colorMap[color].split(' ').filter(c => c.startsWith('from-') || c.startsWith('to-')).join(' ')} shadow-xl relative group-hover:rotate-12 transition-all duration-500`}>
+                    <Icon className="h-6 w-6 text-white" />
+                    <div className="absolute inset-0 rounded-2xl bg-white/20 animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
                 </div>
             </div>
 
