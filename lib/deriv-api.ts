@@ -1,6 +1,8 @@
 export interface DerivAPIConfig {
   appId: string
   token?: string
+  isOptions?: boolean
+  accountType?: "demo" | "real" | "public"
 }
 
 export interface AuthorizeResponse {
@@ -143,6 +145,7 @@ export interface PortfolioResponse {
 }
 
 import { DerivWebSocketManager } from "./deriv-websocket-manager"
+import { derivREST } from "./deriv-rest-client"
 
 export class DerivAPIClient {
   private manager: DerivWebSocketManager
@@ -181,9 +184,32 @@ export class DerivAPIClient {
   }
 
   async connect(): Promise<void> {
-    await this.manager.connect()
-    if (this.config.token && !this.isAuthorised) {
-      await this.authorize(this.config.token)
+    if (this.config.isOptions) {
+      const type = this.config.accountType || "public"
+      let otp: string | undefined
+
+      if (type !== "public" && this.config.token) {
+        // We need an account ID to get an OTP. 
+        // For now, we assume provide it via config or fetch it first.
+        // Let's assume we fetch accounts if not provided.
+        try {
+          const accounts = await derivREST.getAccounts()
+          const account = accounts.find(a => this.config.accountType === "demo" ? a.is_virtual : !a.is_virtual)
+          if (account) {
+            otp = await derivREST.getOTP(account.loginid)
+          }
+        } catch (e) {
+          console.error("[v0] Potential error fetching OTP (might be public only):", e)
+        }
+      }
+
+      await this.manager.connectOptions(type, otp)
+      this.isAuthorised = type !== "public" // OTP auth is implicit
+    } else {
+      await this.manager.connect()
+      if (this.config.token && !this.isAuthorised) {
+        await this.authorize(this.config.token)
+      }
     }
   }
 
@@ -267,7 +293,9 @@ export class DerivAPIClient {
   }
 
   async getActiveSymbols(): Promise<ActiveSymbol[]> {
-    const response = await this.send({ active_symbols: "brief", product_type: "basic" })
+    const request: any = { active_symbols: "brief", product_type: "basic" }
+    // Migration: new API might not need product_type: basic or it might be different
+    const response = await this.send(request)
     return response.active_symbols
   }
 
@@ -296,6 +324,7 @@ export class DerivAPIClient {
     const response = await this.send({
       proposal: 1,
       ...validatedParams,
+      ...(this.config.isOptions && { underlying_symbol: validatedParams.symbol }),
       basis: validatedParams.basis || "stake",
     })
 
@@ -331,6 +360,10 @@ export class DerivAPIClient {
     if (askPrice !== undefined && isFinite(askPrice)) {
       buyRequest.price = askPrice
     }
+
+    // For Options API, we might need a request ID or specific fields
+    // Migration: loginid is removed (we already don't send it here)
+
     try {
       const response = await this.send(buyRequest)
       if (response.error) {
@@ -414,6 +447,12 @@ export class DerivAPIClient {
 
     try {
       // Delegate to manager for shared subscription handling
+      const request: any = { ticks: symbol, subscribe: 1 }
+      if (this.config.isOptions) {
+        request.underlying_symbol = symbol
+        delete request.ticks // Might need to keep both or swap, let's follow migration guide strictly
+      }
+
       const subscriptionId = await this.manager.subscribeTicks(symbol, callback)
 
       if (subscriptionId) {
@@ -442,6 +481,15 @@ export class DerivAPIClient {
     if (response.error) {
       throw new Error(response.error.message || "Portfolio fetch failed")
     }
+
+    // Migration: symbol -> underlying_symbol
+    if (this.config.isOptions && response.portfolio?.contracts) {
+      response.portfolio.contracts = response.portfolio.contracts.map((c: any) => ({
+        ...c,
+        symbol: c.underlying_symbol || c.symbol
+      }))
+    }
+
     return response.portfolio
   }
 

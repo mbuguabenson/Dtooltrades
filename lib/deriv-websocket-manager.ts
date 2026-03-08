@@ -50,7 +50,7 @@ export class DerivWebSocketManager {
   private connectionLogs: ConnectionLog[] = []
   private maxLogs = 100
   private readonly appId = DERIV_CONFIG.APP_ID
-  private readonly wsUrl = `${DERIV_API.WEBSOCKET}?app_id=${DERIV_CONFIG.APP_ID}`
+  private currentWsUrl: string = `${DERIV_API.WEBSOCKET}?app_id=${DERIV_CONFIG.APP_ID}`
 
   private tickCallbacks: Map<string, Set<(tick: TickData) => void>> = new Map()
 
@@ -63,16 +63,26 @@ export class DerivWebSocketManager {
     return DerivWebSocketManager.instance
   }
 
-  public async connect(): Promise<void> {
-    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
-      if (this.ws.readyState === WebSocket.OPEN) {
-        this.log("info", "WebSocket already connected")
+  public async connect(url?: string, force = false): Promise<void> {
+    const targetUrl = url || this.currentWsUrl
+
+    if (!force && this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      if (this.ws.readyState === WebSocket.OPEN && this.ws.url === targetUrl) {
+        this.log("info", "WebSocket already connected to target URL")
         return Promise.resolve()
       }
-      if (this.connectionPromise) {
+      if (this.connectionPromise && this.ws.url === targetUrl) {
         return this.connectionPromise
       }
+
+      // If we are connecting to a DIFFERENT URL, we must close the current one
+      if (this.ws.url !== targetUrl) {
+        this.log("info", `Switching connection from ${this.ws.url} to ${targetUrl}`)
+        this.ws.close()
+      }
     }
+
+    this.currentWsUrl = targetUrl
 
     if (this.connectionPromise) {
       return this.connectionPromise
@@ -80,11 +90,11 @@ export class DerivWebSocketManager {
 
     this.connectionPromise = new Promise((resolve, reject) => {
       try {
-        console.log("[v0] Connecting to Deriv WebSocket:", this.wsUrl)
-        this.log("info", "Initiating WebSocket connection")
+        console.log("[v0] Connecting to Deriv WebSocket:", this.currentWsUrl)
+        this.log("info", `Initiating WebSocket connection to ${this.currentWsUrl}`)
         this.notifyConnectionStatus("reconnecting")
 
-        this.ws = new WebSocket(this.wsUrl)
+        this.ws = new WebSocket(this.currentWsUrl)
 
         const connectionTimeout = setTimeout(() => {
           if (this.ws?.readyState !== WebSocket.OPEN) {
@@ -745,6 +755,12 @@ export class DerivWebSocketManager {
         instance.unsubscribe(subscriptionId, callback)
       }
     }
+  }
+
+  public async connectOptions(type: "demo" | "real" | "public", otp?: string): Promise<void> {
+    const baseUrl = DERIV_API.OPTIONS_WS[type.toUpperCase() as keyof typeof DERIV_API.OPTIONS_WS]
+    const url = otp ? `${baseUrl}?otp=${otp}` : baseUrl
+    return this.connect(url, true)
   }
 }
 

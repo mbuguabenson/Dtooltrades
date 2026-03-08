@@ -66,7 +66,15 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
           globalAPIClient.disconnect()
         }
 
-        globalAPIClient = new DerivAPIClient({ appId: DERIV_APP_ID.toString(), token })
+        const currentAccount = auth.accounts.find(a => a.id === auth.activeLoginId)
+        const isOptionsAccount = currentAccount?.id.startsWith("CR") || currentAccount?.id.startsWith("VRTC") // Simplified logic for detection
+
+        globalAPIClient = new DerivAPIClient({
+          appId: DERIV_APP_ID.toString(),
+          token,
+          isOptions: isOptionsAccount,
+          accountType: auth.accountType?.toLowerCase() as any
+        })
         globalAPIClient.setErrorCallback((err) => {
           const errorMessage = err?.message || (typeof err === 'string' ? err : 'Unknown API Error');
           setError(errorMessage)

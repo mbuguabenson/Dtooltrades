@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
+import { DERIV_CONFIG, DERIV_API } from "@/lib/deriv-config"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -748,7 +749,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
               </p>
             </div>
             <Button
-              onClick={() => (window as any).location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${process.env.NEXT_PUBLIC_DERIV_APP_ID || "65416"}&l=en&brand=deriv`}
+              onClick={() => (window as any).location.href = `${DERIV_API.OAUTH}?app_id=${DERIV_CONFIG.APP_ID}&l=en&brand=deriv`}
               className="bg-red-500 hover:bg-red-600 text-white h-8 sm:h-10 text-[10px] sm:text-sm"
             >
               Login to Deriv

@@ -4,7 +4,7 @@ import { z } from "zod"
 const configSchema = z.object({
   DERIV_APP_ID: z.string().default("32EtOUHbr4zUOcHKwjgwj"),
   DERIV_API_TOKEN: z.string(),
-  WS_URL: z.string().default("wss://ws.derivws.com/websockets/v3"),
+  WS_URL: z.string().default("wss://ws.binaryws.com/websockets/v3"),
   EXECUTION_MODE: z.enum(["demo", "live"]).default("demo"),
   MARKETS: z.string().default("R_100,R_75,R_50,R_25,R_10"),
   BASE_STAKE_USD: z.coerce.number().default(1),

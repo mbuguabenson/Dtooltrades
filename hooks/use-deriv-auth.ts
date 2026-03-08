@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
-import { DERIV_CONFIG } from "@/lib/deriv-config"
+import { DERIV_CONFIG, DERIV_API } from "@/lib/deriv-config"
 
 interface Balance {
   amount: number
@@ -202,7 +202,7 @@ export function useDerivAuth() {
   const loginWithDeriv = () => {
     if (typeof window === "undefined") return
     const redirectUri = encodeURIComponent(`${window.location.origin}`)
-    const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=${DERIV_CONFIG.APP_ID}&redirect_uri=${redirectUri}`
+    const oauthUrl = `${DERIV_API.OAUTH}?app_id=${DERIV_CONFIG.APP_ID}&redirect_uri=${redirectUri}`
     window.location.href = oauthUrl
   }
 
