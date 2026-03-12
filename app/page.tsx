@@ -153,7 +153,7 @@ export default function DerivAnalysisApp() {
               } backdrop-blur-xl`}
           >
             <div className="mx-auto w-full px-2 sm:px-6">
-              <div className="flex flex-wrap xl:flex-nowrap items-center py-1.5 xl:h-14 gap-2 w-full justify-between">
+              <div className="flex flex-wrap 2xl:flex-nowrap items-center py-1.5 2xl:h-14 gap-2 w-full justify-between">
 
                 {/* Brand */}
                 <div className="flex items-center shrink-0">
@@ -164,7 +164,7 @@ export default function DerivAnalysisApp() {
                 </div>
 
                 {/* Centralized Market Selector + Live Price */}
-                <div className="order-last xl:order-none w-full xl:w-auto mt-2 xl:mt-0 flex-1 flex justify-center items-center min-w-0 max-w-2xl px-1 sm:px-2 gap-2">
+                <div className="order-last 2xl:order-none w-full 2xl:w-auto mt-2 2xl:mt-0 flex-1 flex justify-center items-center min-w-fit px-1 sm:px-2 gap-2">
                   {/* Market Selector */}
                   {availableSymbols.length > 0 && (
                     <div className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-xl border transition-all ${theme === "dark"
