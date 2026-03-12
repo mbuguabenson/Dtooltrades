@@ -85,6 +85,7 @@ export interface TickData {
 export interface TickHistoryResponse {
   prices: number[]
   times: number[]
+  pip_size?: number
 }
 
 export interface StatementTransaction {
@@ -239,12 +240,15 @@ export class DerivAPIClient {
     if (response.subscription) {
       const callback = this.subscriptions.get(response.subscription.id)
       if (callback) {
-        callback(response)
+        // Skip tick type as it's handled centrally via manager and registered explicitly
+        if (response.msg_type !== "tick") {
+          callback(response)
+        }
       }
     }
   }
 
-  private send(request: any): Promise<any> {
+  public async send(request: any): Promise<any> {
     return new Promise((resolve, reject) => {
       const req_id = this.manager.getNextReqId()
       this.pendingRequests.set(req_id, { resolve, reject })
@@ -293,10 +297,14 @@ export class DerivAPIClient {
   }
 
   async getActiveSymbols(): Promise<ActiveSymbol[]> {
-    const request: any = { active_symbols: "brief", product_type: "basic" }
-    // Migration: new API might not need product_type: basic or it might be different
+    const request: any = { active_symbols: "brief" }
     const response = await this.send(request)
-    return response.active_symbols
+    return response.active_symbols.map((s: any) => ({
+      symbol: s.underlying_symbol || s.symbol,
+      display_name: s.underlying_symbol_name || s.display_name,
+      market: s.market,
+      market_display_name: s.market_display_name
+    }))
   }
 
   async getContractsFor(symbol: string): Promise<ContractType[]> {
@@ -321,12 +329,19 @@ export class DerivAPIClient {
       throw new Error("Invalid symbol: Symbol cannot be empty")
     }
 
-    const response = await this.send({
+    // Latest Deriv API Best Practice: Use underlying_symbol instead of symbol for proposal
+    const proposalReq: any = {
       proposal: 1,
       ...validatedParams,
-      ...(this.config.isOptions && { underlying_symbol: validatedParams.symbol }),
+      underlying_symbol: validatedParams.symbol,
       basis: validatedParams.basis || "stake",
-    })
+    }
+
+    // Remove legacy 'symbol' if underlying_symbol is preferred, 
+    // though keeping it usually doesn't hurt for v3 compatibility.
+    delete proposalReq.symbol
+
+    const response = await this.send(proposalReq)
 
     if (response.error) {
       console.error("[v0] Proposal error:", response.error)
@@ -339,6 +354,7 @@ export class DerivAPIClient {
   async getTickHistory(symbol: string, count = 1000): Promise<TickHistoryResponse> {
     const response = await this.send({
       ticks_history: symbol,
+      underlying_symbol: symbol,
       count: count,
       end: "latest",
       style: "ticks",
@@ -372,6 +388,23 @@ export class DerivAPIClient {
       return response.buy
     } catch (err) {
       console.error("[v0] ❌ Buy execution failed:", err)
+      throw err
+    }
+  }
+
+  async sellContract(contractId: number, price: number): Promise<any> {
+    console.log("[v0] 💰 selling contract:", contractId, "at price:", price)
+    try {
+      const response = await this.send({
+        sell: contractId,
+        price: price
+      })
+      if (response.error) {
+        throw new Error(response.error.message || "Sell request failed")
+      }
+      return response.sell
+    } catch (err) {
+      console.error("[v0] ❌ Sell execution failed:", err)
       throw err
     }
   }

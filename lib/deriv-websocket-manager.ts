@@ -18,7 +18,7 @@ interface ConnectionLog {
 }
 
 import { DERIV_CONFIG, DERIV_API } from "./deriv-config"
-
+import { extractLastDigit, calculateDecimalCount } from "./digit-utils"
 // ... imports
 
 /**
@@ -315,7 +315,7 @@ export class DerivWebSocketManager {
 
       // 2. Special handling for ticks (New robust way)
       if (message.tick) {
-        const symbol = message.tick.symbol
+        const symbol = message.tick.underlying_symbol || message.tick.symbol
 
         // Recover subscription ID from tick if missing or mismatched
         if (message.subscription?.id) {
@@ -338,7 +338,17 @@ export class DerivWebSocketManager {
 
         const callbacks = this.tickCallbacks.get(symbol)
         if (callbacks) {
-          const pipSize = this.getPipSize(symbol)
+          // 1. Prioritize pip_size from the tick message itself (it's the decimal count)
+          // 2. Fallback to cached pipSizeMap
+          // 3. Fallback to default 2
+          const tickPipSize = message.tick.pip_size !== undefined ? Number(message.tick.pip_size) : undefined
+
+          if (tickPipSize !== undefined) {
+            this.pipSizeMap.set(symbol, tickPipSize)
+          }
+
+          const pipSize = tickPipSize ?? this.getPipSize(symbol)
+
           const tickData: TickData = {
             quote: message.tick.quote,
             lastDigit: this.extractLastDigit(message.tick.quote, pipSize),
@@ -574,12 +584,12 @@ export class DerivWebSocketManager {
     return this.pipSizeMap.get(symbol) || 2
   }
 
-  public extractLastDigit(quote: number, pipSize: number = 2): number {
-    // Fixed point formatting ensures we keep trailing zeros
-    const formatted = quote.toFixed(pipSize)
-    const lastChar = formatted.charAt(formatted.length - 1)
-    const digit = parseInt(lastChar, 10)
-    return isNaN(digit) ? 0 : digit
+  public extractLastDigit(quote: number, pipSize: number): number {
+    return extractLastDigit(quote, pipSize)
+  }
+
+  public getDecimalCount(pip: number): number {
+    return calculateDecimalCount(pip)
   }
 
   public async unsubscribe(subscriptionId: string, callback?: (tick: TickData) => void) {
@@ -644,22 +654,29 @@ export class DerivWebSocketManager {
           console.log(`[v0] Fetching active symbols (attempt ${attempts}/${maxAttempts})...`);
 
           const response = await this.sendAndWait({
-            active_symbols: "brief",
-            product_type: "basic"
+            active_symbols: "brief"
           }, 15000); // reduced timeout for symbols to prevent connection blockage
 
           if (response && response.active_symbols) {
             this.symbolsCache = response.active_symbols.map((s: any) => {
-              this.pipSizeMap.set(s.symbol, s.pip_size)
+              const symbol = s.underlying_symbol || s.symbol
+              const display_name = s.underlying_symbol_name || s.display_name
+              const market = s.market
+              const market_display_name = s.market_display_name
+
+              // Convert s.pip (e.g. 0.001) to decimal count (e.g. 3)
+              const decimalCount = s.pip_size !== undefined ? s.pip_size : (s.pip ? this.getDecimalCount(s.pip) : 2)
+              this.pipSizeMap.set(symbol, decimalCount)
+
               return {
-                symbol: s.symbol,
-                display_name: s.display_name,
-                market: s.market,
-                market_display_name: s.market_display_name,
-                pip_size: s.pip_size
+                symbol,
+                display_name,
+                market,
+                market_display_name,
+                pip_size: decimalCount
               }
             });
-            console.log(`[v0] Successfully loaded ${this.symbolsCache?.length} symbols`);
+            console.log(`[v0] Successfully loaded ${this.symbolsCache?.length} symbols with correct precision`);
             return this.symbolsCache!;
           }
           throw new Error("Invalid symbols response");
@@ -667,15 +684,9 @@ export class DerivWebSocketManager {
           console.error(`[v0] getActiveSymbols attempt ${attempts} failed:`, error);
           if (attempts === maxAttempts) {
             console.warn("[v0] All attempts to fetch symbols failed, using defaults");
-            this.symbolsCache = [
-              { symbol: "R_10", display_name: "Volatility 10 Index", market: "synthetic_index" },
-              { symbol: "R_25", display_name: "Volatility 25 Index", market: "synthetic_index" },
-              { symbol: "R_50", display_name: "Volatility 50 Index", market: "synthetic_index" },
-              { symbol: "R_75", display_name: "Volatility 75 Index", market: "synthetic_index" },
-              { symbol: "R_100", display_name: "Volatility 100 Index", market: "synthetic_index" },
-              { symbol: "1HZ10V", display_name: "Volatility 10 (1s) Index", market: "synthetic_index" },
-              { symbol: "1HZ100V", display_name: "Volatility 100 (1s) Index", market: "synthetic_index" },
-            ];
+            this.symbolsCache = [];
+            // Update pipSizeMap from fallbacks
+            this.symbolsCache.forEach(s => this.pipSizeMap.set(s.symbol, s.pip_size));
             return this.symbolsCache;
           }
           // Wait before retry

@@ -10,7 +10,7 @@
  * - Derivatives Base (optional): https://github.com/deriv-com/derivatives
  */
 
-export const DERIV_APP_ID = "32EtOUHbr4zUOcHKwjgwj"
+export const DERIV_APP_ID = "123189"
 export const DERIV_REDIRECT_URL = typeof window !== "undefined" ? window.location.origin : ""
 
 export const DERIV_CONFIG = {
@@ -28,7 +28,7 @@ export const DERIV_PLATFORMS = {
 
 // Official Deriv API Endpoints
 export const DERIV_API = {
-  WEBSOCKET: "wss://ws.binaryws.com/websockets/v3",
+  WEBSOCKET: "wss://api.derivws.com/trading/v1/options/ws/public",
   OAUTH: "https://auth.deriv.com/oauth2/auth",
   // New Options API (REST)
   REST_BASE: "https://api.derivws.com",
