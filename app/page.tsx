@@ -160,7 +160,7 @@ export default function DerivAnalysisApp() {
               } backdrop-blur-xl`}
           >
             <div className="mx-auto w-full px-2 sm:px-6">
-              <div className="flex flex-nowrap items-center py-1.5 h-auto sm:h-14 gap-1.5 sm:gap-2 w-full justify-between">
+              <div className="flex flex-nowrap items-center py-0.5 h-auto sm:h-12 gap-1.5 sm:gap-2 w-full justify-between">
 
                 {/* Brand Logo only on mobile, full text on desktop */}
                 <div className="flex items-center shrink-0">
@@ -290,7 +290,7 @@ export default function DerivAnalysisApp() {
               </div>
 
               {/* Elegant Navigation Row within Header */}
-              <div className="mt-1 pb-1 sm:pb-2 px-1 sm:px-4">
+              <div className="pb-1 px-1 sm:px-4">
                 <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
                   {[
                     "smart-adaptive",
@@ -321,6 +321,9 @@ export default function DerivAnalysisApp() {
                           ? "bg-transparent border-transparent text-slate-400 hover:text-white hover:bg-white/10"
                           : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 hover:bg-black/5"
                         }`}
+                      onClick={(e) => {
+                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                      }}
                     >
                       {tab === "autobot" ? "Autobot 🤖" : tab === "automated" ? "Autotrader 🚀" : tab.replace("-", " ")}
                     </TabsTrigger>
@@ -331,7 +334,7 @@ export default function DerivAnalysisApp() {
           </header>
         )}
 
-        <main className="flex-1 pt-[100px] sm:pt-[110px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
+        <main className="flex-1 pt-[85px] sm:pt-[90px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
           {connectionStatus !== "connected" ? (
             <div className="text-center py-12 sm:py-20 md:py-32">
               <h2
@@ -629,7 +632,7 @@ export default function DerivAnalysisApp() {
 
       {!siteConfig?.footerHidden && (
         <footer
-          className={`mt-12 py-8 transition-all duration-300 border-t relative overflow-hidden ${theme === "dark"
+          className={`mt-6 py-5 transition-all duration-300 border-t relative overflow-hidden ${theme === "dark"
             ? "bg-[#0a0e27]/40 border-white/5"
             : "bg-gray-50 border-gray-200"
             }`}
