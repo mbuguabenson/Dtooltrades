@@ -201,10 +201,9 @@ export function useDerivAuth() {
 
   const loginWithDeriv = () => {
     if (typeof window === "undefined") return
-    // CRITICAL: The redirect_uri must match exactly what is registered in the 
-    // Deriv Developer Dashboard for App ID: 32EtOUHbr4zUOcHKwjgwj
+    // Use the standard Deriv OAuth endpoint with App ID 123189
     const redirectUri = encodeURIComponent(`${window.location.origin}`)
-    const oauthUrl = `${DERIV_API.OAUTH}?app_id=${DERIV_CONFIG.APP_ID}&redirect_uri=${redirectUri}`
+    const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=123189&redirect_uri=${redirectUri}&response_type=token&scope=read,trade,trading_information,payments,admin`
     window.location.href = oauthUrl
   }
 

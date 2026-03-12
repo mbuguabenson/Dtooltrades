@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Shield, Zap, Globe, Cpu, Rocket, Lock } from "lucide-react"
+import { Shield, Zap, Globe, Cpu, Rocket } from "lucide-react"
+import Image from "next/image"
 
 interface LoadingStep {
   id: string
@@ -79,17 +80,23 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
-            className="flex flex-col items-center justify-center space-y-8"
+            className="flex flex-col items-center justify-center space-y-6 sm:space-y-8"
           >
             <div className="relative">
-              <div className="w-24 h-24 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin" />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <Lock className="h-8 w-8 text-blue-400 animate-pulse" />
+                <Image
+                  src="/ph-logo.png"
+                  alt="PH Logo"
+                  width={48}
+                  height={48}
+                  className="w-10 h-10 sm:w-12 sm:h-12 animate-pulse"
+                />
               </div>
             </div>
             <div className="text-center">
-              <h2 className="text-xl font-bold tracking-[0.3em] text-white uppercase italic">Initializing System</h2>
-              <p className="text-[10px] text-blue-400/60 tracking-[0.5em] mt-2 uppercase">Core Protocol V2.0</p>
+              <h2 className="text-lg sm:text-xl font-bold tracking-[0.3em] text-white uppercase italic">Initializing System</h2>
+              <p className="text-[9px] sm:text-[10px] text-blue-400/60 tracking-[0.5em] mt-2 uppercase">Core Protocol V2.0</p>
             </div>
           </motion.div>
         ) : (
@@ -97,14 +104,27 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
             key="loading"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="w-full max-w-4xl px-8 flex flex-col items-center"
+            className="w-full max-w-4xl px-6 sm:px-8 flex flex-col items-center"
           >
             {/* Header */}
-            <div className="text-center mb-16">
+            <div className="text-center mb-8 sm:mb-16">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="mb-4 sm:mb-6 flex justify-center"
+              >
+                <Image
+                  src="/ph-logo.png"
+                  alt="PH Logo"
+                  width={64}
+                  height={64}
+                  className="w-12 h-12 sm:w-16 sm:h-16 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+                />
+              </motion.div>
               <motion.h1
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="text-4xl font-black italic tracking-tighter text-white sm:text-6xl"
+                className="text-3xl font-black italic tracking-tighter text-white sm:text-6xl"
               >
                 PROFIT<span className="text-blue-500 text-glow">HUB</span>
               </motion.h1>
@@ -116,19 +136,19 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
             </div>
 
             {/* Glowing Step Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 w-full mb-12">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 w-full mb-10 sm:mb-12">
               {steps.map((step, idx) => (
                 <motion.div
                   key={step.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className={`relative p-6 rounded-2xl border transition-all duration-500 overflow-hidden group ${step.status === "complete"
-                    ? "bg-blue-600/10 border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.1)]"
-                    : step.status === "loading"
-                      ? "bg-slate-900 border-blue-500/50 shadow-[0_0_30px_rgba(37,99,235,0.2)] scale-105"
-                      : "bg-black/40 border-white/5 opacity-40"
-                    }`}
+                  className={`relative p-4 sm:p-6 rounded-2xl border transition-all duration-500 overflow-hidden group ${step.status === "complete"
+                      ? "bg-blue-600/10 border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.1)]"
+                      : step.status === "loading"
+                        ? "bg-slate-900 border-blue-500/50 shadow-[0_0_30px_rgba(37,99,235,0.2)] scale-105 z-10"
+                        : "bg-black/40 border-white/5 opacity-40"
+                    } ${idx === 4 && steps.length % 2 !== 0 ? "col-span-2 sm:col-span-1" : ""}`}
                 >
                   {/* Subtle Glow Overlay */}
                   {step.status === "loading" && (
@@ -138,18 +158,18 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
                     />
                   )}
 
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${step.status === "complete" ? "text-blue-400" :
-                      step.status === "loading" ? "text-blue-500" : "text-slate-600"
+                  <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-colors ${step.status === "complete" ? "text-blue-400" :
+                        step.status === "loading" ? "text-blue-500" : "text-slate-600"
                       }`}>
-                      <step.icon className={`h-6 w-6 ${step.status === "loading" ? "animate-bounce" : ""}`} />
+                      <step.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${step.status === "loading" ? "animate-bounce" : ""}`} />
                     </div>
                     <div>
-                      <h3 className={`text-[10px] font-bold uppercase tracking-widest ${step.status === "loading" ? "text-blue-400" : "text-white/60"
+                      <h3 className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${step.status === "loading" ? "text-blue-400" : "text-white/60"
                         }`}>
                         {step.label.split(' ')[0]}
                       </h3>
-                      <p className="text-[8px] text-white/30 truncate mt-1">{step.label.split(' ').slice(1).join(' ')}</p>
+                      <p className="text-[7px] sm:text-[8px] text-white/30 truncate mt-0.5 sm:mt-1">{step.label.split(' ').slice(1).join(' ')}</p>
                     </div>
                   </div>
 
@@ -162,11 +182,11 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
             {/* Master Progress */}
             <div className="w-full max-w-md">
-              <div className="flex justify-between items-end mb-3">
-                <span className="text-[10px] font-bold text-blue-500/70 tracking-[0.2em] uppercase">System Integration</span>
-                <span className="text-xl font-black text-white italic">{Math.round(progress)}%</span>
+              <div className="flex justify-between items-end mb-2 sm:mb-3">
+                <span className="text-[9px] sm:text-[10px] font-bold text-blue-500/70 tracking-[0.15em] sm:tracking-[0.2em] uppercase">Integration</span>
+                <span className="text-lg sm:text-xl font-black text-white italic">{Math.round(progress)}%</span>
               </div>
-              <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-[2px] border border-white/5">
+              <div className="h-1.5 sm:h-2 w-full bg-white/5 rounded-full overflow-hidden p-[1px] sm:p-[2px] border border-white/5">
                 <motion.div
                   className="h-full bg-linear-to-r from-blue-600 to-cyan-400 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.5)]"
                   style={{ width: `${progress}%` }}
@@ -177,8 +197,8 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
         )}
       </AnimatePresence>
 
-      <div className="absolute bottom-12 text-center opacity-30">
-        <p className="text-[9px] text-blue-100 uppercase tracking-[0.5em] font-medium">Secured by Quantum Guard</p>
+      <div className="absolute bottom-8 sm:bottom-12 text-center opacity-30">
+        <p className="text-[8px] sm:text-[9px] text-blue-100 uppercase tracking-[0.3em] sm:tracking-[0.5em] font-medium">Secured by Quantum Guard</p>
       </div>
 
       <style jsx global>{`
