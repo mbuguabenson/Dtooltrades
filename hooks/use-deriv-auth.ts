@@ -127,31 +127,48 @@ export function useDerivAuth() {
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlTokens: Record<string, string> = {}
-    let primaryToken = ""
-    let primaryAcct = ""
+    const extractTokensFromParams = (searchStr: string): Record<string, string> => {
+      const params = new URLSearchParams(searchStr)
+      const urlTokens: Record<string, string> = {}
+      let primaryToken = ""
+      let primaryAcct = ""
 
-    for (let i = 1; i <= 10; i++) {
-      const t = urlParams.get(`token${i}`)
-      const a = urlParams.get(`acct${i}`)
-      if (t && a) {
-        urlTokens[a] = t
-        if (i === 1) {
-          primaryToken = t
-          primaryAcct = a
+      for (let i = 1; i <= 10; i++) {
+        const t = params.get(`token${i}`)
+        const a = params.get(`acct${i}`)
+        if (t && a) {
+          urlTokens[a] = t
+          if (i === 1) {
+            primaryToken = t
+            primaryAcct = a
+          }
         }
       }
+      return primaryToken ? { ...urlTokens, __primary: primaryToken, __primaryAcct: primaryAcct } : {}
     }
 
-    if (Object.keys(urlTokens).length > 0) {
-      console.log("[v0] 🔑 OAuth tokens detected in URL")
-      localStorage.setItem("deriv_auth_tokens", JSON.stringify(urlTokens))
+    // Try query params first (standard Deriv OAuth redirect)
+    let tokenData = extractTokensFromParams(window.location.search)
+
+    // Fallback: try URL hash fragment (some OAuth flows use this)
+    if (Object.keys(tokenData).length === 0 && window.location.hash) {
+      const hashStr = window.location.hash.replace(/^#/, '')
+      tokenData = extractTokensFromParams(hashStr)
+    }
+
+    if (Object.keys(tokenData).length > 0) {
+      const primaryToken = tokenData.__primary || ""
+      const primaryAcct = tokenData.__primaryAcct || ""
+      delete tokenData.__primary
+      delete tokenData.__primaryAcct
+
+      console.log("[v0] 🔑 OAuth tokens detected in URL:", Object.keys(tokenData).length, "accounts")
+      localStorage.setItem("deriv_auth_tokens", JSON.stringify(tokenData))
       localStorage.setItem("deriv_api_token", primaryToken)
       if (primaryAcct) localStorage.setItem("active_login_id", primaryAcct)
 
-      const cleanUrl = window.location.pathname
-      window.history.replaceState({}, document.title, cleanUrl)
+      // Clean URL of both query params and hash fragment
+      window.history.replaceState({}, document.title, window.location.pathname)
 
       setToken(primaryToken)
       connectWithToken(primaryToken)
@@ -201,9 +218,10 @@ export function useDerivAuth() {
 
   const loginWithDeriv = () => {
     if (typeof window === "undefined") return
-    // Use the standard Deriv OAuth endpoint with App ID 123189
+    // Use the standard Deriv OAuth URL - no response_type or scope needed
+    // Deriv will redirect back with tokens as query params: ?acct1=CR...&token1=...
     const redirectUri = encodeURIComponent(`${window.location.origin}`)
-    const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=123189&redirect_uri=${redirectUri}&response_type=token&scope=read,trade,trading_information,payments,admin`
+    const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=123189&redirect_uri=${redirectUri}&l=EN&brand=deriv`
     window.location.href = oauthUrl
   }
 
