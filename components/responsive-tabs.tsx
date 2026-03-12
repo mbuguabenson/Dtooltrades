@@ -88,8 +88,7 @@ export function ResponsiveTabs({ children, theme = "dark", value, onValueChange 
   return (
     <TabsList
       ref={tabsListRef}
-      className={`flex w-full justify-start bg-transparent border-0 h-auto p-1 overflow-x-auto flex-nowrap scrollbar-none sm:scrollbar-thin scrollbar-thumb-emerald-500/50 hover:scrollbar-thumb-emerald-500/70 scrollbar-track-transparent ${theme === "dark" ? "" : ""
-        }`}
+      className="flex w-full justify-start bg-transparent border-0 h-auto p-1 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
     >
       {children}
     </TabsList>

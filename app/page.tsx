@@ -313,13 +313,13 @@ export default function DerivAnalysisApp() {
                     <TabsTrigger
                       key={tab}
                       value={tab}
-                      className={`shrink-0 rounded-full text-[10px] sm:text-[12px] px-3 sm:px-4 py-1.5 sm:py-2 mx-0.5 whitespace-nowrap transition-all duration-200 capitalize font-medium tracking-wide ${activeTab === tab
+                      className={`shrink-0 rounded-full text-[12px] sm:text-[14px] px-5 sm:px-7 py-2 sm:py-2.5 mx-1 whitespace-nowrap transition-all duration-300 capitalize font-semibold tracking-wide border ${activeTab === tab
                         ? theme === "dark"
-                          ? "bg-white/10 text-white"
-                          : "bg-black/5 text-black"
+                          ? "bg-white text-[#0f1629] border-white shadow-md shadow-white/10"
+                          : "bg-[#0f1629] text-white border-[#0f1629] shadow-md shadow-black/10"
                         : theme === "dark"
-                          ? "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-                          : "text-gray-500 hover:text-gray-700 hover:bg-black/[0.03]"
+                          ? "bg-transparent border-transparent text-slate-400 hover:text-white hover:bg-white/10"
+                          : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 hover:bg-black/5"
                         }`}
                     >
                       {tab === "autobot" ? "Autobot 🤖" : tab === "automated" ? "Autotrader 🚀" : tab.replace("-", " ")}
