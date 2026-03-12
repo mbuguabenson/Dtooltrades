@@ -229,7 +229,7 @@ export function useDerivAuth() {
     // Use the standard Deriv OAuth URL - no response_type or scope needed
     // Deriv will redirect back with tokens as query params: ?acct1=CR...&token1=...
     const redirectUri = encodeURIComponent(`${window.location.origin}`)
-    const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=123189&redirect_uri=${redirectUri}&l=EN&brand=deriv`
+    const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=${DERIV_CONFIG.APP_ID}&redirect_uri=${redirectUri}&l=EN&brand=deriv`
     window.location.href = oauthUrl
   }
 
