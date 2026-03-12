@@ -222,11 +222,11 @@ export default function DerivAnalysisApp() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
+                        className={`h-8 px-3 text-xs rounded-xl font-bold flex items-center gap-1.5 transition-all ${theme === "dark"
                           ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
                           : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
                       >
-                        <User className="h-4 w-4" />
+                        <User className="h-3.5 w-3.5" />
                         Account
                       </Button>
                     </Link>
@@ -234,23 +234,23 @@ export default function DerivAnalysisApp() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowRiskModal(true)}
-                      className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
+                      className={`h-8 px-3 text-xs rounded-xl font-bold flex items-center gap-1.5 transition-all ${theme === "dark"
                         ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20"
                         : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
                     >
-                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTriangle className="h-3.5 w-3.5" />
                       Risk
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={toggleTheme}
-                      className={`h-9 w-9 rounded-lg transition-all ${theme === "dark"
+                      className={`h-8 w-8 rounded-lg transition-all ${theme === "dark"
                         ? "bg-white/5 text-yellow-500 hover:bg-white/10"
                         : "bg-black/5 text-slate-700 hover:bg-black/10"
                         }`}
                     >
-                      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                      {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
 
@@ -260,8 +260,8 @@ export default function DerivAnalysisApp() {
                   <div className="sm:hidden -ml-1">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-lg ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                          <Menu className="h-5 w-5" />
+                        <Button variant="ghost" size="icon" className={`h-7 w-7 rounded-lg ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                          <Menu className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={`w-48 ${theme === "dark" ? "bg-[#0a0e27] border-white/10" : ""}`}>
@@ -629,35 +629,46 @@ export default function DerivAnalysisApp() {
 
       {!siteConfig?.footerHidden && (
         <footer
-          className={`border-t mt-4 py-4 transition-all duration-300 ${theme === "dark"
-            ? "bg-[#050505] border-white/5"
-            : "bg-white border-gray-100"
+          className={`mt-12 py-8 transition-all duration-300 border-t relative overflow-hidden ${theme === "dark"
+            ? "bg-[#0a0e27]/40 border-white/5"
+            : "bg-gray-50 border-gray-200"
             }`}
         >
-          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <span className={`font-bold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+          {theme === "dark" && (
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+          )}
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
+              {/* Brand Col */}
+              <div className="flex flex-col items-center md:items-start space-y-2 max-w-xs text-center md:text-left">
+                <span className={`text-xl font-black tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
                   PROFIT<span className="text-blue-500">HUB</span>
                 </span>
-                <span className="text-gray-500">•</span>
-                <span className="text-gray-500">Quantum Trading Terminal</span>
+                <span className={`text-sm font-medium ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                  Quantum Trading Terminal
+                </span>
+                <p className={`text-[11px] mt-4 leading-relaxed ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                  Experience next-generation autonomous trading, powered by quantitative analysis and real-time market data.
+                </p>
               </div>
 
-              <div className="flex items-center gap-4 text-gray-500">
-                <button
-                  onClick={() => setIsDisclaimerOpen(true)}
-                  className="hover:text-blue-500 transition-colors font-medium border border-gray-500/20 px-2 py-0.5 rounded-md hover:border-blue-500/30"
-                >
-                  Risk Disclaimer
-                </button>
-                <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
-                <a href="#" className="hover:text-blue-500 transition-colors">Terms</a>
-                <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
-              </div>
-
-              <div className="text-gray-600">
-                © 2026 Profit Hub. All rights reserved.
+              {/* Links Col */}
+              <div className="flex flex-col items-center md:items-end space-y-4">
+                <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-3 text-sm font-semibold">
+                  <button
+                    onClick={() => setIsDisclaimerOpen(true)}
+                    className={`transition-all flex items-center gap-1.5 ${theme === "dark" ? "text-amber-500/80 hover:text-amber-400" : "text-amber-600 hover:text-amber-500"}`}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    Risk Disclaimer
+                  </button>
+                  <a href="#" className={`transition-colors ${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>Privacy Policy</a>
+                  <a href="#" className={`transition-colors ${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>Terms of Service</a>
+                  <a href="#" className={`transition-colors ${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>Support Center</a>
+                </div>
+                <div className={`text-xs mt-4 ${theme === "dark" ? "text-gray-600" : "text-gray-400"}`}>
+                  © 2026 Profit Hub. All rights reserved.
+                </div>
               </div>
             </div>
           </div>

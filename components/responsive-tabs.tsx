@@ -3,7 +3,7 @@
 import React from "react"
 import { TabsList } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { ChevronDown } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface ResponsiveTabsProps {
@@ -85,12 +85,48 @@ export function ResponsiveTabs({ children, theme = "dark", value, onValueChange 
     return value.replace(/-/g, " ")
   }
 
+  const scroll = (direction: "left" | "right") => {
+    if (tabsListRef.current) {
+      const scrollAmount = 300
+      tabsListRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      })
+    }
+  }
+
   return (
-    <TabsList
-      ref={tabsListRef}
-      className="flex w-full justify-start bg-transparent border-0 h-auto p-1 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-    >
-      {children}
-    </TabsList>
+    <div className="relative flex items-center w-full group">
+      {/* Desktop Scroll Left Button */}
+      <div className={`absolute left-0 z-10 hidden sm:flex items-center h-full pr-8 bg-gradient-to-r from-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${theme === "dark" ? "from-[#050505]" : "from-white"}`}>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => scroll("left")}
+          className={`h-8 w-8 rounded-full shadow-lg border absolute -left-2 ${theme === "dark" ? "bg-[#0f1629] border-white/10 text-white hover:bg-[#1a1f3a]" : "bg-white border-gray-200 text-slate-700 hover:bg-gray-50"}`}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <TabsList
+        ref={tabsListRef}
+        className="flex w-full justify-start bg-transparent border-0 h-auto p-1 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth"
+      >
+        {children}
+      </TabsList>
+
+      {/* Desktop Scroll Right Button */}
+      <div className={`absolute right-0 z-10 hidden sm:flex justify-end items-center h-full pl-8 bg-gradient-to-l from-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${theme === "dark" ? "from-[#050505]" : "from-white"}`}>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => scroll("right")}
+          className={`h-8 w-8 rounded-full shadow-lg border absolute -right-2 ${theme === "dark" ? "bg-[#0f1629] border-white/10 text-white hover:bg-[#1a1f3a]" : "bg-white border-gray-200 text-slate-700 hover:bg-gray-50"}`}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   )
 }

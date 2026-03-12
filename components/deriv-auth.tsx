@@ -130,15 +130,15 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
           {accounts.length > 0 ? (
             <Select value={activeLoginId || ""} onValueChange={switchAccount}>
               <SelectTrigger
-                className={`flex items-center h-10 sm:h-11 px-3 sm:px-4 rounded-xl border transition-all duration-300 min-w-[160px] shadow-sm ${theme === "dark"
+                className={`flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-xl border transition-all duration-300 min-w-[140px] shadow-sm ${theme === "dark"
                   ? "bg-gradient-to-r from-slate-800/80 to-slate-900/80 border-slate-700/50 hover:border-blue-500/30 hover:shadow-blue-500/10 text-white"
                   : "bg-white border-gray-200 hover:border-blue-500/30 hover:shadow-blue-500/10 text-slate-900"
                   }`}
               >
-                <div className="flex items-center gap-2 sm:gap-3 font-semibold text-xs sm:text-sm">
+                <div className="flex items-center gap-1.5 sm:gap-2 font-semibold text-[10px] sm:text-xs">
                   {getAccountIcon(activeLoginId || "", balance?.currency, accountType || undefined)}
                   {balance ? (
-                    <div className="flex flex-col items-start leading-tight min-w-[80px]">
+                    <div className="flex flex-col items-start leading-tight min-w-[70px]">
                       <span className={`text-[9px] sm:text-[10px] font-medium opacity-70 uppercase tracking-wide`}>
                         {customUsername || (accountType === "Demo" || accountCode?.startsWith('VRTC') ? "Demo" : "Real")}
                       </span>
@@ -183,13 +183,13 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
             onClick={logout}
             variant="ghost"
             size="icon"
-            className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl transition-all duration-300 border shadow-sm ${theme === "dark"
+            className={`h-8 w-8 sm:h-9 sm:w-9 rounded-xl transition-all duration-300 border shadow-sm ${theme === "dark"
               ? "bg-slate-800/80 border-slate-700/50 text-slate-300 hover:text-white hover:bg-rose-500/90 hover:border-rose-500"
               : "bg-white border-gray-200 text-slate-600 hover:text-white hover:bg-rose-500/90 hover:border-rose-500 hover:shadow-rose-500/20"
               }`}
             title="Secure Logout"
           >
-            <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+            <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
         </div>
       )}

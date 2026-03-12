@@ -38,26 +38,18 @@ export function TabMarketBar({
                 : "bg-white border-gray-200 shadow-sm"
                 }`}
         >
-            {/* Market Selector */}
-            {availableSymbols.length > 0 && onSymbolChange && symbol && (
+            {/* Market Symbol Display (Read-Only) */}
+            {symbol && (
                 <div className="flex items-center gap-2">
-                    <span
-                        className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-gray-500" : "text-gray-400"
-                            }`}
-                    >
-                        Market
+                    <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest ${isDark ? "text-slate-300" : "text-gray-600"
+                        }`}>
+                        {symbol.replace(/_/g, " ")}
                     </span>
-                    <MarketSelector
-                        symbols={availableSymbols}
-                        currentSymbol={symbol}
-                        onSymbolChange={onSymbolChange}
-                        theme={theme}
-                    />
                 </div>
             )}
 
             {/* Divider */}
-            {availableSymbols.length > 0 && (currentPrice !== undefined || currentDigit !== undefined) && (
+            {symbol && (currentPrice !== undefined || currentDigit !== undefined) && (
                 <div className={`h-6 w-px ${isDark ? "bg-white/10" : "bg-gray-200"}`} />
             )}
 
