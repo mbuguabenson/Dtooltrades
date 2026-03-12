@@ -160,11 +160,11 @@ export default function DerivAnalysisApp() {
               } backdrop-blur-xl`}
           >
             <div className="mx-auto w-full px-2 sm:px-6">
-              <div className="flex flex-nowrap items-center py-0.5 h-auto sm:h-12 gap-1.5 sm:gap-2 w-full justify-between">
+              <div className="flex flex-nowrap items-center py-0.5 h-auto sm:h-10 gap-1 w-full justify-between">
 
                 {/* Brand Logo only on mobile, full text on desktop */}
                 <div className="flex items-center shrink-0">
-                  <h1 className="text-sm sm:text-xl font-bold tracking-tight flex items-center gap-0.5 sm:gap-1">
+                  <h1 className="text-sm sm:text-lg font-black tracking-tight flex items-center gap-0.5">
                     <span className={`hidden sm:inline ${theme === "dark" ? "text-white" : "text-slate-900"}`}>PROFIT</span>
                     <span className={`hidden sm:inline ${theme === "dark" ? "text-slate-400 font-medium" : "text-slate-500 font-medium"}`}>HUB</span>
                     <span className={`sm:hidden ${theme === "dark" ? "text-white" : "text-slate-900"}`}>PH</span>
@@ -172,10 +172,10 @@ export default function DerivAnalysisApp() {
                 </div>
 
                 {/* Centralized Market Selector + Live Price */}
-                <div className="order-none w-auto flex-1 flex justify-center items-center min-w-0 max-w-2xl px-0.5 sm:px-2 gap-1.5 sm:gap-2">
+                <div className="order-none w-auto flex-1 flex justify-center items-center min-w-0 max-w-2xl px-0 gap-1 sm:gap-1.5">
                   {/* Market Selector */}
                   {availableSymbols.length > 0 && (
-                    <div className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-xl border transition-all ${theme === "dark"
+                    <div className={`flex items-center gap-1.5 px-1.5 sm:px-2 py-1 rounded-lg border transition-all ${theme === "dark"
                       ? "bg-white/5 border-white/10 hover:border-blue-500/30"
                       : "bg-gray-50 border-gray-200 hover:border-blue-400"
                       }`}>
@@ -192,7 +192,7 @@ export default function DerivAnalysisApp() {
 
                   {/* Live Price + Digit */}
                   {currentPrice !== null && currentPrice !== undefined && (
-                    <div className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 rounded-xl border ${theme === "dark"
+                    <div className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1 rounded-lg border ${theme === "dark"
                       ? "bg-white/5 border-white/10"
                       : "bg-gray-50 border-gray-200"
                       }`}>
@@ -203,7 +203,7 @@ export default function DerivAnalysisApp() {
                           }`}>{currentPrice.toFixed(2)}</p>
                       </div>
                       {currentDigit !== null && currentDigit !== undefined && (
-                        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-black text-sm sm:text-base ${theme === "dark"
+                        <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md flex items-center justify-center font-black text-xs sm:text-sm ${theme === "dark"
                           ? "bg-blue-500/15 text-blue-300 border border-blue-500/20"
                           : "bg-blue-50 text-blue-700 border border-blue-200"
                           }`}>
@@ -234,18 +234,18 @@ export default function DerivAnalysisApp() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowRiskModal(true)}
-                      className={`h-8 px-3 text-xs rounded-xl font-bold flex items-center gap-1.5 transition-all ${theme === "dark"
+                      className={`h-7 px-2 text-[11px] rounded-lg font-bold flex items-center gap-1 transition-all ${theme === "dark"
                         ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20"
                         : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
                     >
-                      <AlertTriangle className="h-3.5 w-3.5" />
+                      <AlertTriangle className="h-3 w-3" />
                       Risk
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={toggleTheme}
-                      className={`h-8 w-8 rounded-lg transition-all ${theme === "dark"
+                      className={`h-7 w-7 rounded-md transition-all ${theme === "dark"
                         ? "bg-white/5 text-yellow-500 hover:bg-white/10"
                         : "bg-black/5 text-slate-700 hover:bg-black/10"
                         }`}
@@ -313,10 +313,10 @@ export default function DerivAnalysisApp() {
                     <TabsTrigger
                       key={tab}
                       value={tab}
-                      className={`shrink-0 rounded-full text-[12px] sm:text-[14px] px-5 sm:px-7 py-2 sm:py-2.5 mx-1 whitespace-nowrap transition-all duration-300 capitalize font-semibold tracking-wide border ${activeTab === tab
+                      className={`shrink-0 rounded-full text-[11px] sm:text-[12px] px-4 sm:px-5 py-1.5 sm:py-2 mx-0.5 whitespace-nowrap transition-all duration-300 capitalize font-medium tracking-wide border ${activeTab === tab
                         ? theme === "dark"
-                          ? "bg-white text-[#0f1629] border-white shadow-md shadow-white/10"
-                          : "bg-[#0f1629] text-white border-[#0f1629] shadow-md shadow-black/10"
+                          ? "bg-white text-[#0f1629] border-white shadow-sm shadow-white/10"
+                          : "bg-[#0f1629] text-white border-[#0f1629] shadow-sm shadow-black/10"
                         : theme === "dark"
                           ? "bg-transparent border-transparent text-slate-400 hover:text-white hover:bg-white/10"
                           : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 hover:bg-black/5"
@@ -334,7 +334,7 @@ export default function DerivAnalysisApp() {
           </header>
         )}
 
-        <main className="flex-1 pt-[85px] sm:pt-[90px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
+        <main className="flex-1 pt-[75px] sm:pt-[80px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
           {connectionStatus !== "connected" ? (
             <div className="text-center py-12 sm:py-20 md:py-32">
               <h2
@@ -632,7 +632,7 @@ export default function DerivAnalysisApp() {
 
       {!siteConfig?.footerHidden && (
         <footer
-          className={`mt-6 py-5 transition-all duration-300 border-t relative overflow-hidden ${theme === "dark"
+          className={`mt-4 py-3 transition-all duration-300 border-t relative overflow-hidden ${theme === "dark"
             ? "bg-[#0a0e27]/40 border-white/5"
             : "bg-gray-50 border-gray-200"
             }`}
@@ -640,38 +640,31 @@ export default function DerivAnalysisApp() {
           {theme === "dark" && (
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
           )}
-          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
-              {/* Brand Col */}
-              <div className="flex flex-col items-center md:items-start space-y-2 max-w-xs text-center md:text-left">
-                <span className={`text-xl font-black tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+          <div className="mx-auto w-full max-w-7xl px-2 sm:px-6 lg:px-8 relative z-10">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className={`font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
                   PROFIT<span className="text-blue-500">HUB</span>
                 </span>
-                <span className={`text-sm font-medium ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                  Quantum Trading Terminal
-                </span>
-                <p className={`text-[11px] mt-4 leading-relaxed ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
-                  Experience next-generation autonomous trading, powered by quantitative analysis and real-time market data.
-                </p>
+                <span className="text-gray-500 hidden sm:inline">•</span>
+                <span className="text-gray-500 hidden sm:inline text-[10px] uppercase tracking-wider">Trading Terminal</span>
               </div>
 
-              {/* Links Col */}
-              <div className="flex flex-col items-center md:items-end space-y-4">
-                <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-3 text-sm font-semibold">
-                  <button
-                    onClick={() => setIsDisclaimerOpen(true)}
-                    className={`transition-all flex items-center gap-1.5 ${theme === "dark" ? "text-amber-500/80 hover:text-amber-400" : "text-amber-600 hover:text-amber-500"}`}
-                  >
-                    <AlertTriangle className="h-4 w-4" />
-                    Risk Disclaimer
-                  </button>
-                  <a href="#" className={`transition-colors ${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>Privacy Policy</a>
-                  <a href="#" className={`transition-colors ${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>Terms of Service</a>
-                  <a href="#" className={`transition-colors ${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>Support Center</a>
-                </div>
-                <div className={`text-xs mt-4 ${theme === "dark" ? "text-gray-600" : "text-gray-400"}`}>
-                  © 2026 Profit Hub. All rights reserved.
-                </div>
+              <div className="flex items-center gap-4 text-gray-500 font-medium">
+                <button
+                  onClick={() => setIsDisclaimerOpen(true)}
+                  className={`hover:text-blue-500 transition-colors flex items-center gap-1 border px-2 py-0.5 rounded ${theme === "dark" ? "border-white/10 hover:border-blue-500/30" : "border-gray-200 hover:border-blue-300"}`}
+                >
+                  <AlertTriangle className="h-3 w-3 text-amber-500" />
+                  Risk
+                </button>
+                <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
+                <a href="#" className="hover:text-blue-500 transition-colors hidden sm:inline">Terms</a>
+                <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
+              </div>
+
+              <div className={`hidden md:block text-[10px] ${theme === "dark" ? "text-gray-600" : "text-gray-400"}`}>
+                © 2026 Profit Hub.
               </div>
             </div>
           </div>
