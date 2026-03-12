@@ -1,4 +1,5 @@
 import type { DerivAPIClient } from "./deriv-api"
+import { extractLastDigit } from "./digit-utils"
 
 export interface MarketAnalysis {
   symbol: string
@@ -61,7 +62,7 @@ export class AutonomousBotEngine {
     this.config = config
     this.state = {
       isRunning: false,
-      currentMarket: config.selectedMarket || "R_100",
+      currentMarket: config.selectedMarket || "",
       currentStrategy: "ANALYZING",
       totalTrades: 0,
       wins: 0,
@@ -191,7 +192,7 @@ export class AutonomousBotEngine {
       }
 
       history.prices.forEach((price: number) => {
-        const digit = this.getLastDigit(price)
+        const digit = extractLastDigit(price, history.pip_size || 2)
         digitFrequencies[digit]++
       })
 
@@ -427,8 +428,7 @@ export class AutonomousBotEngine {
   }
 
   private getLastDigit(price: number): number {
-    const priceStr = price.toFixed(5)
-    return Number.parseInt(priceStr[priceStr.length - 1])
+    return extractLastDigit(price, 2) // Fallback to 2
   }
 
   private updateUI() {

@@ -52,8 +52,8 @@ export function ToolsInfoTab({ theme, connectionLogs = [] }: ToolsInfoTabProps) 
                 key={tab.value}
                 value={tab.value}
                 className={`flex-shrink-0 rounded-none border-b-2 border-transparent text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-3 whitespace-nowrap transition-all font-medium ${theme === "dark"
-                    ? "text-gray-400 hover:text-white data-[state=active]:border-blue-500 data-[state=active]:text-blue-400 data-[state=active]:bg-blue-500/10"
-                    : "text-gray-600 hover:text-gray-900 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 data-[state=active]:bg-blue-50"
+                  ? "text-gray-400 hover:text-white data-[state=active]:border-blue-500 data-[state=active]:text-blue-400 data-[state=active]:bg-blue-500/10"
+                  : "text-gray-600 hover:text-gray-900 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 data-[state=active]:bg-blue-50"
                   }`}
               >
                 {tab.label}
@@ -64,7 +64,7 @@ export function ToolsInfoTab({ theme, connectionLogs = [] }: ToolsInfoTabProps) 
           <div className="w-full p-4 sm:p-6">
             <TabsContent value="bots" className="mt-0">
               <ErrorBoundary>
-                <AutoBotTab theme={theme} symbol="R_50" />
+                <AutoBotTab theme={theme} symbol="" />
               </ErrorBoundary>
             </TabsContent>
 

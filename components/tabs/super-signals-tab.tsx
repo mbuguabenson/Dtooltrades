@@ -34,21 +34,7 @@ interface TradeSignal {
   category: "even-odd" | "over-under" | "differs"
 }
 
-const MARKETS = [
-  { symbol: "R_10", name: "Volatility 10 (1s)" },
-  { symbol: "R_25", name: "Volatility 25 (1s)" },
-  { symbol: "R_50", name: "Volatility 50 (1s)" },
-  { symbol: "R_75", name: "Volatility 75 (1s)" },
-  { symbol: "R_100", name: "Volatility 100 (1s)" },
-  { symbol: "1HZ10V", name: "Volatility 10 Index" },
-  { symbol: "1HZ25V", name: "Volatility 25 Index" },
-  { symbol: "1HZ50V", name: "Volatility 50 Index" },
-  { symbol: "1HZ75V", name: "Volatility 75 Index" },
-  { symbol: "1HZ100V", name: "Volatility 100 Index" },
-  { symbol: "1HZ15V", name: "Volatility 15 (1s) Index" },
-  { symbol: "1HZ30V", name: "Volatility 30 (1s) Index" },
-  { symbol: "1HZ90V", name: "Volatility 90 (1s) Index" },
-]
+const MARKETS: { symbol: string; name: string }[] = []
 
 interface SuperSignalsTabProps {
   theme?: "light" | "dark"

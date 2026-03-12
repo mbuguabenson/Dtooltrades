@@ -17,7 +17,7 @@ export interface GlobalTradingContext {
 
 export function useGlobalTradingContext(): GlobalTradingContext {
   const { token, isLoggedIn, balance } = useDerivAuth()
-  const [selectedMarket, setSelectedMarket] = useState("1HZ100V")
+  const [selectedMarket, setSelectedMarket] = useState("")
   const [selectedStrategy, setSelectedStrategy] = useState("OVER3_UNDER6")
   const [isTrading, setIsTrading] = useState(false)
 

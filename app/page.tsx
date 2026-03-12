@@ -65,7 +65,7 @@ export default function DerivAnalysisApp() {
     changeSymbol,
     changeMaxTicks,
     getRecentDigits,
-  } = useDeriv()
+  } = useDeriv("R_100")
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light"
@@ -508,7 +508,14 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="smartauto24" className="mt-0">
-                <SmartAuto24Tab theme={theme} symbol={symbol} onSymbolChange={changeSymbol} availableSymbols={availableSymbols} />
+                <SmartAuto24Tab
+                  theme={theme}
+                  symbol={symbol}
+                  onSymbolChange={changeSymbol}
+                  availableSymbols={availableSymbols}
+                  maxTicks={maxTicks}
+                  onMaxTicksChange={changeMaxTicks}
+                />
               </TabsContent>
 
               <TabsContent value="smart-adaptive" className="mt-0">

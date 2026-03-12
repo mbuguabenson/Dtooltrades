@@ -115,7 +115,7 @@ export default function AdminTradingPage() {
                                             100
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-white tracking-tight">Volatility 100 (1s)</h3>
+                                            <h3 className="text-2xl font-black text-white tracking-tight">Select Market</h3>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                                 <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">$982,541.20</span>

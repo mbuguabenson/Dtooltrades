@@ -29,7 +29,7 @@ export class MarketDataService {
     }
   }
 
-  async connect(symbol = "R_100"): Promise<void> {
+  async connect(symbol = ""): Promise<void> {
     if (!this.ws) return
 
     try {

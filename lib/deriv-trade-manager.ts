@@ -102,7 +102,7 @@ export class DerivTradeManager {
 
     // Unsubscribe from all contracts
     this.contractSubscriptions.forEach((subId) => {
-      this.derivClient.forget(subId).catch(() => {})
+      this.derivClient.forget(subId).catch(() => { })
     })
     this.contractSubscriptions.clear()
 
@@ -139,19 +139,9 @@ export class DerivTradeManager {
     }
 
     try {
-      const symbolMap: { [key: string]: string } = {
-        "Volatility 10 (1s) Index": "R_10",
-        "Volatility 25 (1s) Index": "R_25",
-        "Volatility 50 (1s) Index": "R_50",
-        "Volatility 75 (1s) Index": "R_75",
-        "Volatility 100 (1s) Index": "R_100",
-        "Volatility 150 (1s) Index": "R_150",
-        "Volatility 200 (1s) Index": "R_200",
-        "Volatility 250 (1s) Index": "R_250",
-        "Volatility 300 (1s) Index": "R_300",
-      }
+      const symbolMap: Record<string, string> = {}
 
-      const symbol = symbolMap[this.config.market] || "R_100"
+      const symbol = symbolMap[this.config.market] || ""
       const contractType = type === "OVER" ? "DIGITOVER" : "DIGITUNDER"
       const barrier = String(digit)
 
@@ -245,7 +235,7 @@ export class DerivTradeManager {
       // Unsubscribe from this contract
       const subId = this.contractSubscriptions.get(contractId)
       if (subId) {
-        this.derivClient.forget(subId).catch(() => {})
+        this.derivClient.forget(subId).catch(() => { })
         this.contractSubscriptions.delete(contractId)
       }
 

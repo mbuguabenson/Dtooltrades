@@ -1,4 +1,5 @@
 import type { DerivAPIClient } from "./deriv-api"
+import { extractLastDigit } from "./digit-utils"
 import { AnalysisEngine, type Signal } from "./analysis-engine"
 
 export interface AutoBotConfig {
@@ -236,9 +237,7 @@ export class AutoBot {
       })
 
       this.tickHistory = response.prices.map((price: number) => {
-        const priceStr = price.toFixed(5)
-        const lastDigit = Number.parseInt(priceStr[priceStr.length - 1])
-        return lastDigit
+        return extractLastDigit(price, response.pip_size || 2)
       })
       console.log(`[v0] 📈 Engine warmed up with ${response.prices.length} ticks for ${this.strategy}`)
     } catch (error: any) {

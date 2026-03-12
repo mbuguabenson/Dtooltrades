@@ -68,7 +68,7 @@ export function SpeedBot({
   journal,
   selectedSymbol: propSelectedSymbol,
 }: SpeedBotProps) {
-  const [market, setMarket] = useState(propSelectedSymbol || "1HZ100V")
+  const [market, setMarket] = useState(propSelectedSymbol || "")
   const [tradeType, setTradeType] = useState("digits")
   const [contractType, setContractType] = useState("DIGITEVEN")
   const [stake, setStake] = useState(0.35)

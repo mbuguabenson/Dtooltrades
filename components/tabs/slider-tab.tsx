@@ -21,7 +21,7 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
   const [activeTab, setActiveTab] = useState("config")
 
   // Config state
-  const [market, setMarket] = useState("R_100")
+  const [market, setMarket] = useState("")
   const [symbol, setSymbol] = useState("---")
   const [tradeCategory, setTradeCategory] = useState("")
   const [contractType, setContractType] = useState("")
@@ -62,11 +62,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
     <div className="space-y-6">
       {/* Header */}
       <Card
-        className={`p-6 border ${
-          theme === "dark"
-            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
-            : "bg-white border-gray-200"
-        }`}
+        className={`p-6 border ${theme === "dark"
+          ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
+          : "bg-white border-gray-200"
+          }`}
       >
         <div className="flex items-center justify-between mb-6">
           <div className={`text-2xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
@@ -104,15 +103,14 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
               key={tab}
               onClick={() => setActiveTab(tab.toLowerCase().replace(" ", "-"))}
               variant={activeTab === tab.toLowerCase().replace(" ", "-") ? "default" : "outline"}
-              className={`${
-                activeTab === tab.toLowerCase().replace(" ", "-")
-                  ? theme === "dark"
-                    ? "bg-blue-500 text-white"
-                    : "bg-blue-600 text-white"
-                  : theme === "dark"
-                    ? "bg-gray-800 text-gray-300 border-gray-600"
-                    : "bg-gray-100 text-gray-700 border-gray-300"
-              }`}
+              className={`${activeTab === tab.toLowerCase().replace(" ", "-")
+                ? theme === "dark"
+                  ? "bg-blue-500 text-white"
+                  : "bg-blue-600 text-white"
+                : theme === "dark"
+                  ? "bg-gray-800 text-gray-300 border-gray-600"
+                  : "bg-gray-100 text-gray-700 border-gray-300"
+                }`}
             >
               {tab}
             </Button>
@@ -123,11 +121,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
       {/* Bot Config Tab */}
       {activeTab === "bot-config" && (
         <Card
-          className={`p-6 border ${
-            theme === "dark"
-              ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
-              : "bg-white border-gray-200"
-          }`}
+          className={`p-6 border ${theme === "dark"
+            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
+            : "bg-white border-gray-200"
+            }`}
         >
           <div className="space-y-6">
             {/* Market & Symbol */}
@@ -140,17 +137,16 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                 </label>
                 <Select value={market} onValueChange={setMarket}>
                   <SelectTrigger
-                    className={`${
-                      theme === "dark"
-                        ? "bg-gray-800 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
+                    className={`${theme === "dark"
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                      }`}
                   >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="R_100">Volatility 100</SelectItem>
-                    <SelectItem value="R_50">Volatility 50</SelectItem>
+                    {/* Markets will be loaded dynamically */}
+                    {/* Dynamic markets */}
                   </SelectContent>
                 </Select>
               </div>
@@ -164,11 +160,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                 <Input
                   value={symbol}
                   readOnly
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-gray-400"
-                      : "bg-gray-100 border-gray-300 text-gray-600"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-gray-400"
+                    : "bg-gray-100 border-gray-300 text-gray-600"
+                    }`}
                 />
               </div>
 
@@ -181,11 +176,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                 <Input
                   value="N/A"
                   readOnly
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-gray-400"
-                      : "bg-gray-100 border-gray-300 text-gray-600"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-gray-400"
+                    : "bg-gray-100 border-gray-300 text-gray-600"
+                    }`}
                 />
               </div>
             </div>
@@ -200,11 +194,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                 </label>
                 <Select value={tradeCategory} onValueChange={setTradeCategory}>
                   <SelectTrigger
-                    className={`${
-                      theme === "dark"
-                        ? "bg-gray-800 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
+                    className={`${theme === "dark"
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                      }`}
                   >
                     <SelectValue placeholder="Loading..." />
                   </SelectTrigger>
@@ -223,11 +216,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                 </label>
                 <Select value={contractType} onValueChange={setContractType}>
                   <SelectTrigger
-                    className={`${
-                      theme === "dark"
-                        ? "bg-gray-800 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
+                    className={`${theme === "dark"
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                      }`}
                   >
                     <SelectValue placeholder="Select contract" />
                   </SelectTrigger>
@@ -247,11 +239,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                 <Input
                   value="N/A"
                   readOnly
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-gray-400"
-                      : "bg-gray-100 border-gray-300 text-gray-600"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-gray-400"
+                    : "bg-gray-100 border-gray-300 text-gray-600"
+                    }`}
                 />
               </div>
             </div>
@@ -269,11 +260,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                   value={baseStake}
                   onChange={(e) => setBaseStake(e.target.value)}
                   step="0.01"
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
 
@@ -287,11 +277,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                   type="number"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
 
@@ -306,11 +295,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                   value={martingaleMultiplier}
                   onChange={(e) => setMartingaleMultiplier(e.target.value)}
                   step="0.1"
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
 
@@ -324,11 +312,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                   type="number"
                   value={currentStake}
                   readOnly
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-cyan-400"
-                      : "bg-gray-100 border-gray-300 text-cyan-600"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-cyan-400"
+                    : "bg-gray-100 border-gray-300 text-cyan-600"
+                    }`}
                 />
               </div>
             </div>
@@ -346,11 +333,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                   value={takeProfit}
                   onChange={(e) => setTakeProfit(e.target.value)}
                   step="0.1"
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
 
@@ -365,11 +351,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                   value={stopLoss}
                   onChange={(e) => setStopLoss(e.target.value)}
                   step="0.01"
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
 
@@ -382,11 +367,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
                 <Input
                   value="---"
                   readOnly
-                  className={`${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-600 text-gray-400"
-                      : "bg-gray-100 border-gray-300 text-gray-600"
-                  }`}
+                  className={`${theme === "dark"
+                    ? "bg-gray-800 border-gray-600 text-gray-400"
+                    : "bg-gray-100 border-gray-300 text-gray-600"
+                    }`}
                 />
               </div>
             </div>
@@ -402,9 +386,8 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
               <Button
                 onClick={handleRun}
                 disabled={isRunning}
-                className={`flex-1 ${
-                  isRunning ? "bg-gray-500 cursor-not-allowed" : "bg-teal-500 hover:bg-teal-600"
-                } text-white font-bold`}
+                className={`flex-1 ${isRunning ? "bg-gray-500 cursor-not-allowed" : "bg-teal-500 hover:bg-teal-600"
+                  } text-white font-bold`}
               >
                 <Play className="w-4 h-4 mr-2" />
                 Run
@@ -412,9 +395,8 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
               <Button
                 onClick={handlePause}
                 disabled={!isRunning}
-                className={`flex-1 ${
-                  isRunning ? "bg-gray-600 hover:bg-gray-700" : "bg-gray-500 cursor-not-allowed"
-                } text-white font-bold`}
+                className={`flex-1 ${isRunning ? "bg-gray-600 hover:bg-gray-700" : "bg-gray-500 cursor-not-allowed"
+                  } text-white font-bold`}
               >
                 <Pause className="w-4 h-4 mr-2" />
                 Bot Paused
@@ -427,11 +409,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
       {/* Transactions Tab */}
       {activeTab === "transactions" && (
         <Card
-          className={`p-6 border ${
-            theme === "dark"
-              ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
-              : "bg-white border-gray-200"
-          }`}
+          className={`p-6 border ${theme === "dark"
+            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
+            : "bg-white border-gray-200"
+            }`}
         >
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4 text-sm font-semibold mb-4 pb-4 border-b border-teal-500/20">
@@ -474,11 +455,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
             </div>
 
             <Button
-              className={`w-full mt-4 border ${
-                theme === "dark"
-                  ? "border-teal-500/50 text-teal-400 hover:bg-teal-500/10"
-                  : "border-teal-500 text-teal-600 hover:bg-teal-50"
-              }`}
+              className={`w-full mt-4 border ${theme === "dark"
+                ? "border-teal-500/50 text-teal-400 hover:bg-teal-500/10"
+                : "border-teal-500 text-teal-600 hover:bg-teal-50"
+                }`}
               variant="outline"
             >
               Reset Transactions & History
@@ -490,11 +470,10 @@ export function SliderTab({ theme = "dark" }: SliderTabProps) {
       {/* History Tab */}
       {activeTab === "history" && (
         <Card
-          className={`p-6 border ${
-            theme === "dark"
-              ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
-              : "bg-white border-gray-200"
-          }`}
+          className={`p-6 border ${theme === "dark"
+            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-teal-500/20"
+            : "bg-white border-gray-200"
+            }`}
         >
           <div className={`text-center py-12 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
             <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />

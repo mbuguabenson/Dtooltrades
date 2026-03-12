@@ -50,7 +50,7 @@ const itemVariants = {
 export default function SmartAdaptiveTradingTab({
     signals: engineSignals = [],
     analysis: engineAnalysis,
-    symbol = "R_100",
+    symbol = "",
     availableSymbols,
     onSymbolChange,
     theme = "dark",

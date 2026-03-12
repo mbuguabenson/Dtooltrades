@@ -39,7 +39,7 @@ export class TradingBot {
     takeProfit: 50,
     stopLoss: -30,
     maxConsecutiveLosses: 5,
-    symbol: "R_100",
+    symbol: "",
     duration: 5,
     durationUnit: "t",
     contractType: "CALL",

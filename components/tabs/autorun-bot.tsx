@@ -67,7 +67,7 @@ export function AutoRunBot({
   journal,
   selectedSymbol: propSelectedSymbol,
 }: AutoRunBotProps) {
-  const [market, setMarket] = useState(propSelectedSymbol || "1HZ100V")
+  const [market, setMarket] = useState(propSelectedSymbol || "")
   const [strategy, setStrategy] = useState<BotStrategy>("EVEN_ODD")
   const [stake, setStake] = useState(0.35)
   const [duration, setDuration] = useState(1)

@@ -8,8 +8,16 @@ import { SmartPatternEngine, type PatternMatch } from "@/lib/trading/smart-patte
 import { AdaptiveStrategyManager, type StrategySignal } from "@/lib/trading/adaptive-strategy-manager"
 import { AnalysisEngine } from "@/lib/analysis-engine"
 
-export function useSmartAuto24(market: string, isConnected: boolean) {
-  const engineRef = useRef<SmartAuto24Engine>(new SmartAuto24Engine(100))
+export function useSmartAuto24(market: string, isConnected: boolean, maxTicks: number = 100) {
+  const engineRef = useRef<SmartAuto24Engine>(new SmartAuto24Engine(maxTicks))
+
+  useEffect(() => {
+    if (engineRef.current) {
+      // Re-initialize or update engine with new maxTicks
+      // Assuming we want a fresh engine for new depth
+      engineRef.current = new SmartAuto24Engine(maxTicks)
+    }
+  }, [maxTicks])
   const intelligenceRef = useRef<SmartIntelligenceEngine | null>(null)
   const patternRef = useRef<SmartPatternEngine>(new SmartPatternEngine())
   const strategyRef = useRef<AdaptiveStrategyManager>(new AdaptiveStrategyManager())

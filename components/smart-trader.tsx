@@ -31,7 +31,7 @@ interface SmartTraderProps {
 export function SmartTrader({ theme = "dark", currency = "USD" }: SmartTraderProps) {
   const { apiClient, isConnected, isAuthorized } = useDerivAPI()
   const [markets, setMarkets] = useState<any[]>([])
-  const [selectedMarket, setSelectedMarket] = useState("R_100")
+  const [selectedMarket, setSelectedMarket] = useState("")
   const [contractType, setContractType] = useState("CALL")
   const [stake, setStake] = useState(0.35)
   const [duration, setDuration] = useState(5)

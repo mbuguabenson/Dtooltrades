@@ -161,7 +161,7 @@ export class RealTradeExecutor {
 
       // Create proposal request
       const proposalRequest: ProposalRequest = {
-        symbol: "R_100", // Default to Volatility 100
+        symbol: "", // Default to empty
         contract_type: contractType,
         amount: this.state.currentStake,
         basis: "stake",

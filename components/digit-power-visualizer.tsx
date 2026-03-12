@@ -80,18 +80,15 @@ export function DigitPowerVisualizer({ snapshot, theme = "dark" }: DigitPowerVis
                 </div>
             </div>
 
-            {/* Last digits visualizer */}
+            {/* Last digits visualizer - now shows actual last digit from snapshot */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <span className="text-[10px] font-bold text-gray-500 whitespace-nowrap mr-2">FEED:</span>
-                {/* We assume the caller provides lastDigits or we use a ref to track them */}
-                {Array.from({ length: 10 }).map((_, i) => (
-                    <div key={i} className={`
-              min-w-[28px] h-7 rounded flex items-center justify-center text-xs font-mono font-bold
-              ${isDark ? "bg-white/5 border border-white/5 text-white" : "bg-black/5 border border-black/5 text-black"}
-            `}>
-                        {Math.floor(Math.random() * 10)}
-                    </div>
-                ))}
+                <div className={`
+                    min-w-[28px] h-7 rounded flex items-center justify-center text-xs font-mono font-bold
+                    ${isDark ? "bg-blue-500 border border-blue-500/50 text-white" : "bg-blue-500 text-white"}
+                `}>
+                    {snapshot.lastDigit}
+                </div>
             </div>
         </div>
     )

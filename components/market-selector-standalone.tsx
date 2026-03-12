@@ -10,23 +10,12 @@ interface MarketSelectorStandaloneProps {
   defaultSymbol?: string
 }
 
-const VOLATILITY_MARKETS = [
-  { symbol: "R_10", name: "Volatility 10 (1s)", interval: "1s" },
-  { symbol: "R_25", name: "Volatility 25 (1s)", interval: "1s" },
-  { symbol: "R_50", name: "Volatility 50 (1s)", interval: "1s" },
-  { symbol: "R_75", name: "Volatility 75 (1s)", interval: "1s" },
-  { symbol: "R_100", name: "Volatility 100 (1s)", interval: "1s" },
-  { symbol: "1HZ10V", name: "Volatility 10 Index", interval: "1s" },
-  { symbol: "1HZ25V", name: "Volatility 25 Index", interval: "1s" },
-  { symbol: "1HZ50V", name: "Volatility 50 Index", interval: "1s" },
-  { symbol: "1HZ75V", name: "Volatility 75 Index", interval: "1s" },
-  { symbol: "1HZ100V", name: "Volatility 100 Index", interval: "1s" },
-]
+const VOLATILITY_MARKETS: { symbol: string; name: string; interval: string }[] = []
 
 export function MarketSelectorStandalone({
   onMarketChange,
   theme = "dark",
-  defaultSymbol = "R_100",
+  defaultSymbol = "",
 }: MarketSelectorStandaloneProps) {
   const [selectedSymbol, setSelectedSymbol] = useState(defaultSymbol)
   const [currentPrice, setCurrentPrice] = useState<number>(0)
@@ -86,11 +75,10 @@ export function MarketSelectorStandalone({
 
   return (
     <div
-      className={`space-y-4 p-4 rounded-lg border ${
-        theme === "dark"
-          ? "bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-slate-700"
-          : "bg-white border-gray-200"
-      }`}
+      className={`space-y-4 p-4 rounded-lg border ${theme === "dark"
+        ? "bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-slate-700"
+        : "bg-white border-gray-200"
+        }`}
     >
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <div className="flex-1 w-full sm:w-auto">
@@ -99,9 +87,8 @@ export function MarketSelectorStandalone({
           </label>
           <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
             <SelectTrigger
-              className={`w-full ${
-                theme === "dark" ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-gray-300 text-gray-900"
-              }`}
+              className={`w-full ${theme === "dark" ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-gray-300 text-gray-900"
+                }`}
             >
               <SelectValue />
             </SelectTrigger>
@@ -117,9 +104,8 @@ export function MarketSelectorStandalone({
 
         <div className="flex gap-4 w-full sm:w-auto">
           <div
-            className={`flex-1 sm:flex-none text-center p-3 rounded-lg ${
-              theme === "dark" ? "bg-blue-500/10 border border-blue-500/20" : "bg-blue-50 border border-blue-200"
-            }`}
+            className={`flex-1 sm:flex-none text-center p-3 rounded-lg ${theme === "dark" ? "bg-blue-500/10 border border-blue-500/20" : "bg-blue-50 border border-blue-200"
+              }`}
           >
             <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"} mb-1`}>Price</div>
             <div className={`text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
@@ -128,9 +114,8 @@ export function MarketSelectorStandalone({
           </div>
 
           <div
-            className={`flex-1 sm:flex-none text-center p-3 rounded-lg ${
-              theme === "dark" ? "bg-green-500/10 border border-green-500/20" : "bg-green-50 border border-green-200"
-            }`}
+            className={`flex-1 sm:flex-none text-center p-3 rounded-lg ${theme === "dark" ? "bg-green-500/10 border border-green-500/20" : "bg-green-50 border border-green-200"
+              }`}
           >
             <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"} mb-1`}>Last Digit</div>
             <div className={`text-2xl font-bold ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
@@ -139,11 +124,10 @@ export function MarketSelectorStandalone({
           </div>
 
           <div
-            className={`flex-1 sm:flex-none text-center p-3 rounded-lg ${
-              theme === "dark"
-                ? "bg-purple-500/10 border border-purple-500/20"
-                : "bg-purple-50 border border-purple-200"
-            }`}
+            className={`flex-1 sm:flex-none text-center p-3 rounded-lg ${theme === "dark"
+              ? "bg-purple-500/10 border border-purple-500/20"
+              : "bg-purple-50 border border-purple-200"
+              }`}
           >
             <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"} mb-1`}>Ticks</div>
             <div className={`text-lg font-bold ${theme === "dark" ? "text-purple-400" : "text-purple-600"}`}>

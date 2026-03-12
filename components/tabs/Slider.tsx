@@ -172,7 +172,7 @@ export default function TradingBotSlider() {
 
     // --- Bot Configuration State ---
     const [formState, setFormState] = useState({
-        symbol: 'R_100', // Default to Volatility 100 Index
+        symbol: '', // Default to empty
         tradeTypeCategory: 'Up/Down',
         contractType: 'CALL',
         prediction: 3,

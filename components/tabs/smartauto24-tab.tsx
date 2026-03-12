@@ -51,9 +51,21 @@ interface SmartAuto24TabProps {
   currentPrice?: number | null
   currentDigit?: number | null
   tickCount?: number
+  maxTicks?: number
+  onMaxTicksChange?: (ticks: number) => void
 }
 
-export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols, currentPrice, currentDigit, tickCount }: SmartAuto24TabProps) {
+export function SmartAuto24Tab({
+  theme,
+  symbol,
+  onSymbolChange,
+  availableSymbols,
+  currentPrice,
+  currentDigit,
+  tickCount,
+  maxTicks = 100,
+  onMaxTicksChange
+}: SmartAuto24TabProps) {
   const {
     apiClient,
     isConnected,
@@ -143,7 +155,7 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
     processTick: engineProcessTick,
     reset: resetEngine,
     marketScores
-  } = useSmartAuto24(symbol, isConnected)
+  } = useSmartAuto24(symbol, isConnected, maxTicks)
 
   // Modal state
   const [showResultModal, setShowResultModal] = useState(false)
@@ -729,10 +741,11 @@ export function SmartAuto24Tab({ theme, symbol, onSymbolChange, availableSymbols
         symbol={symbol}
         availableSymbols={availableSymbols}
         onSymbolChange={onSymbolChange}
-        currentPrice={currentPrice}
         currentDigit={currentDigit}
         tickCount={tickCount}
         theme={theme}
+        maxTicks={maxTicks}
+        onMaxTicksChange={onMaxTicksChange}
       />
       {!isAuthorized ? (
         <Card

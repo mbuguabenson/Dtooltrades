@@ -16,7 +16,7 @@ export interface AnalysisState {
   isAnalyzing: boolean
 }
 
-export function useMarketAnalysis(symbol = "R_100") {
+export function useMarketAnalysis(symbol = "") {
   const [analysis, setAnalysis] = useState<AnalysisState>({
     digitFrequencies: {},
     overUnderAnalysis: { over: 0, under: 0, total: 0 },

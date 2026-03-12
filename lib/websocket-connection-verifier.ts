@@ -42,7 +42,6 @@ export class WebSocketVerifier {
       console.log("[v0] Testing message send...")
       this.manager.send({
         active_symbols: "brief",
-        product_type: "basic",
       })
 
       // Set up listener for response
@@ -91,7 +90,7 @@ export class WebSocketVerifier {
   /**
    * Subscribe to test symbol and monitor
    */
-  static async monitorConnection(symbol: string = "R_50"): Promise<void> {
+  static async monitorConnection(symbol: string = ""): Promise<void> {
     console.log(`[v0] Monitoring connection with symbol: ${symbol}`)
 
     if (!this.manager.isConnected()) {

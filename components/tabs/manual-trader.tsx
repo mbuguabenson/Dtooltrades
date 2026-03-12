@@ -161,7 +161,7 @@ export function ManualTrader({
   journal,
   selectedSymbol: propSelectedSymbol,
 }: ManualTraderProps) {
-  const [market, setMarket] = useState(propSelectedSymbol || "1HZ100V")
+  const [market, setMarket] = useState(propSelectedSymbol || "")
 
   const [tradeType, setTradeType] = useState<keyof typeof TRADE_TYPES>("DIGITS")
   const [contractType, setContractType] = useState("DIGITOVER")

@@ -65,23 +65,7 @@ export const TRADING_STRATEGIES = {
   },
 } as const
 
-export const TICK_INTERVALS = {
-  "1HZ10V": 1,
-  "1HZ15V": 1,
-  "1HZ25V": 1,
-  "1HZ30V": 1,
-  "1HZ50V": 1,
-  "1HZ75V": 1,
-  "1HZ90V": 1,
-  "1HZ100V": 1,
-  R_10: 2,
-  R_25: 2,
-  R_50: 2,
-  R_75: 2,
-  R_100: 2,
-  R_150: 2,
-  R_250: 2,
-} as const
+export const TICK_INTERVALS = {} as const
 
 export type ContractType = (typeof TRADING_CONTRACTS)[keyof typeof TRADING_CONTRACTS]
 export type StrategyKey = keyof typeof TRADING_STRATEGIES

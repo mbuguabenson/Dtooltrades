@@ -1,3 +1,4 @@
+import { extractLastDigit as utilsExtractLastDigit } from "./digit-utils"
 // Analysis engine for processing tick data and generating signals
 export interface TickData {
   epoch: number
@@ -85,13 +86,9 @@ export class AnalysisEngine {
     this.digitCounts.set(lastDigit, count + 1)
   }
 
-  public extractLastDigit(quote: number, pipSize = 2): number {
-    // Format with pip_size decimal places, then extract last character
-    const formatted = quote.toFixed(pipSize)
-    const lastChar = formatted.charAt(formatted.length - 1)
-    const digit = Number.parseInt(lastChar, 10)
-
-    return isNaN(digit) ? 0 : digit
+  // Extract last digit correctly using truncation
+  public extractLastDigit(quote: number, pipSize: number = 2): number {
+    return utilsExtractLastDigit(quote, pipSize)
   }
 
   getAnalysis(): AnalysisResult {

@@ -14,12 +14,12 @@ interface AutonomousBotTabProps {
 
 export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabProps) {
   const [isActive, setIsActive] = useState(false)
-  const { 
-    apiClient, 
-    isConnected, 
-    isAuthorized, 
+  const {
+    apiClient,
+    isConnected,
+    isAuthorized,
     balance,
-    isLoggedIn 
+    isLoggedIn
   } = useDerivAPI()
 
   const [selectedContracts, setSelectedContracts] = useState({
@@ -121,7 +121,7 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
           currency: "USD",
           duration: 5,
           duration_unit: "t",
-          symbol: "1HZ10V",
+          symbol: "",
           amount: roundedStake,
           parameters: contractType === "DIGITDIFF" ? { digit_lower: digitValue } : { digit: digitValue },
         }
@@ -215,11 +215,10 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
           </div>
           <Badge
             variant="outline"
-            className={`${
-              isActive
+            className={`${isActive
                 ? "bg-green-500/20 border-green-500/30 text-green-400"
                 : "bg-gray-500/20 border-gray-500/30 text-gray-400"
-            }`}
+              }`}
           >
             {isActive ? "Active" : "Inactive"}
           </Badge>
@@ -243,9 +242,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
-              className={`p-4 rounded-lg border ${
-                theme === "dark" ? "bg-blue-500/5 border-blue-500/20" : "bg-blue-50 border-blue-200"
-              }`}
+              className={`p-4 rounded-lg border ${theme === "dark" ? "bg-blue-500/5 border-blue-500/20" : "bg-blue-50 border-blue-200"
+                }`}
             >
               <div
                 className={`font-bold mb-2 flex items-center gap-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -259,9 +257,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
             </div>
 
             <div
-              className={`p-4 rounded-lg border ${
-                theme === "dark" ? "bg-green-500/5 border-green-500/20" : "bg-green-50 border-green-200"
-              }`}
+              className={`p-4 rounded-lg border ${theme === "dark" ? "bg-green-500/5 border-green-500/20" : "bg-green-50 border-green-200"
+                }`}
             >
               <div
                 className={`font-bold mb-2 flex items-center gap-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -275,9 +272,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
             </div>
 
             <div
-              className={`p-4 rounded-lg border ${
-                theme === "dark" ? "bg-orange-500/5 border-orange-500/20" : "bg-orange-50 border-orange-200"
-              }`}
+              className={`p-4 rounded-lg border ${theme === "dark" ? "bg-orange-500/5 border-orange-500/20" : "bg-orange-50 border-orange-200"
+                }`}
             >
               <div
                 className={`font-bold mb-2 flex items-center gap-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -291,9 +287,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
             </div>
 
             <div
-              className={`p-4 rounded-lg border ${
-                theme === "dark" ? "bg-purple-500/5 border-purple-500/20" : "bg-purple-50 border-purple-200"
-              }`}
+              className={`p-4 rounded-lg border ${theme === "dark" ? "bg-purple-500/5 border-purple-500/20" : "bg-purple-50 border-purple-200"
+                }`}
             >
               <div
                 className={`font-bold mb-2 flex items-center gap-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -333,15 +328,14 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
               ].map(({ key, label }) => (
                 <label
                   key={key}
-                  className={`flex items-center gap-2 p-2 rounded border cursor-pointer ${
-                    selectedContracts[key as keyof typeof selectedContracts]
+                  className={`flex items-center gap-2 p-2 rounded border cursor-pointer ${selectedContracts[key as keyof typeof selectedContracts]
                       ? theme === "dark"
                         ? "bg-blue-500/20 border-blue-500/50"
                         : "bg-blue-50 border-blue-300"
                       : theme === "dark"
                         ? "bg-gray-500/10 border-gray-500/30"
                         : "bg-gray-50 border-gray-200"
-                  }`}
+                    }`}
                 >
                   <input
                     type="checkbox"
@@ -368,11 +362,10 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
                 onChange={(e) => handleStakeChange(e.target.value)}
                 step="0.01"
                 min="0.01"
-                className={`w-full px-2 py-1 rounded text-sm ${
-                  theme === "dark"
+                className={`w-full px-2 py-1 rounded text-sm ${theme === "dark"
                     ? "bg-gray-800 border border-gray-600 text-white"
                     : "bg-white border border-gray-300 text-gray-900"
-                }`}
+                  }`}
               />
             </div>
             <div>
@@ -386,11 +379,10 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
                 value={maxLosses}
                 onChange={(e) => setMaxLosses(Number.parseInt(e.target.value) || 0)}
                 min="1"
-                className={`w-full px-2 py-1 rounded text-sm ${
-                  theme === "dark"
+                className={`w-full px-2 py-1 rounded text-sm ${theme === "dark"
                     ? "bg-gray-800 border border-gray-600 text-white"
                     : "bg-white border border-gray-300 text-gray-900"
-                }`}
+                  }`}
               />
             </div>
             <div>
@@ -404,11 +396,10 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
                 value={profitTarget}
                 onChange={(e) => setProfitTarget(Number.parseInt(e.target.value) || 0)}
                 min="1"
-                className={`w-full px-2 py-1 rounded text-sm ${
-                  theme === "dark"
+                className={`w-full px-2 py-1 rounded text-sm ${theme === "dark"
                     ? "bg-gray-800 border border-gray-600 text-white"
                     : "bg-white border border-gray-300 text-gray-900"
-                }`}
+                  }`}
               />
             </div>
           </div>
@@ -431,8 +422,7 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
 
           {currentTrade && (
             <div
-              className={`p-3 rounded border ${
-                currentTrade.status === "won"
+              className={`p-3 rounded border ${currentTrade.status === "won"
                   ? theme === "dark"
                     ? "bg-green-500/10 border-green-500/50"
                     : "bg-green-50 border-green-300"
@@ -443,7 +433,7 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
                     : theme === "dark"
                       ? "bg-yellow-500/10 border-yellow-500/50"
                       : "bg-yellow-50 border-yellow-300"
-              }`}
+                }`}
             >
               <p className={`text-sm font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                 {currentTrade.type.toUpperCase()} - Entry: {currentTrade.entry}
@@ -472,9 +462,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div
-              className={`p-4 rounded-lg border text-center ${
-                theme === "dark" ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-200"
-              }`}
+              className={`p-4 rounded-lg border text-center ${theme === "dark" ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-200"
+                }`}
             >
               <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Trades</p>
               <p className={`text-lg font-bold mt-2 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
@@ -483,9 +472,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
             </div>
 
             <div
-              className={`p-4 rounded-lg border text-center ${
-                theme === "dark" ? "bg-green-500/10 border-green-500/20" : "bg-green-50 border-green-200"
-              }`}
+              className={`p-4 rounded-lg border text-center ${theme === "dark" ? "bg-green-500/10 border-green-500/20" : "bg-green-50 border-green-200"
+                }`}
             >
               <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Wins</p>
               <p className={`text-lg font-bold mt-2 ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>
@@ -494,9 +482,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
             </div>
 
             <div
-              className={`p-4 rounded-lg border text-center ${
-                theme === "dark" ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"
-              }`}
+              className={`p-4 rounded-lg border text-center ${theme === "dark" ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"
+                }`}
             >
               <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Losses</p>
               <p className={`text-lg font-bold mt-2 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
@@ -505,9 +492,8 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
             </div>
 
             <div
-              className={`p-4 rounded-lg border text-center ${
-                theme === "dark" ? "bg-purple-500/10 border-purple-500/20" : "bg-purple-50 border-purple-200"
-              }`}
+              className={`p-4 rounded-lg border text-center ${theme === "dark" ? "bg-purple-500/10 border-purple-500/20" : "bg-purple-50 border-purple-200"
+                }`}
             >
               <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>P&L</p>
               <p
@@ -522,18 +508,16 @@ export function AutonomousBotTab({ theme = "dark", symbol }: AutonomousBotTabPro
             <Button
               onClick={startBot}
               disabled={isActive || !isAuthorized}
-              className={`flex-1 ${
-                !isActive && isAuthorized ? "bg-green-500 hover:bg-green-600" : "bg-gray-500 cursor-not-allowed"
-              } text-white`}
+              className={`flex-1 ${!isActive && isAuthorized ? "bg-green-500 hover:bg-green-600" : "bg-gray-500 cursor-not-allowed"
+                } text-white`}
             >
               Start Bot
             </Button>
             <Button
               onClick={stopBot}
               disabled={!isActive}
-              className={`flex-1 ${
-                isActive ? "bg-red-500 hover:bg-red-600" : "bg-gray-500 cursor-not-allowed"
-              } text-white`}
+              className={`flex-1 ${isActive ? "bg-red-500 hover:bg-red-600" : "bg-gray-500 cursor-not-allowed"
+                } text-white`}
             >
               Stop Bot
             </Button>

@@ -1,5 +1,6 @@
 // Advanced Analytics Engine for Deriv Trading
 // Implements power calculations, trend analysis, and signal generation
+import { extractLastDigit } from "./digit-utils"
 
 export interface TickData {
   epoch: number
@@ -93,8 +94,14 @@ export class CoreAnalyticsEngine {
   }
 
   private extractDigit(price: number): number {
-    const formatted = price.toFixed(this.pipSize)
-    return Number.parseInt(formatted.charAt(formatted.length - 1), 10)
+    return extractLastDigit(price, this.pipSize)
+  }
+
+  private calculateDecimalCount(pip: number): number {
+    const s = String(pip)
+    if (s.includes(".")) return s.split(".")[1].length
+    if (s.includes("e-")) return Number.parseInt(s.split("e-")[1], 10)
+    return 0
   }
 
   analyze(): AnalysisSnapshot {

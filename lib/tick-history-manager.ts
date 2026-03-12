@@ -1,3 +1,5 @@
+import { extractLastDigit } from "./digit-utils"
+
 export class TickHistoryManager {
   private tickBuffers = new Map<string, number[]>()
   private priceBuffers = new Map<string, number[]>()
@@ -20,7 +22,7 @@ export class TickHistoryManager {
         // Check if we already have cached data and it's recent
         const lastFetch = this.lastFetchTime.get(symbol) || 0
         const now = Date.now()
-        
+
         if (now - lastFetch < this.FETCH_COOLDOWN) {
           console.log(`[v0] Using cached data for ${symbol}`)
           continue
@@ -40,10 +42,7 @@ export class TickHistoryManager {
         }
 
         const latestDigits = response.history.prices.map((price: number) => {
-          const priceStr = price.toString()
-          const cleanStr = priceStr.replace(".", "")
-          const lastChar = cleanStr[cleanStr.length - 1]
-          return Number.parseInt(lastChar)
+          return extractLastDigit(price, 2) // Assuming default 2, but we should ideally know pipSize
         })
 
         this.tickBuffers.set(symbol, latestDigits)
@@ -98,10 +97,7 @@ export class TickHistoryManager {
     const buffer = this.tickBuffers.get(symbol) || []
     const priceBuffer = this.priceBuffers.get(symbol) || []
 
-    const priceStr = price.toString()
-    const cleanStr = priceStr.replace(".", "")
-    const lastChar = cleanStr[cleanStr.length - 1]
-    const lastDigit = Number.parseInt(lastChar)
+    const lastDigit = extractLastDigit(price, 2)
 
     console.log(`[v0] ${symbol} tick: ${price} → last digit: ${lastDigit}`)
 

@@ -187,8 +187,8 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
     <div className="space-y-6 pb-[200px]">
       <div
         className={`rounded-xl p-4 sm:p-6 border ${theme === "dark"
-            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-            : "bg-white border-gray-200 shadow-lg"
+          ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+          : "bg-white border-gray-200 shadow-lg"
           }`}
       >
         <h2
@@ -218,19 +218,7 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={theme === "dark" ? "bg-[#0a0e27] border-blue-500/30" : "bg-white"}>
-                <SelectItem value="1HZ10V">Volatility 10 (1s) Index</SelectItem>
-                <SelectItem value="1HZ15V">Volatility 15 (1s) Index</SelectItem>
-                <SelectItem value="1HZ25V">Volatility 25 (1s) Index</SelectItem>
-                <SelectItem value="1HZ30V">Volatility 30 (1s) Index</SelectItem>
-                <SelectItem value="1HZ50V">Volatility 50 (1s) Index</SelectItem>
-                <SelectItem value="1HZ75V">Volatility 75 (1s) Index</SelectItem>
-                <SelectItem value="1HZ90V">Volatility 90 (1s) Index</SelectItem>
-                <SelectItem value="1HZ100V">Volatility 100 (1s) Index</SelectItem>
-                <SelectItem value="R_10">Volatility 10 Index</SelectItem>
-                <SelectItem value="R_25">Volatility 25 Index</SelectItem>
-                <SelectItem value="R_50">Volatility 50 Index</SelectItem>
-                <SelectItem value="R_75">Volatility 75 Index</SelectItem>
-                <SelectItem value="R_100">Volatility 100 Index</SelectItem>
+                {/* Markets will be loaded dynamically */}
               </SelectContent>
             </Select>
           </div>
@@ -333,8 +321,8 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
             onClick={handleAnalyze}
             disabled={isAnalyzing}
             className={`w-full py-4 sm:py-6 text-base sm:text-lg font-bold ${isAnalyzing
-                ? "bg-gray-500"
-                : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-[0_0_20px_rgba(34,211,238,0.5)]"
+              ? "bg-gray-500"
+              : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-[0_0_20px_rgba(34,211,238,0.5)]"
               }`}
           >
             {isAnalyzing ? "Analyzing..." : "Scan All Strategies"}
@@ -353,8 +341,8 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
       {aiSignalResult && (
         <div
           className={`rounded-xl p-4 sm:p-6 border ${theme === "dark"
-              ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-              : "bg-white border-gray-200 shadow-lg"
+            ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+            : "bg-white border-gray-200 shadow-lg"
             }`}
         >
           <h3
@@ -367,10 +355,10 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
             <div className="text-center">
               <Badge
                 className={`text-base sm:text-lg px-4 sm:px-6 py-2 ${aiSignalResult.signal === "TRADE NOW"
-                    ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)] animate-pulse"
-                    : aiSignalResult.signal === "WAIT"
-                      ? "bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.6)]"
-                      : "bg-slate-500 text-white"
+                  ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)] animate-pulse"
+                  : aiSignalResult.signal === "WAIT"
+                    ? "bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.6)]"
+                    : "bg-slate-500 text-white"
                   }`}
               >
                 {aiSignalResult.signal}

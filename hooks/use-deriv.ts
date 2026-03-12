@@ -19,7 +19,7 @@ export interface ConnectionLog {
   type: "info" | "error" | "warning"
 }
 
-export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 1000) {
+export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">(
     "reconnecting",
   )
@@ -75,27 +75,15 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 1000) {
             console.log("[v0] Loaded symbols:", symbols.length, symbols.map(s => s.symbol).join(", "))
           } else {
             console.warn("[v0] No symbols returned, using defaults")
-            const defaultSymbols = [
-              { symbol: "R_50", display_name: "Volatility 50" },
-              { symbol: "R_100", display_name: "Volatility 100" },
-              { symbol: "EURUSD", display_name: "EUR/USD" },
-              { symbol: "GBPUSD", display_name: "GBP/USD" },
-              { symbol: "USDJPY", display_name: "USD/JPY" },
-            ]
+            const defaultSymbols: DerivSymbol[] = []
             setAvailableSymbols(defaultSymbols)
-            addLog("Using default markets", "info")
+            addLog("No markets available", "info")
           }
         } catch (error) {
           console.error("[v0] Failed to get active symbols:", error)
-          const defaultSymbols = [
-            { symbol: "R_50", display_name: "Volatility 50" },
-            { symbol: "R_100", display_name: "Volatility 100" },
-            { symbol: "EURUSD", display_name: "EUR/USD" },
-            { symbol: "GBPUSD", display_name: "GBP/USD" },
-            { symbol: "USDJPY", display_name: "USD/JPY" },
-          ]
+          const defaultSymbols: DerivSymbol[] = []
           setAvailableSymbols(defaultSymbols)
-          addLog("Failed to get symbols, using defaults", "warning")
+          addLog("Failed to get symbols", "warning")
         }
 
         if (subscriptionIdRef.current) {
@@ -108,8 +96,7 @@ export function useDeriv(initialSymbol = "R_100", initialMaxTicks = 1000) {
         }
 
         if (!symbol || symbol.trim() === "") {
-          console.error("[v0] Invalid symbol, cannot subscribe")
-          addLog("Invalid symbol provided", "error")
+          console.log("[v0] No symbol selected for subscription yet")
           return
         }
 

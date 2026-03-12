@@ -6,7 +6,7 @@ import { Play, Square, TrendingUp, TrendingDown, Users, Search, Target, Zap, Shi
 export function AdminTradingConsole() {
     const [users, setUsers] = useState<any[]>([])
     const [selectedUser, setSelectedUser] = useState<string>("")
-    const [market, setMarket] = useState("R_100")
+    const [market, setMarket] = useState("")
     const [tradeType, setTradeType] = useState("CALL")
     const [stake, setStake] = useState(10)
     const [status, setStatus] = useState<"idle" | "trading" | "success" | "error">("idle")
@@ -110,11 +110,7 @@ export function AdminTradingConsole() {
                                 onChange={(e) => setMarket(e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-blue-500 transition-all appearance-none"
                             >
-                                <option value="R_100" className="bg-[#0a0a0a]">Volatility 100</option>
-                                <option value="R_75" className="bg-[#0a0a0a]">Volatility 75</option>
-                                <option value="R_50" className="bg-[#0a0a0a]">Volatility 50</option>
-                                <option value="R_25" className="bg-[#0a0a0a]">Volatility 25</option>
-                                <option value="R_10" className="bg-[#0a0a0a]">Volatility 10</option>
+                                <option value="" className="bg-[#0a0a0a]">Select market...</option>
                             </select>
                         </div>
 

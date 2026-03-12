@@ -1,3 +1,4 @@
+import { extractLastDigit } from "../digit-utils"
 import { DerivWebSocketManager } from "../deriv-websocket-manager"
 
 export type MarketState = "Random" | "Transitional" | "Structured"
@@ -18,7 +19,7 @@ export class SmartIntelligenceEngine {
     private wsManager: DerivWebSocketManager
     private isScanning: boolean = false
     private subscriptionIds: Map<string, string> = new Map()
-    private markets: string[] = ["R_10", "R_25", "R_50", "R_75", "R_100"]
+    private markets: string[] = []
     private focusMarket: string | null = null
     private scanResults: Map<string, MarketScore> = new Map()
     private tickWindows: Map<string, number[]> = new Map()
@@ -103,7 +104,8 @@ export class SmartIntelligenceEngine {
     }
 
     private processTick(symbol: string, tick: any) {
-        const lastDigit = this.wsManager.extractLastDigit(tick.quote, tick.pip_size || 2)
+        const pipSize = this.wsManager.getPipSize(symbol)
+        const lastDigit = extractLastDigit(tick.quote, pipSize)
         const window = this.tickWindows.get(symbol) || []
 
         window.push(lastDigit)

@@ -13,7 +13,7 @@ export function useSmartAdaptiveTrading() {
     const { apiClient, isConnected, isAuthorized, balance } = useDerivAPI()
 
     const [marketScores, setMarketScores] = useState<MarketScore[]>([])
-    const [selectedMarket, setSelectedMarket] = useState("R_100")
+    const [selectedMarket, setSelectedMarket] = useState("")
     const [selectedStrategies, setSelectedStrategies] = useState<string[]>(["OverUnder", "SuperSignals"])
     const [selectedStrategy, setSelectedStrategy] = useState("All")
     const [patterns, setPatterns] = useState<PatternMatch[]>([])

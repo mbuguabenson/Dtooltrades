@@ -1,4 +1,5 @@
-import type DerivAPIBasic from "@deriv/deriv-api/dist/DerivAPIBasic"
+import type { DerivAPIClient } from "./deriv-api"
+import { extractLastDigit, calculateDecimalCount } from "./digit-utils"
 
 export interface AutomatedBotConfig {
   accountBalance: number
@@ -42,18 +43,15 @@ export interface TradingSignal {
 }
 
 export class AutomatedTradesBot {
-  private apiClient: DerivAPIBasic
+  private apiClient: DerivAPIClient
   private config: AutomatedBotConfig
   private isRunning: boolean = false
   private tickHistory: Map<string, number[]> = new Map()
   private tickCache: Map<string, { ticks: number[], timestamp: number }> = new Map()
   private readonly CACHE_DURATION = 60000 // 1 minute cache
-  private readonly MARKETS = [
-    "1HZ10V", "1HZ25V", "1HZ50V", "1HZ75V", "1HZ100V",
-    "R_10", "R_25", "R_50", "R_75", "R_100"
-  ]
+  private readonly MARKETS = []
 
-  constructor(apiClient: DerivAPIBasic, config: AutomatedBotConfig) {
+  constructor(apiClient: DerivAPIClient, config: AutomatedBotConfig) {
     this.apiClient = apiClient
     this.config = config
   }
@@ -61,7 +59,7 @@ export class AutomatedTradesBot {
   async analyzeMarket(symbol: string): Promise<MarketAnalysis> {
     const ticks = await this.fetchTickHistory(symbol, 100)
     const digitFrequencies: Record<number, number> = {}
-    
+
     // Calculate digit frequencies
     for (let i = 0; i <= 9; i++) {
       digitFrequencies[i] = ticks.filter(t => t === i).length
@@ -136,7 +134,7 @@ export class AutomatedTradesBot {
       this.MARKETS.map(market => this.analyzeMarket(market))
     )
 
-    return analyses.reduce((best, current) => 
+    return analyses.reduce((best, current) =>
       current.score > best.score ? current : best
     )
   }
@@ -240,7 +238,7 @@ export class AutomatedTradesBot {
 
     // Find strongest trend
     const trendEntries = Object.entries(trends)
-    const strongestTrend = trendEntries.reduce((max, curr) => 
+    const strongestTrend = trendEntries.reduce((max, curr) =>
       curr[1] > max[1] ? curr : max
     )
 
@@ -340,16 +338,12 @@ export class AutomatedTradesBot {
     }
 
     try {
-      const response = await this.apiClient.send({
-        ticks_history: symbol,
-        count,
-        end: "latest",
-        style: "ticks",
-      })
+      const response = await this.apiClient.getTickHistory(symbol, count)
 
-      if (response.history?.prices) {
-        const ticks = response.history.prices.map((price: number) => 
-          Number(price.toFixed(2).slice(-1))
+      if (response.prices && response.pip_size !== undefined) {
+        const pipSize = response.pip_size
+        const ticks = response.prices.map((price: number) =>
+          extractLastDigit(price, pipSize)
         )
         // Cache the result
         this.tickCache.set(symbol, { ticks, timestamp: Date.now() })
@@ -369,10 +363,10 @@ export class AutomatedTradesBot {
 
   private calculateVolatility(ticks: number[]): number {
     if (ticks.length < 2) return 0
-    
+
     const changes = ticks.slice(1).map((tick, i) => Math.abs(tick - ticks[i]))
     const avgChange = changes.reduce((sum, change) => sum + change, 0) / changes.length
-    
+
     return (avgChange / 9) * 100
   }
 
@@ -384,25 +378,21 @@ export class AutomatedTradesBot {
   async executeTradeSignal(signal: TradingSignal): Promise<void> {
     try {
       console.log(`[v0] Executing trade: ${signal.contractType} ${signal.barrier} on ${signal.market} with stake $${signal.stake}`)
-      
-      const proposal = await this.apiClient.send({
-        proposal: 1,
+
+      const proposal = await this.apiClient.getProposal({
+        symbol: signal.market,
+        contract_type: signal.contractType,
         amount: signal.stake,
         basis: "stake",
-        contract_type: signal.contractType,
         currency: "USD",
         duration: this.config.duration,
         duration_unit: this.config.durationUnit,
-        symbol: signal.market,
         barrier: signal.barrier,
       })
 
-      if (proposal.proposal) {
-        const buyResponse = await this.apiClient.send({
-          buy: proposal.proposal.id,
-          price: signal.stake,
-        })
-        
+      if (proposal) {
+        const buyResponse = await this.apiClient.buyContract(proposal.id, signal.stake)
+
         console.log(`[v0] Trade executed successfully:`, buyResponse)
       }
     } catch (error) {
