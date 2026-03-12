@@ -34,7 +34,13 @@ interface TradeSignal {
   category: "even-odd" | "over-under" | "differs"
 }
 
-const MARKETS: { symbol: string; name: string }[] = []
+const MARKETS: { symbol: string; name: string }[] = [
+  { symbol: "R_100", name: "Volatility 100 Index" },
+  { symbol: "R_75", name: "Volatility 75 Index" },
+  { symbol: "R_50", name: "Volatility 50 Index" },
+  { symbol: "R_25", name: "Volatility 25 Index" },
+  { symbol: "R_10", name: "Volatility 10 Index" },
+]
 
 interface SuperSignalsTabProps {
   theme?: "light" | "dark"
