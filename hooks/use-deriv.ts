@@ -75,13 +75,27 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
             console.log("[v0] Loaded symbols:", symbols.length, symbols.map(s => s.symbol).join(", "))
           } else {
             console.warn("[v0] No symbols returned, using defaults")
-            const defaultSymbols: DerivSymbol[] = []
+            const defaultSymbols: any[] = [
+              { symbol: "R_100", display_name: "Volatility 100 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "R_75", display_name: "Volatility 75 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "R_50", display_name: "Volatility 50 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "R_25", display_name: "Volatility 25 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "R_10", display_name: "Volatility 10 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "1HZ100V", display_name: "Volatility 100 (1s) Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "1HZ75V", display_name: "Volatility 75 (1s) Index", market: "synthetic_index", market_display_name: "Derived" },
+            ]
             setAvailableSymbols(defaultSymbols)
-            addLog("No markets available", "info")
+            addLog("Using default markets", "info")
           }
         } catch (error) {
           console.error("[v0] Failed to get active symbols:", error)
-          const defaultSymbols: DerivSymbol[] = []
+          const defaultSymbols: any[] = [
+            { symbol: "R_100", display_name: "Volatility 100 Index", market: "synthetic_index", market_display_name: "Derived" },
+            { symbol: "R_75", display_name: "Volatility 75 Index", market: "synthetic_index", market_display_name: "Derived" },
+            { symbol: "R_50", display_name: "Volatility 50 Index", market: "synthetic_index", market_display_name: "Derived" },
+            { symbol: "R_25", display_name: "Volatility 25 Index", market: "synthetic_index", market_display_name: "Derived" },
+            { symbol: "R_10", display_name: "Volatility 10 Index", market: "synthetic_index", market_display_name: "Derived" },
+          ]
           setAvailableSymbols(defaultSymbols)
           addLog("Failed to get symbols", "warning")
         }
