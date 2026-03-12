@@ -41,9 +41,17 @@ export function useDerivAuth() {
           console.error("[v0] ❌ Auth error:", data.error.message)
           if (data.error.code === "InvalidToken" || data.error.code === "AuthorizationRequired") {
             setIsLoggedIn(false)
-            // Only show token modal if we actually don't have a session
-            const storedToken = localStorage.getItem("deriv_api_token")
-            if (!storedToken) setShowTokenModal(true)
+            setActiveLoginId(null)
+            activeLoginIdRef.current = null
+            setAccountCode("")
+            setToken("")
+
+            // Clear invalid credentials so they aren't retried indefinitely
+            localStorage.removeItem("deriv_api_token")
+            localStorage.removeItem("deriv_auth_tokens")
+            localStorage.removeItem("active_login_id")
+
+            setShowTokenModal(true)
           }
           return
         }

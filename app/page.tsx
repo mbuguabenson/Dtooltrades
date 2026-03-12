@@ -5,7 +5,14 @@ import { useDeriv } from "@/hooks/use-deriv"
 import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Moon, Sun, User, AlertTriangle } from 'lucide-react'
+import { Moon, Sun, User, AlertTriangle, Menu } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import Link from 'next/link'
 import { DigitDistribution } from "@/components/digit-distribution"
 import { SignalsTab } from "@/components/tabs/signals-tab"
@@ -153,18 +160,19 @@ export default function DerivAnalysisApp() {
               } backdrop-blur-xl`}
           >
             <div className="mx-auto w-full px-2 sm:px-6">
-              <div className="flex flex-wrap 2xl:flex-nowrap items-center py-1.5 2xl:h-14 gap-2 w-full justify-between">
+              <div className="flex flex-nowrap items-center py-1.5 h-auto sm:h-14 gap-1.5 sm:gap-2 w-full justify-between">
 
-                {/* Brand */}
+                {/* Brand Logo only on mobile, full text on desktop */}
                 <div className="flex items-center shrink-0">
                   <h1 className="text-sm sm:text-xl font-bold tracking-tight flex items-center gap-0.5 sm:gap-1">
-                    <span className={theme === "dark" ? "text-white" : "text-slate-900"}>PROFIT</span>
+                    <span className={`hidden sm:inline ${theme === "dark" ? "text-white" : "text-slate-900"}`}>PROFIT</span>
                     <span className={`hidden sm:inline ${theme === "dark" ? "text-slate-400 font-medium" : "text-slate-500 font-medium"}`}>HUB</span>
+                    <span className={`sm:hidden ${theme === "dark" ? "text-white" : "text-slate-900"}`}>PH</span>
                   </h1>
                 </div>
 
                 {/* Centralized Market Selector + Live Price */}
-                <div className="order-last 2xl:order-none w-full 2xl:w-auto mt-2 2xl:mt-0 flex-1 flex justify-center items-center min-w-fit px-1 sm:px-2 gap-2">
+                <div className="order-none w-auto flex-1 flex justify-center items-center min-w-0 max-w-2xl px-0.5 sm:px-2 gap-1.5 sm:gap-2">
                   {/* Market Selector */}
                   {availableSymbols.length > 0 && (
                     <div className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-xl border transition-all ${theme === "dark"
@@ -206,48 +214,78 @@ export default function DerivAnalysisApp() {
                   )}
                 </div>
 
-                {/* Auth & Theme */}
-                <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
-                  <Link href="/account" className="hidden sm:block">
+                {/* Auth & Desktop Tools */}
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  {/* Desktop Only Buttons */}
+                  <div className="hidden sm:flex items-center gap-2">
+                    <Link href="/account">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
+                          ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
+                          : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
+                      >
+                        <User className="h-4 w-4" />
+                        Account
+                      </Button>
+                    </Link>
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => setShowRiskModal(true)}
                       className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
-                        ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
-                        : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
+                        ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20"
+                        : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
                     >
-                      <User className="h-4 w-4" />
-                      Account
+                      <AlertTriangle className="h-4 w-4" />
+                      Risk
                     </Button>
-                  </Link>
-                  <Link href="/account" className="sm:hidden">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-800/50 text-slate-300">
-                      <User className="h-4 w-4" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleTheme}
+                      className={`h-9 w-9 rounded-lg transition-all ${theme === "dark"
+                        ? "bg-white/5 text-yellow-500 hover:bg-white/10"
+                        : "bg-black/5 text-slate-700 hover:bg-black/10"
+                        }`}
+                    >
+                      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                     </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowRiskModal(true)}
-                    className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
-                      ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20"
-                      : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
-                  >
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="hidden sm:inline">Risk</span>
-                  </Button>
+                  </div>
+
                   <DerivAuth theme={theme} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleTheme}
-                    className={`h-7 w-7 sm:h-9 sm:w-9 rounded-lg transition-all ${theme === "dark"
-                      ? "bg-white/5 text-yellow-500 hover:bg-white/10"
-                      : "bg-black/5 text-slate-700 hover:bg-black/10"
-                      }`}
-                  >
-                    {theme === "dark" ? <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                  </Button>
+
+                  {/* Mobile Hamburger Menu */}
+                  <div className="sm:hidden -ml-1">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-lg ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                          <Menu className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className={`w-48 ${theme === "dark" ? "bg-[#0a0e27] border-white/10" : ""}`}>
+                        <DropdownMenuItem asChild>
+                          <Link href="/account" className="flex items-center gap-2 w-full cursor-pointer">
+                            <User className="h-4 w-4 shrink-0" />
+                            <span>Account</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowRiskModal(true)} className="flex items-center gap-2 cursor-pointer">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                          <span>Risk Disclaimer</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className={theme === "dark" ? "bg-white/10" : ""} />
+                        <DropdownMenuItem onClick={toggleTheme} className="flex items-center justify-between cursor-pointer">
+                          <span className="flex items-center gap-2">
+                            {theme === "dark" ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 shrink-0" />}
+                            <span>Theme</span>
+                          </span>
+                          <span className="text-xs opacity-50">{theme === "dark" ? "Light" : "Dark"}</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
 
