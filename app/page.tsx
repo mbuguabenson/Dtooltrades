@@ -5,7 +5,7 @@ import { useDeriv } from "@/hooks/use-deriv"
 import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Moon, Sun, User } from 'lucide-react'
+import { Moon, Sun, User, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { DigitDistribution } from "@/components/digit-distribution"
 import { SignalsTab } from "@/components/tabs/signals-tab"
@@ -32,6 +32,7 @@ import { ResponsiveTabs } from "@/components/responsive-tabs"
 import { MoneyMakerTab } from "@/components/tabs/money-maker-tab"
 import { ToolsInfoTab } from "@/components/tabs/tools-info-tab"
 import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
+import { RiskDisclaimerModal } from "@/components/modals/risk-disclaimer-modal"
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,7 @@ export default function DerivAnalysisApp() {
   const [isLoading, setIsLoading] = useState(true)
   const [initError, setInitError] = useState<string | null>(null)
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
+  const [showRiskModal, setShowRiskModal] = useState(false)
   const [siteConfig, setSiteConfig] = useState<any>(null)
   const globalContext = useGlobalTradingContext()
 
@@ -86,6 +88,12 @@ export default function DerivAnalysisApp() {
     } catch (error) {
       console.error("[v0] Initialization error:", error)
       setInitError(error instanceof Error ? error.message : "Unknown error")
+    }
+
+    // Check for risk acceptance
+    const accepted = localStorage.getItem("deriv_risk_accepted")
+    if (!accepted) {
+      setShowRiskModal(true)
     }
 
     // Fetch site config
@@ -177,6 +185,17 @@ export default function DerivAnalysisApp() {
                       <User className="h-4 w-4" />
                     </Button>
                   </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowRiskModal(true)}
+                    className={`h-9 px-4 rounded-xl font-bold flex items-center gap-2 transition-all ${theme === "dark"
+                      ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20"
+                      : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Risk</span>
+                  </Button>
                   <DerivAuth theme={theme} />
                   <Button
                     variant="ghost"
@@ -596,6 +615,15 @@ export default function DerivAnalysisApp() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <RiskDisclaimerModal
+        isOpen={showRiskModal}
+        onClose={() => setShowRiskModal(false)}
+        onAccept={() => {
+          localStorage.setItem("deriv_risk_accepted", "true")
+          setShowRiskModal(false)
+        }}
+        theme={theme}
+      />
     </div >
   )
 }

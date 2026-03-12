@@ -168,11 +168,11 @@ export function LiveChat() {
             {/* Floating Bubble */}
             <button
                 onClick={() => { setOpen(!open); setHasNewAdminReply(false) }}
-                className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-2xl shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                className="fixed bottom-6 right-6 z-50 w-11 h-11 bg-blue-600 hover:bg-blue-500 rounded-xl shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
             >
-                {open ? <X className="h-6 w-6 text-white" /> : <MessageCircle className="h-6 w-6 text-white" />}
+                {open ? <X className="h-5 w-5 text-white" /> : <MessageCircle className="h-5 w-5 text-white" />}
                 {!open && hasNewAdminReply && (
-                    <span className="absolute top-1 right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-[#050505] animate-pulse" />
+                    <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-[#050505] animate-pulse" />
                 )}
             </button>
 
