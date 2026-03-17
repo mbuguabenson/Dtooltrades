@@ -94,16 +94,18 @@ export function useDerivAuth() {
 
       if (data.msg_type === "balance" && data.balance) {
         const msgLoginId = data.balance.loginid || activeLoginIdRef.current
+        console.log("[v0] 💰 Balance update received:", data.balance.balance, data.balance.currency, "for", msgLoginId)
+        
         if (msgLoginId === activeLoginIdRef.current) {
           setBalance({
-            amount: data.balance.balance,
+            amount: Number(data.balance.balance),
             currency: data.balance.currency,
           })
         }
 
         setAccounts(prev => prev.map(acc => {
           if (acc.id === msgLoginId) {
-            return { ...acc, balance: data.balance.balance }
+            return { ...acc, balance: Number(data.balance.balance) }
           }
           return acc
         }))
@@ -136,17 +138,22 @@ export function useDerivAuth() {
     if (typeof window === "undefined") return
 
     const extractTokensFromParams = (searchStr: string): Record<string, string> => {
-      const params = new URLSearchParams(searchStr)
+      // Remove leading ? or # if present
+      const cleanedStr = searchStr.replace(/^[?#]/, '')
+      if (!cleanedStr) return {}
+
+      const params = new URLSearchParams(cleanedStr)
       const urlTokens: Record<string, string> = {}
       let primaryToken = ""
       let primaryAcct = ""
 
-      for (let i = 1; i <= 10; i++) {
+      // Deriv OAuth returns acct1, token1, cur1, acct2, token2, cur2, etc.
+      for (let i = 1; i <= 20; i++) {
         const t = params.get(`token${i}`)
         const a = params.get(`acct${i}`)
         if (t && a) {
           urlTokens[a] = t
-          if (i === 1) {
+          if (i === 1 || !primaryToken) {
             primaryToken = t
             primaryAcct = a
           }
@@ -158,10 +165,10 @@ export function useDerivAuth() {
     // Try query params first (standard Deriv OAuth redirect)
     let tokenData = extractTokensFromParams(window.location.search)
 
-    // Fallback: try URL hash fragment (some OAuth flows use this)
-    if (Object.keys(tokenData).length === 0 && window.location.hash) {
-      const hashStr = window.location.hash.replace(/^#/, '')
-      tokenData = extractTokensFromParams(hashStr)
+    // Merge with URL hash fragment (some OAuth flows use this or it might be appended)
+    if (window.location.hash) {
+      const hashData = extractTokensFromParams(window.location.hash)
+      tokenData = { ...tokenData, ...hashData }
     }
 
     if (Object.keys(tokenData).length > 0) {
@@ -175,8 +182,9 @@ export function useDerivAuth() {
       localStorage.setItem("deriv_api_token", primaryToken)
       if (primaryAcct) localStorage.setItem("active_login_id", primaryAcct)
 
-      // Clean URL of both query params and hash fragment
-      window.history.replaceState({}, document.title, window.location.pathname)
+      // Clean URL of both query params and hash fragment to avoid re-processing
+      const newUrl = window.location.origin + window.location.pathname
+      window.history.replaceState({}, document.title, newUrl)
 
       setToken(primaryToken)
       connectWithToken(primaryToken)
@@ -248,7 +256,10 @@ export function useDerivAuth() {
     setBalance(null)
     setAccounts([])
     setActiveLoginId(null)
+    activeLoginIdRef.current = null
     setIsInitializing(false)
+    balanceSubscribedRef.current = false
+    setBalanceSubscribed(false)
     setShowTokenModal(true)
   }
 
@@ -259,12 +270,16 @@ export function useDerivAuth() {
 
     if (!targetToken) return
 
+    console.log("[v0] 🔄 Switching account to:", loginId)
     setIsInitializing(true)
     localStorage.setItem("deriv_api_token", targetToken)
     localStorage.setItem("active_login_id", loginId)
     setToken(targetToken)
+    
+    // Reset subscription flags so authorize handler re-subscribes for the NEW account
     balanceSubscribedRef.current = false
     setBalanceSubscribed(false)
+    
     manager.send({ authorize: targetToken })
   }
 

@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState, useRef } from "react"
 import { DerivAPIClient } from "./deriv-api"
 import { DERIV_APP_ID } from "./deriv-config"
 import { useDerivAuth } from "@/hooks/use-deriv-auth"
+import { DerivWebSocketManager } from "./deriv-websocket-manager"
 
 interface Balance {
   amount: number
@@ -88,6 +89,12 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
             await globalAPIClient!.connect()
             await new Promise(resolve => setTimeout(resolve, 500))
             await globalAPIClient!.authorize(token)
+
+            // Also authorize the shared DerivAPIBasic connection used by all tabs
+            const wsManager = DerivWebSocketManager.getInstance()
+            if (wsManager.isConnected()) {
+              wsManager.authorize(token).catch(console.error)
+            }
 
             setIsConnected(true)
             setIsAuthorized(true)

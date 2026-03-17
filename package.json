@@ -6,10 +6,12 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "postinstall": "mkdir -p public/assets && cp -r node_modules/@deriv/deriv-charts/dist/* public/assets/ || true && cp -r node_modules/@deriv/deriv-charts/dist/chart/assets/* public/assets/ || true"
   },
   "dependencies": {
     "@deriv/deriv-api": "latest",
+    "@deriv/deriv-charts": "^2.10.0",
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "latest",
@@ -54,6 +56,8 @@
     "geist": "latest",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
+    "mobx": "^6.15.0",
+    "mobx-react-lite": "^4.1.1",
     "next": "15.5.9",
     "next-themes": "latest",
     "path": "latest",

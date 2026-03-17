@@ -116,6 +116,39 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
 
         console.log("[v0] Subscribing to symbol:", symbol)
 
+        // Pre-fetch historical ticks to populate the engine immediately
+        try {
+          const history = await wsRef.current.getTicksHistory(symbol, 1000)
+          if (history && history.length > 0) {
+            console.log(`[v0] Pre-loaded ${history.length} historical ticks for ${symbol}`)
+            history.forEach(t => {
+              engineRef.current?.addTick({
+                epoch: t.epoch,
+                quote: t.quote,
+                symbol: t.symbol,
+                pipSize: t.pip_size || 2
+              })
+            })
+            
+            // Initial UI state from history
+            const lastTick = history[history.length - 1]
+            setCurrentPrice(lastTick.quote)
+            setCurrentDigit(lastTick.lastDigit)
+            setTickCount(history.length)
+            
+            const initialAnalysis = engineRef.current?.getAnalysis()
+            if (initialAnalysis) setAnalysis(initialAnalysis)
+
+            const initialSignals = engineRef.current?.generateSignals()
+            if (initialSignals) setSignals(initialSignals)
+
+            const initialProSignals = engineRef.current?.generateProSignals()
+            if (initialProSignals) setProSignals(initialProSignals)
+          }
+        } catch (e) {
+          console.error("[v0] Failed to pre-load historical data:", e)
+        }
+
         const tickHandler = (tick: any) => {
           if (!tick || typeof tick.quote !== "number") {
             console.warn("[v0] Invalid tick data received")

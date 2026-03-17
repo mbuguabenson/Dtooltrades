@@ -38,6 +38,7 @@ import { verifier } from "@/lib/system-verifier"
 import { ResponsiveTabs } from "@/components/responsive-tabs"
 import { MoneyMakerTab } from "@/components/tabs/money-maker-tab"
 import { ToolsInfoTab } from "@/components/tabs/tools-info-tab"
+import { ChartsTab } from "@/components/tabs/charts-tab"
 import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
 import { RiskDisclaimerModal } from "@/components/modals/risk-disclaimer-modal"
 import { MarketSelector } from "@/components/market-selector"
@@ -309,6 +310,7 @@ export default function DerivAnalysisApp() {
                     "rise-fall",
                     "ai-analysis",
                     "tools-info",
+                    "charts",
                   ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => (
                     <TabsTrigger
                       key={tab}
@@ -596,6 +598,18 @@ export default function DerivAnalysisApp() {
                     onSymbolChange={changeSymbol}
                   />
                 )}
+              </TabsContent>
+
+              <TabsContent value="charts" className="mt-0">
+                <ChartsTab
+                  symbol={symbol}
+                  theme={theme}
+                  availableSymbols={availableSymbols}
+                  onSymbolChange={changeSymbol}
+                  currentPrice={currentPrice}
+                  currentDigit={currentDigit}
+                  tickCount={tickCount}
+                />
               </TabsContent>
 
 
