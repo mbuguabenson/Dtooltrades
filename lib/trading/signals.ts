@@ -1,39 +1,44 @@
+import { extractLastDigit } from "../digit-utils"
+
 // Signal generation from tick data
 export interface TickData {
   quote: number
   epoch: number
+  pipSize?: number
 }
 
 export class TickBuffer {
   private ticks: TickData[] = []
   private maxSize: number
+  private pipSize: number = 2
 
   constructor(maxSize = 12) {
     this.maxSize = maxSize
   }
 
-  addTick(quote: number, epoch: number): void {
-    this.ticks.push({ quote, epoch })
+  setPipSize(size: number): void {
+    this.pipSize = size
+  }
+
+  addTick(quote: number, epoch: number, pipSize?: number): void {
+    const currentPipSize = pipSize !== undefined ? pipSize : this.pipSize
+    this.ticks.push({ quote, epoch, pipSize: currentPipSize })
     if (this.ticks.length > this.maxSize) {
       this.ticks.shift()
     }
   }
 
-  getTicks(): TickData[] {
-    return [...this.ticks]
-  }
-
   getLastDigit(): number {
     if (this.ticks.length === 0) return -1
-    const lastQuote = this.ticks[this.ticks.length - 1].quote
-    return Math.floor(lastQuote * 10) % 10
+    const lastTick = this.ticks[this.ticks.length - 1]
+    return extractLastDigit(lastTick.quote, lastTick.pipSize || this.pipSize)
   }
 
   getMostFrequentDigit(): { digit: number; frequency: number } {
     const digitCounts = new Map<number, number>()
 
     for (const tick of this.ticks) {
-      const digit = Math.floor(tick.quote * 10) % 10
+      const digit = extractLastDigit(tick.quote, tick.pipSize || this.pipSize)
       digitCounts.set(digit, (digitCounts.get(digit) || 0) + 1)
     }
 
@@ -47,7 +52,7 @@ export class TickBuffer {
       }
     }
 
-    return { digit: maxDigit, frequency: maxCount / this.ticks.length }
+    return { digit: maxDigit, frequency: this.ticks.length > 0 ? maxCount / this.ticks.length : 0 }
   }
 
   getLeastFrequentDigit(): { digit: number; frequency: number } {
@@ -58,7 +63,7 @@ export class TickBuffer {
     }
 
     for (const tick of this.ticks) {
-      const digit = Math.floor(tick.quote * 10) % 10
+      const digit = extractLastDigit(tick.quote, tick.pipSize || this.pipSize)
       digitCounts.set(digit, (digitCounts.get(digit) || 0) + 1)
     }
 
@@ -72,7 +77,7 @@ export class TickBuffer {
       }
     }
 
-    return { digit: minDigit, frequency: minCount / this.ticks.length }
+    return { digit: minDigit, frequency: this.ticks.length > 0 ? minCount / this.ticks.length : 0 }
   }
 
   getDigitDistribution(): Record<number, number> {
@@ -82,7 +87,7 @@ export class TickBuffer {
     }
 
     for (const tick of this.ticks) {
-      const digit = Math.floor(tick.quote * 10) % 10
+      const digit = extractLastDigit(tick.quote, tick.pipSize || this.pipSize)
       distribution[digit]++
     }
 

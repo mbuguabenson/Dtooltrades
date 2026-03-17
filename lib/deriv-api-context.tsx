@@ -1,6 +1,6 @@
 "use client"
-
-import type React from "react"
+import "@/lib/react-19-shim"
+import React from "react"
 
 import { createContext, useContext, useEffect, useState, useRef } from "react"
 import { DerivAPIClient } from "./deriv-api"
@@ -47,6 +47,7 @@ const DerivAPIContext = createContext<DerivAPIContextType | null>(null)
 let globalAPIClient: DerivAPIClient | null = null
 
 export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
+  const [apiClient, setApiClient] = useState<DerivAPIClient | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -59,81 +60,69 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
   const { token, isLoggedIn, isInitializing } = auth
 
   useEffect(() => {
-    if (token && isLoggedIn && token.length > 10) {
-      if (!globalAPIClient || globalAPIClient.token !== token) {
-        console.log("[v0] Initializing/Updating DerivAPIClient with token")
+    // 1. Ensure basic API client exists even without token
+    if (!globalAPIClient) {
+      console.log("[v0] Initializing baseline DerivAPIClient")
+      globalAPIClient = new DerivAPIClient({
+        appId: String(DERIV_APP_ID || "123189"),
+      })
+      
+      globalAPIClient.setErrorCallback((err) => {
+        const errorMessage = err?.message || (typeof err === 'string' ? err : 'Unknown API Error');
+        setError(errorMessage)
+      })
 
-        if (globalAPIClient) {
-          globalAPIClient.disconnect()
+      clientRef.current = globalAPIClient
+      setApiClient(globalAPIClient)
+    }
+
+    const client = globalAPIClient
+
+    // 2. Handle Connection and Authorization
+    const syncConnection = async () => {
+      try {
+        if (!client.isConnected()) {
+          setConnectionStatus("connecting")
+          await client.connect()
+          setConnectionStatus("connected")
         }
 
-        const currentAccount = auth.accounts.find(a => a.id === auth.activeLoginId)
-        const isOptionsAccount = currentAccount?.id.startsWith("CR") || currentAccount?.id.startsWith("VRTC") // Simplified logic for detection
-
-        globalAPIClient = new DerivAPIClient({
-          appId: String(DERIV_APP_ID || "123189"),
-          token,
-          isOptions: isOptionsAccount,
-          accountType: auth.accountType?.toLowerCase() as any
-        })
-        globalAPIClient.setErrorCallback((err) => {
-          const errorMessage = err?.message || (typeof err === 'string' ? err : 'Unknown API Error');
-          setError(errorMessage)
-        })
-
-        const attemptConnection = async () => {
-          try {
-            initAttemptRef.current++
-            setConnectionStatus("connecting")
-
-            await globalAPIClient!.connect()
-            await new Promise(resolve => setTimeout(resolve, 500))
-            await globalAPIClient!.authorize(token)
-
-            // Also authorize the shared DerivAPIBasic connection used by all tabs
-            const wsManager = DerivWebSocketManager.getInstance()
-            if (wsManager.isConnected()) {
-              wsManager.authorize(token).catch(console.error)
-            }
-
-            setIsConnected(true)
-            setIsAuthorized(true)
-            setConnectionStatus("connected")
-            setError(null)
-            initAttemptRef.current = 0
-          } catch (err: any) {
-            console.error("[v0] Connection/Authorization failed:", err)
-            setConnectionStatus("reconnecting")
-
-            if (initAttemptRef.current < 10) {
-              const delay = Math.min(1000 * Math.pow(1.5, initAttemptRef.current), 15000)
-              setTimeout(attemptConnection, delay)
-            } else {
-              setError("Failed to connect to API after 10 attempts.")
-              setConnectionStatus("disconnected")
-            }
+        if (token && isLoggedIn && token.length > 10 && !client.isAuth()) {
+          console.log("[v0] Authorizing global client with token...")
+          await client.authorize(token)
+          
+          // Also authorize the shared DerivAPIBasic connection if needed
+          const wsManager = DerivWebSocketManager.getInstance()
+          if (wsManager.isConnected()) {
+            wsManager.authorize(token).catch(console.error)
           }
         }
-
-        attemptConnection()
+        
+        setIsConnected(client.isConnected())
+        setIsAuthorized(client.isAuth())
+        setError(null)
+      } catch (err: any) {
+        console.error("[v0] Sync failed:", err)
+        setConnectionStatus("reconnecting")
+        setError(err?.message || "Connection sync failed")
       }
     }
 
-    clientRef.current = globalAPIClient
+    syncConnection()
 
+    // 3. Status Polling
     const interval = setInterval(() => {
-      if (clientRef.current) {
-        const connected = clientRef.current.isConnected()
-        const authorized = clientRef.current.isAuth()
+      if (client) {
+        const connected = client.isConnected()
+        const authorized = client.isAuth()
 
         setIsConnected(connected)
         setIsAuthorized(authorized)
 
         // Auto-reauthorize if connected but lost authorization
         if (connected && !authorized && token && isLoggedIn) {
-          console.log("[v0] Auto-reauthorizing due to connection recovery...")
-          clientRef.current.authorize(token).catch(err => {
-            console.error("[v0] Auto-reauth failed:", err)
+          client.authorize(token).catch(err => {
+            console.error("[v0] Background re-auth failed:", err)
           })
         }
 
@@ -142,7 +131,7 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
           setConnectionStatus("connected")
         }
       }
-    }, 2000)
+    }, 3000)
 
     return () => {
       clearInterval(interval)
@@ -152,7 +141,7 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
   return (
     <DerivAPIContext.Provider
       value={{
-        apiClient: clientRef.current,
+        apiClient,
         isConnected,
         isAuthorized,
         isInitializing,

@@ -222,12 +222,12 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
   const slProgress = botState ? Math.min((Math.abs(botState.profitLoss) / slAmount) * 100, 100) : 0
 
   const isRunning = botState?.isRunning || false
-  const canStart = !isRunning && isConnected && isAuthorized && !isLoading
+  const canStart = !isRunning && isConnected && isAuthorized && !!apiClient && !isLoading
 
   return (
     <div className="space-y-3 sm:space-y-6">
-      {/* Connection Status Alert */}
-      {(apiError || localError || !isConnected) && (
+      {/* Connection Status Alert - only show if no data and really disconnected */}
+      {(apiError || localError || (!isConnected && marketPrice === 0)) && (
         <Card className="bg-rose-500/5 border-rose-500/20 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-500">
           <CardContent className="p-4 flex items-start gap-3">
             <div className="p-2 rounded-full bg-rose-500/10 border border-rose-500/20">
@@ -239,6 +239,20 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
                 {localError || apiError || "Negotiating WebSocket connection..."}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Authorization pending alert - show when connected but not yet authorized */}
+      {isConnected && !isAuthorized && isLoggedIn && !localError && (
+        <Card className="bg-amber-500/5 border-amber-500/20 backdrop-blur-xl">
+          <CardContent className="p-3 flex items-center gap-3">
+            <div className="p-2 rounded-full bg-amber-500/10 border border-amber-500/20">
+               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            </div>
+            <p className="text-[10px] sm:text-xs text-amber-400/80 font-medium">
+              Authorizing session... Trading will be available shortly.
+            </p>
           </CardContent>
         </Card>
       )}

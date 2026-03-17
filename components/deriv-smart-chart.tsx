@@ -15,6 +15,8 @@ interface DerivSmartChartProps {
   className?: string
   isMobile?: boolean
   hideToolbar?: boolean
+  granularity?: number
+  onSymbolChange?: (symbol: string) => void
 }
 
 export function DerivSmartChart(props: DerivSmartChartProps) {

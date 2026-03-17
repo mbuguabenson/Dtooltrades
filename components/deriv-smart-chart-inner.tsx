@@ -1,10 +1,12 @@
 "use client"
-
+import "@/lib/react-19-shim"
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+
 import classNames from 'classnames'
-import { ChartTitle, SmartChart, setSmartChartsPublicPath } from '@deriv/deriv-charts'
-import '@deriv/deriv-charts/dist/smartcharts.css'
+import { ChartTitle, SmartChart, setSmartChartsPublicPath } from '@deriv-com/smartcharts-champion'
+import '@deriv-com/smartcharts-champion/dist/smartcharts.css'
 import { derivWebSocket } from '@/lib/deriv-websocket-manager'
+import { chartWebSocket } from '@/lib/chart-websocket-manager'
 
 // Initialize the path where SmartCharts expects its fonts and binary shaders to live
 if (typeof window !== 'undefined') {
@@ -17,6 +19,8 @@ interface DerivSmartChartProps {
   className?: string
   isMobile?: boolean
   hideToolbar?: boolean
+  granularity?: number
+  onSymbolChange?: (symbol: string) => void
 }
 
 export default function DerivSmartChartInner({ 
@@ -24,83 +28,91 @@ export default function DerivSmartChartInner({
   theme = "dark", 
   className,
   isMobile = false,
-  hideToolbar = false
+  hideToolbar = false,
+  granularity: initialGranularity = 0,
+  onSymbolChange,
 }: DerivSmartChartProps) {
   const [activeSymbols, setActiveSymbols] = useState<any[]>([])
-  const [isConnectionOpened, setIsConnectionOpened] = useState(derivWebSocket.isConnected())
+  const [isConnectionOpened, setIsConnectionOpened] = useState(false)
   const [chartType, setChartType] = useState('line')
-  const [granularity, setGranularity] = useState(0)
+  const [granularity, setGranularity] = useState(initialGranularity)
+  const [isEngineReady, setIsEngineReady] = useState(false)
 
-  // Subscriptions tracking: map of subscription_id -> wildcard message handler for cleanup
+  // Sync granularity prop with local state
+  useEffect(() => {
+    setGranularity(initialGranularity)
+  }, [initialGranularity])
+
+  // Subscriptions tracking
   const subscriptionHandlersRef = useRef<Map<string, (msg: any) => void>>(new Map())
-  // Track subscription tags (symbol-granularity) to subscription IDs
   const subscriptionIdsRef = useRef<Record<string, string>>({})
 
   useEffect(() => {
-    // Sync connection status
-    const unsubStatus = derivWebSocket.onConnectionStatus((status) => {
-      setIsConnectionOpened(status === "connected")
-    })
-    setIsConnectionOpened(derivWebSocket.isConnected())
+    let isMounted = true
 
-    // Load active symbols
-    derivWebSocket.getActiveSymbols().then((symbols) => {
-      setActiveSymbols(symbols)
-    })
+    const init = async () => {
+      // 1. Ensure dedicated connection is ready
+      await chartWebSocket.connect()
+      if (!isMounted) return
+
+      setIsConnectionOpened(true)
+
+      // 2. Load active symbols (Metadata is shared but fetched independently for robustness)
+      const symbols = await derivWebSocket.getActiveSymbols()
+      if (isMounted && symbols && symbols.length > 0) {
+        setActiveSymbols(symbols)
+        // Ensure state is synced before starting engine
+        setTimeout(() => {
+           if (isMounted) setIsEngineReady(true)
+        }, 300)
+      }
+    }
+
+    init()
 
     return () => {
-      unsubStatus()
+      isMounted = false
       // Cleanup any dangling streams started by this chart instance
       subscriptionHandlersRef.current.forEach((handler, id) => {
-        derivWebSocket.off("*", handler)
-        derivWebSocket.send({ forget: id })
+        chartWebSocket.send({ forget: id })
       })
       subscriptionHandlersRef.current.clear()
     }
   }, [])
 
-  // SmartChart request callbacks (Champion Pattern)
+  // SmartChart request callbacks
   const requestAPI = async (req: any) => {
     const requestType = Object.keys(req)[0]
     
-    // Intercept metadata requests to satisfy the engine instantly
+    // Intercept metadata requests for instant response
     if (requestType === 'active_symbols') {
-      console.log("[SmartChart] Intercepting active_symbols request")
       return { active_symbols: activeSymbols }
     }
     
     if (requestType === 'trading_times') {
-      console.log("[SmartChart] Intercepting trading_times request")
       const now = new Date()
-      const dateStr = now.toISOString().split('T')[0]
       return { 
         trading_times: { 
           markets: [], 
-          date: dateStr 
+          date: now.toISOString().split('T')[0] 
         } 
       }
     }
 
     if (requestType === 'asset_index') {
-      console.log("[SmartChart] Intercepting asset_index request")
       return { asset_index: [] }
     }
 
-    console.log("[SmartChart] requestAPI core request:", JSON.stringify(req))
     try {
-      const response = await derivWebSocket.sendAndWait(req, 15000)
-      console.log(`[SmartChart] response for ${requestType}:`, !!response)
-      return response
+      return await chartWebSocket.sendAndWait(req)
     } catch (e) {
-      console.error("[SmartChart] requestAPI error:", e)
+      console.error("[ChartAPI] requestAPI error:", e)
       return { error: e }
     }
   }
 
-  // getQuotes: Fetch historical data (Champion Pattern)
   const getQuotes = async (params: { symbol: string; granularity: number; count: number; start?: number; end?: number }) => {
     const { symbol, granularity, count, start, end } = params;
-    
     const request: any = {
       ticks_history: symbol,
       style: granularity ? 'candles' : 'ticks',
@@ -113,21 +125,13 @@ export default function DerivSmartChartInner({
     if (start) request.start = String(start);
 
     try {
-      const response = await derivWebSocket.sendAndWait(request, 15000);
-      
-      if (response.error) {
-        throw new Error(response.error.message || 'Unknown error in tick history');
-      }
+      const response = await chartWebSocket.sendAndWait(request);
+      if (response.error) throw new Error(response.error.message);
 
-      // Transform response to TGetQuotesResult format for the chart
       const result: any = {};
       if (response.candles) {
         result.candles = response.candles.map((c: any) => ({
-          open: +c.open,
-          high: +c.high,
-          low: +c.low,
-          close: +c.close,
-          epoch: +c.epoch,
+          open: +c.open, high: +c.high, low: +c.low, close: +c.close, epoch: +c.epoch,
         }));
       } else if (response.history) {
         result.history = {
@@ -135,15 +139,13 @@ export default function DerivSmartChartInner({
           times: response.history.times.map((t: any) => +t),
         };
       }
-
       return result;
     } catch (e) {
-      console.error("[SmartChart] getQuotes error:", e);
+      console.error("[ChartAPI] getQuotes error:", e);
       throw e;
     }
   };
 
-  // subscribeQuotes: Real-time data (Champion Pattern)
   const subscribeQuotes = (request: any, callback: (quote: any) => void) => {
     const { symbol, granularity = 0 } = request;
     const key = `${symbol}-${granularity}`;
@@ -156,13 +158,23 @@ export default function DerivSmartChartInner({
       end: 'latest',
     };
 
+    const messageHandler = (msg: any) => {
+      // Filter out invalid quotes
+      if (msg?.tick && (msg.tick.quote === null || msg.tick.quote === undefined || msg.tick.quote === 0)) return;
+      
+      // Route messages to this subscriber
+      if (msg.subscription?.id && msg.subscription.id === subscriptionIdsRef.current[key]) {
+         handleResponse(msg);
+      } else if ((msg.tick?.symbol === symbol || msg.ohlc?.symbol === symbol) && (!granularity || msg.ohlc?.granularity === granularity)) {
+         handleResponse(msg);
+      }
+    };
+
     const handleResponse = (response: any) => {
-      // Store subscription ID
       if (response.subscription?.id) {
         subscriptionIdsRef.current[key] = response.subscription.id;
       }
 
-      // Convert to TQuote format for the champion library
       if (response.tick) {
         const { tick } = response;
         callback({
@@ -185,26 +197,9 @@ export default function DerivSmartChartInner({
       }
     };
 
-    // Use wildcard listener to capture the subscription response and subsequent ticks
-    const messageHandler = (msg: any) => {
-      // Filter out invalid quotes
-      if (msg?.tick && (msg.tick.quote === null || msg.tick.quote === undefined || msg.tick.quote === 0)) {
-        return;
-      }
-      
-      // Route messages to this subscriber
-      // We check if it's the initial subscription response OR a tick/ohlc for the correct symbol
-      if (msg.subscription?.id && msg.subscription.id === subscriptionIdsRef.current[key]) {
-         handleResponse(msg);
-      } else if ((msg.tick?.symbol === symbol || msg.ohlc?.symbol === symbol) && (!granularity || msg.ohlc?.granularity === granularity)) {
-         handleResponse(msg);
-      }
-    };
-
-    derivWebSocket.on("*", messageHandler);
+    const unsub = chartWebSocket.onMessage(messageHandler);
     
-    // Trigger the actual subscription
-    derivWebSocket.sendAndWait(subRequest).then(resp => {
+    chartWebSocket.sendAndWait(subRequest).then(resp => {
       if (resp.subscription?.id) {
         subscriptionIdsRef.current[key] = resp.subscription.id;
         subscriptionHandlersRef.current.set(resp.subscription.id, messageHandler);
@@ -212,7 +207,8 @@ export default function DerivSmartChartInner({
     });
 
     return () => {
-      unsubscribeQuotes({ symbol, granularity });
+       unsub();
+       unsubscribeQuotes({ symbol, granularity });
     };
   };
 
@@ -222,11 +218,7 @@ export default function DerivSmartChartInner({
     const subId = subscriptionIdsRef.current[key];
 
     if (subId) {
-      derivWebSocket.send({ forget: subId });
-      const handler = subscriptionHandlersRef.current.get(subId);
-      if (handler) {
-        derivWebSocket.off("*", handler);
-      }
+      chartWebSocket.send({ forget: subId });
       subscriptionHandlersRef.current.delete(subId);
       delete subscriptionIdsRef.current[key];
     }
@@ -241,43 +233,23 @@ export default function DerivSmartChartInner({
     theme: theme,
   }), [theme])
 
-  // Provide safe fallbacks for ordering to prevent localeCompare crashes inside deriv-charts
   const getMarketsOrder = useCallback((active_symbols: any[]) => {
     if (!active_symbols || !Array.isArray(active_symbols)) return []
-    try {
-      return active_symbols
-        .map(s => s?.market)
-        .filter((v): v is string => typeof v === 'string' && v.length > 0)
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort((a, b) => (a || "").localeCompare(b || ""))
-    } catch (e) {
-      console.warn("[SmartChart] getMarketsOrder sorting failed:", e)
-      return []
-    }
+    return Array.from(new Set(active_symbols.map(s => s?.market).filter(Boolean))).sort()
   }, [])
 
   const getSubmarketsOrder = useCallback((active_symbols: any[]) => {
     if (!active_symbols || !Array.isArray(active_symbols)) return []
-    try {
-      return active_symbols
-        .map(s => s?.submarket)
-        .filter((v): v is string => typeof v === 'string' && v.length > 0)
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort((a, b) => (a || "").localeCompare(b || ""))
-    } catch (e) {
-      console.warn("[SmartChart] getSubmarketsOrder sorting failed:", e)
-      return []
-    }
+    return Array.from(new Set(active_symbols.map(s => s?.submarket).filter(Boolean))).sort()
   }, [])
 
-  // Don't render if SSR
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   if (!mounted) return null
 
   return (
-    <div className={classNames('w-full h-full min-h-[400px] relative', className)} dir='ltr'>
-      {activeSymbols.length > 0 && isConnectionOpened ? (
+    <div className={classNames('w-full h-full min-h-[400px] relative rounded-xl overflow-hidden', className)} dir='ltr'>
+      {isEngineReady && activeSymbols.length > 0 && isConnectionOpened ? (
         <SmartChart
           id={`smartchart-${symbol}`}
           symbol={symbol}
@@ -285,7 +257,7 @@ export default function DerivSmartChartInner({
           theme={theme}
           settings={settings}
           chartType={chartType}
-          granularity={granularity}
+          granularity={granularity as any}
           isConnectionOpened={isConnectionOpened}
           requestAPI={requestAPI}
           getQuotes={getQuotes}
@@ -297,25 +269,26 @@ export default function DerivSmartChartInner({
             if (!symbols || !Array.isArray(symbols)) return []
             return [...symbols].sort((a, b) => (a?.display_name || a?.symbol || "").localeCompare(b?.display_name || b?.symbol || ""))
           }}
-          chartData={{
-            activeSymbols: activeSymbols,
-          }}
-          feedCall={{
-            activeSymbols: false,
-            tradingTimes: false,
-          }}
+          chartData={{ activeSymbols }}
+          feedCall={{ activeSymbols: false, tradingTimes: false }}
           shouldFetchTradingTimes={false}
-          topWidgets={() => hideToolbar ? null : <ChartTitle onChange={(s: string) => {}} />}
+          topWidgets={() => hideToolbar ? <></> : <ChartTitle onChange={(s: any) => {
+             // SmartCharts might pass an object or a string depending on version
+             const nextSymbol = typeof s === 'string' ? s : s?.symbol
+             if (nextSymbol && onSymbolChange) onSymbolChange(nextSymbol)
+          }} />}
           enabledChartFooter={false}
-          chartControlsWidgets={hideToolbar ? null : undefined}
+          chartControlsWidgets={hideToolbar ? () => <></> : undefined}
           barriers={[]}
           isLive
           leftMargin={80}
           showLastDigitStats={false}
         />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 animate-pulse rounded-xl">
-           <div className="text-blue-400 font-medium">Initializing Chart Engine...</div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0e27]/40 backdrop-blur-sm animate-in fade-in duration-500">
+           <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4" />
+           <div className="text-blue-400 font-black uppercase tracking-widest text-[10px]">Initializing Neural Chart Engine</div>
+           {!isConnectionOpened && <div className="text-amber-500/60 text-[8px] mt-2 uppercase font-bold">Waiting for Dedicated Connection...</div>}
         </div>
       )}
     </div>

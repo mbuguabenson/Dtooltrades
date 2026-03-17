@@ -78,7 +78,7 @@ export interface TickData {
   symbol: string
   quote: number
   epoch: number
-  pip_size?: number
+  pipSize?: number
   id?: string
 }
 

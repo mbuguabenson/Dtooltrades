@@ -193,9 +193,7 @@ export function AutoBotTab({
   useEffect(() => {
     const initializeWebSocket = async () => {
       try {
-        if (!derivWebSocket.isConnected()) {
-          await derivWebSocket.connect()
-        }
+        // We rely on DerivAPIProvider for the core connection now
 
         if (!tickManagerRef.current) {
           tickManagerRef.current = new TickHistoryManager(apiClient)
@@ -481,14 +479,28 @@ export function AutoBotTab({
 
   return (
     <div className="space-y-2 sm:space-y-6">
-      {(apiError || !isConnected) && (
+      {(apiError || (!isConnected && !currentPrice)) && (
         <Card className={theme === "dark" ? "bg-red-500/10 border-red-500/30" : "bg-red-50 border-red-200"}>
           <CardContent className="p-3 sm:pt-6 flex items-start gap-2 sm:gap-3">
             <AlertCircle className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
             <div>
-              <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>Connection Issue</p>
+              <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>Connection issue</p>
               <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-red-300" : "text-red-600"}`}>
-                {apiError || "Connecting to API..."}
+                {apiError || "Negotiating connection..."}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isConnected && !isAuthorized && isLoggedIn && (
+         <Card className={theme === "dark" ? "bg-yellow-500/10 border-yellow-500/30" : "bg-yellow-50 border-yellow-200"}>
+          <CardContent className="p-3 sm:pt-6 flex items-start gap-2 sm:gap-3">
+            <AlertCircle className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`} />
+            <div>
+              <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-yellow-400" : "text-yellow-700"}`}>Authorization Required</p>
+              <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-yellow-300" : "text-yellow-600"}`}>
+                Your session is being authenticated. Trading will be available shortly.
               </p>
             </div>
           </CardContent>

@@ -8,7 +8,7 @@ interface TickData {
   epoch: number
   symbol: string
   id?: string
-  pip_size?: number
+  pipSize?: number
 }
 
 interface ConnectionLog {
@@ -51,6 +51,39 @@ export class DerivWebSocketManager {
   private symbolToSubscriptionMap: Map<string, string> = new Map()
   private activeSubscriptions: Set<string> = new Set()
   private tickCallbacks: Map<string, Set<(tick: TickData) => void>> = new Map()
+  
+  // Known robust precision fallbacks for synthetic indices (if API metadata is delayed)
+  private readonly COMMON_PIP_SIZES: Record<string, number> = {
+    "R_10": 3,
+    "R_25": 2,
+    "R_50": 4,
+    "R_75": 4,
+    "R_100": 2,
+    "1HZ10V": 2,
+    "1HZ15V": 3,
+    "1HZ25V": 2,
+    "1HZ30V": 3,
+    "1HZ50V": 2,
+    "1HZ75V": 2,
+    "1HZ90V": 3,
+    "1HZ100V": 2,
+    "1HZ150V": 2,
+    "1HZ200V": 3,
+    "1HZ250V": 3,
+    "1HZ300V": 3,
+    "1HA100": 2, // Bull
+    "1HA200": 2, // Bear
+    "JUMP10": 3,
+    "JUMP25": 3,
+    "JUMP50": 3,
+    "JUMP75": 3,
+    "JUMP100": 3,
+    "JD10": 3,
+    "JD25": 3,
+    "JD50": 3,
+    "JD75": 3,
+    "JD100": 3,
+  }
   
   // Cache for historical data to prevent redundant fetches
   private historyCache: Map<string, { data: TickData[], timestamp: number }> = new Map()
@@ -231,9 +264,9 @@ export class DerivWebSocketManager {
     }
     
     // Switch to fallback URL if primary fails after 3 attempts
-    if (this.reconnectAttempts === 3 && this.currentWsUrl.includes("derivws.com")) {
+    if (this.reconnectAttempts === 3 && this.currentWsUrl.includes("api.derivws.com")) {
       console.log("[v0] Switching to fallback WebSocket URL due to repeated failures")
-      this.currentWsUrl = this.currentWsUrl.replace("ws.derivws.com", "ws.binaryws.com")
+      this.currentWsUrl = `${DERIV_API.WEBSOCKET_FALLBACK_V3}?app_id=${DERIV_CONFIG.APP_ID}&l=en&brand=deriv`
     }
 
     this.reconnectAttempts++
@@ -338,7 +371,7 @@ export class DerivWebSocketManager {
 
         // Track subscription IDs
         if (message.subscription && !message.error) {
-          const symbol = message.echo_req?.ticks || message.echo_req?.active_symbols
+          const symbol = message.echo_req?.ticks || message.echo_req?.underlying_symbol || message.echo_req?.active_symbols
           if (symbol && typeof symbol === 'string') {
             const subId = message.subscription.id
             const existing = this.symbolToSubscriptionMap.get(symbol)
@@ -376,14 +409,14 @@ export class DerivWebSocketManager {
         if (callbacks) {
           const rawPip = message.tick.pip_size !== undefined ? Number(message.tick.pip_size) : undefined
           if (rawPip !== undefined) this.pipSizeMap.set(symbol, rawPip)
-          const pipSize = rawPip ?? this.getPipSize(symbol)
+          const pipSize = this.getPipSize(symbol, rawPip)
           const tickData: TickData = {
             quote: message.tick.quote,
             lastDigit: this.extractLastDigit(message.tick.quote, pipSize),
             epoch: message.tick.epoch,
             symbol,
             id: message.subscription?.id,
-            pip_size: pipSize,
+            pipSize: pipSize,
           }
           callbacks.forEach(cb => cb(tickData))
         }
@@ -484,7 +517,7 @@ export class DerivWebSocketManager {
             epoch: response.tick.epoch,
             symbol: cleanSymbol,
             id: subscriptionId,
-            pip_size: pipSize,
+            pipSize: pipSize,
           })
           return subscriptionId
         }
@@ -577,7 +610,8 @@ export class DerivWebSocketManager {
       })
 
       if (response.history) {
-        const { prices, times } = response.history
+        const prices = Array.isArray(response.history.prices) ? response.history.prices : []
+        const times = Array.isArray(response.history.times) ? response.history.times : []
         const pipSize = this.getPipSize(symbol)
         
         const data = prices.map((price: number, i: number) => ({
@@ -585,7 +619,7 @@ export class DerivWebSocketManager {
           lastDigit: this.extractLastDigit(price, pipSize),
           epoch: times[i],
           symbol,
-          pip_size: pipSize
+          pipSize: pipSize
         }))
 
         // Update cache
@@ -620,10 +654,13 @@ export class DerivWebSocketManager {
               const submarket = s.submarket || "unknown"
               const submarket_display_name = s.submarket_display_name || submarket
               
-              const decimalCount = s.pip_size !== undefined ? s.pip_size : (s.pip ? this.getDecimalCount(s.pip) : 2)
+              const rawPip = s.pip_size !== undefined ? s.pip_size : s.pip
+              const decimalCount = rawPip !== undefined ? this.getDecimalCount(rawPip) : 2
               this.pipSizeMap.set(symbol, decimalCount)
               
+              // Map all properties from original symbol to prevent library crashes (like useCache)
               return { 
+                ...s,
                 symbol, 
                 display_name, 
                 market, 
@@ -651,8 +688,23 @@ export class DerivWebSocketManager {
 
   // ─── Utilities ─────────────────────────────────────────────────────────────
 
-  public getPipSize(symbol: string): number {
-    return this.pipSizeMap.get(symbol) || 2
+  public getPipSize(symbol: string, rawHint?: number): number {
+    // 1. Use API metadata cache if available (Most reliable)
+    if (this.pipSizeMap.has(symbol)) {
+      return this.pipSizeMap.get(symbol)!
+    }
+
+    // 2. Use raw hint from the current message if provided (Convert if float)
+    if (rawHint !== undefined && !isNaN(rawHint)) {
+      return this.getDecimalCount(rawHint)
+    }
+
+    // 3. Robust hardcoded fallbacks (When API metadata is missing)
+    for (const [key, size] of Object.entries(this.COMMON_PIP_SIZES)) {
+      if (symbol === key || symbol.includes(key)) return size
+    }
+    
+    return 2 // Final fallback
   }
 
   public extractLastDigit(quote: number, pipSize: number): number {
@@ -727,7 +779,7 @@ export class DerivWebSocketManager {
     
     // If we are currently on fallback, adjust sub-endpoints too
     if (this.currentWsUrl.includes("binaryws.com")) {
-      baseUrl = baseUrl.replace("derivws.com", "binaryws.com")
+      baseUrl = baseUrl.replace("api.derivws.com/trading/v1/options/ws", "ws.binaryws.com/websockets/v3")
     }
     
     const url = otp ? `${baseUrl}?otp=${otp}` : baseUrl

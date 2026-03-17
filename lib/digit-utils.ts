@@ -29,11 +29,14 @@ export function extractLastDigit(price: number, pipSize: number): number {
 /**
  * Converts a pip value (e.g., 0.01, 1e-3) to a decimal digit count.
  * 
- * @param pip The pip value from Deriv API
+ * @param pip The pip value from Deriv API (can be fractional like 0.01 or integer like 2)
  * @returns The number of decimal places
  */
 export function calculateDecimalCount(pip: number): number {
-    if (!pip || isNaN(pip)) return 2 // Default fallback
+    if (pip === undefined || pip === null || isNaN(pip)) return 2 // Default fallback
+    
+    // If it's already a small integer (0-10), it's likely already the count
+    if (Number.isInteger(pip) && pip >= 0 && pip <= 10) return pip
 
     const s = String(pip)
     if (s.includes(".")) return s.split(".")[1].length
@@ -41,10 +44,10 @@ export function calculateDecimalCount(pip: number): number {
 
     // If it's something like 0.001 but represented as a float
     if (pip > 0 && pip < 1) {
-        return Math.abs(Math.floor(Math.log10(pip)))
+        return Math.abs(Math.floor(Math.log10(pip + 1e-10))) // Use epsilon
     }
 
-    return 0
+    return 2 // Default fallback for safety
 }
 
 /**

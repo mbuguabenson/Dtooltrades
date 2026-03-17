@@ -124,10 +124,13 @@ export default function DerivAnalysisApp() {
     }
   }, [watchedDigits])
 
-  const recentDigits = getRecentDigits(20)
-  const recent40Digits = getRecentDigits(40)
-  const recent50Digits = getRecentDigits(50)
-  const recent100Digits = getRecentDigits(100)
+  // Defensive filtering to prevent `.toString()` crashes in chart components
+  const recent100DigitsRaw = getRecentDigits(100)
+  const recent100Digits = recent100DigitsRaw.filter((d: any) => d !== undefined && d !== null)
+  
+  const recent50Digits = recent100Digits.length >= 50 ? recent100Digits.slice(-50) : recent100Digits
+  const recent40Digits = recent100Digits.length >= 40 ? recent100Digits.slice(-40) : recent100Digits
+  const recentDigits = recent100Digits.length >= 20 ? recent100Digits.slice(-20) : recent100Digits
 
   const activeSignals = (signals || []).filter((s) => s.status !== "NEUTRAL")
   const powerfulSignalsCount = activeSignals.filter((s) => s.status === "TRADE NOW").length
@@ -424,26 +427,30 @@ export default function DerivAnalysisApp() {
         )}
 
         <main className="flex-1 pt-[180px] sm:pt-[240px] pb-4 px-1 sm:px-4 space-y-2 sm:space-y-4 max-w-7xl mx-auto w-full">
-          {connectionStatus !== "connected" ? (
+          {connectionStatus === "disconnected" && tickCount === 0 ? (
             <div className="text-center py-12 sm:py-20 md:py-32">
               <h2
                 className={`text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
               >
-                {connectionStatus === "reconnecting" ? "Connecting to Deriv API" : "Connection Failed"}
+                Connection Failed
               </h2>
               <p className={`text-sm sm:text-base md:text-lg ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                {connectionStatus === "reconnecting"
-                  ? `Establishing connection for ${symbol}...`
-                  : `Unable to connect. Please check your internet connection and refresh the page.`}
+                Unable to connect to Deriv. Please check your internet connection and refresh the page.
               </p>
-              {connectionStatus === "reconnecting" && (
-                <div className="mt-6 flex justify-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400"></div>
-                </div>
-              )}
+              <Button 
+                onClick={() => window.location.reload()}
+                className="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold"
+              >
+                Retry Connection
+              </Button>
             </div>
           ) : (
             <>
+              {connectionStatus === "reconnecting" && (
+                <div className="absolute top-0 left-0 right-0 z-50 bg-yellow-500/20 backdrop-blur-md p-2 text-center text-xs font-bold text-yellow-500 border-b border-yellow-500/30 animate-pulse">
+                  Reconnecting to Deriv API... Some data may be delayed.
+                </div>
+              )}
               <TabsContent value="smart-analysis" className="mt-0 space-y-2 sm:space-y-3 md:space-y-4">
                 <div
                   className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}

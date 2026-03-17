@@ -7,11 +7,11 @@
     "dev": "next dev",
     "lint": "eslint .",
     "start": "next start",
-    "postinstall": "mkdir -p public/assets && cp -r node_modules/@deriv/deriv-charts/dist/* public/assets/ || true && cp -r node_modules/@deriv/deriv-charts/dist/chart/assets/* public/assets/ || true"
+    "postinstall": "node scripts/copy-chart-assets.js"
   },
   "dependencies": {
+    "@deriv-com/smartcharts-champion": "^1.3.14",
     "@deriv/deriv-api": "latest",
-    "@deriv/deriv-charts": "^2.10.0",
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "latest",
@@ -86,5 +86,9 @@
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom"
   }
 }

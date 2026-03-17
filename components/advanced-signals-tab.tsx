@@ -58,14 +58,9 @@ export function AdvancedSignalsTab({ theme, availableSymbols }: AdvancedSignalsT
     const ws = DerivWebSocketManager.getInstance()
 
     const startScanner = async () => {
-      // Direct filter for Jump, Bull, Bear indices
-      const filteredMarkets = availableSymbols.filter(s => {
-        const name = (s.display_name || "").toUpperCase();
-        const sym = (s.symbol || "").toUpperCase();
-        return sym.includes("JUMP") || name.includes("JUMP") || 
-               sym.includes("BULL") || name.includes("BULL") || 
-               sym.includes("BEAR") || name.includes("BEAR");
-      })
+      // Use availableSymbols directly as they are already filtered and sorted in use-deriv hook
+      // This ensures consistency across the app.
+      const filteredMarkets = [...availableSymbols]
 
       if (scannerActiveRef.current || filteredMarkets.length === 0) return
       
@@ -82,7 +77,7 @@ export function AdvancedSignalsTab({ theme, availableSymbols }: AdvancedSignalsT
           if (!isMounted) break
           
           const batch = filteredMarkets.slice(i, i + batchSize)
-          setScanProgress(Math.round((i / availableSymbols.length) * 100))
+          setScanProgress(Math.round((i / filteredMarkets.length) * 100))
 
           await Promise.all(batch.map(async (item) => {
             try {
