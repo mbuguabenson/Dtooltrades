@@ -51,6 +51,10 @@ export class DerivWebSocketManager {
   private symbolToSubscriptionMap: Map<string, string> = new Map()
   private activeSubscriptions: Set<string> = new Set()
   private tickCallbacks: Map<string, Set<(tick: TickData) => void>> = new Map()
+  
+  // Cache for historical data to prevent redundant fetches
+  private historyCache: Map<string, { data: TickData[], timestamp: number }> = new Map()
+  private readonly CACHE_TTL = 30000 // 30 seconds
   private connectionLogs: ConnectionLog[] = []
   private readonly maxLogs = 100
   private connectionStatusListeners: Set<(status: "connected" | "disconnected" | "reconnecting") => void> = new Set()
@@ -123,8 +127,8 @@ export class DerivWebSocketManager {
         // Use addEventListener to avoid overwriting DerivAPIBasic's internal .onopen/.onclose handlers
         this.ws.addEventListener('open', () => {
           clearTimeout(connectionTimeout)
-          console.log("[v0] DerivAPIBasic WebSocket connected")
-          this.log("info", "Connected via DerivAPIBasic")
+          console.log(`[v0] DerivAPIBasic WebSocket connected to ${this.ws?.url}`)
+          this.log("info", `Connected to ${this.ws?.url}`)
           this.reconnectAttempts = 0
           this.lastMessageTime = Date.now()
           this.notifyConnectionStatus("connected")
@@ -225,11 +229,18 @@ export class DerivWebSocketManager {
       }, 60000)
       return
     }
+    
+    // Switch to fallback URL if primary fails after 3 attempts
+    if (this.reconnectAttempts === 3 && this.currentWsUrl.includes("derivws.com")) {
+      console.log("[v0] Switching to fallback WebSocket URL due to repeated failures")
+      this.currentWsUrl = this.currentWsUrl.replace("ws.derivws.com", "ws.binaryws.com")
+    }
+
     this.reconnectAttempts++
-    const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1)
+    const delay = this.reconnectDelay * Math.pow(1.2, this.reconnectAttempts - 1)
     this.log("info", `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
     setTimeout(() => {
-      this.connect().catch((err) => this.log("error", `Reconnection failed: ${err}`))
+      this.connect(this.currentWsUrl, true).catch((err) => this.log("error", `Reconnection failed: ${err}`))
     }, delay)
   }
 
@@ -283,11 +294,10 @@ export class DerivWebSocketManager {
    */
   public async sendAndWait(message: any, timeoutMs = 30000): Promise<any> {
     if (this.ws?.readyState !== WebSocket.OPEN) {
+      console.log("[v0] sendAndWait: WebSocket not open, connecting...")
       await this.connect()
     }
 
-    // Always use our battle-tested custom req_id tracking 
-    // because DerivAPIBasic's internal promise map can sometimes silently drop resolving
     const req_id = message.req_id || this.getNextReqId()
     const payload = { ...message, req_id }
     
@@ -299,12 +309,17 @@ export class DerivWebSocketManager {
       
       this.pendingRequests.set(req_id, (data) => {
         clearTimeout(t)
-        data.error ? reject(data.error) : resolve(data)
+        if (data.error) {
+          reject(data.error)
+        } else {
+          resolve(data)
+        }
       })
       
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify(payload))
       } else {
+        // Double check: if still not open after connect(), queue it
         this.messageQueue.push(payload)
       }
     })
@@ -410,24 +425,25 @@ export class DerivWebSocketManager {
   // ─── Tick subscriptions ────────────────────────────────────────────────────
 
   public async subscribeTicks(symbol: string, callback: (tick: TickData) => void): Promise<string> {
-    if (!symbol) {
-      console.warn("[v0] subscribeTicks: Symbol is empty, skipping")
+    if (!symbol || typeof symbol !== 'string' || symbol.trim() === "") {
+      console.warn("[v0] subscribeTicks: Invalid symbol provided:", symbol)
       return ""
     }
-    if (!this.tickCallbacks.has(symbol)) this.tickCallbacks.set(symbol, new Set())
-    this.tickCallbacks.get(symbol)!.add(callback)
+    const cleanSymbol = symbol.trim()
+    if (!this.tickCallbacks.has(cleanSymbol)) this.tickCallbacks.set(cleanSymbol, new Set())
+    this.tickCallbacks.get(cleanSymbol)!.add(callback)
 
-    const existingId = this.symbolToSubscriptionMap.get(symbol)
+    const existingId = this.symbolToSubscriptionMap.get(cleanSymbol)
     if (existingId) {
       const ref = this.subscriptionRefCount.get(existingId) || 0
       this.subscriptionRefCount.set(existingId, ref + 1)
       return existingId
     }
 
-    if (this.activeSubscriptions.has(symbol)) {
+    if (this.activeSubscriptions.has(cleanSymbol)) {
       return new Promise((resolve) => {
         const check = setInterval(() => {
-          const id = this.symbolToSubscriptionMap.get(symbol)
+          const id = this.symbolToSubscriptionMap.get(cleanSymbol)
           if (id) {
             clearInterval(check)
             const ref = this.subscriptionRefCount.get(id) || 0
@@ -439,34 +455,34 @@ export class DerivWebSocketManager {
       })
     }
 
-    this.activeSubscriptions.add(symbol)
+    this.activeSubscriptions.add(cleanSymbol)
 
     let lastError: any = null
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        console.log(`[v0] Subscribing to ${symbol} (attempt ${attempt})`)
-        const response = await this.sendAndWait({ ticks: symbol, subscribe: 1 }, 30000)
+        console.log(`[v0] Subscribing to ${cleanSymbol} (attempt ${attempt})`)
+        const response = await this.sendAndWait({ ticks: cleanSymbol, subscribe: 1 }, 30000)
 
         if (response.subscription?.id) {
           const subscriptionId = response.subscription.id
-          const existing = this.symbolToSubscriptionMap.get(symbol)
+          const existing = this.symbolToSubscriptionMap.get(cleanSymbol)
           if (existing && existing !== subscriptionId) {
             this.send({ forget: subscriptionId, req_id: this.getNextReqId() })
             const ref = this.subscriptionRefCount.get(existing) || 0
             this.subscriptionRefCount.set(existing, ref + 1)
-            this.activeSubscriptions.delete(symbol)
+            this.activeSubscriptions.delete(cleanSymbol)
             return existing
           }
-          this.subscriptions.set(subscriptionId, symbol)
-          this.symbolToSubscriptionMap.set(symbol, subscriptionId)
+          this.subscriptions.set(subscriptionId, cleanSymbol)
+          this.symbolToSubscriptionMap.set(cleanSymbol, subscriptionId)
           this.subscriptionRefCount.set(subscriptionId, 1)
-          this.activeSubscriptions.delete(symbol)
-          const pipSize = this.getPipSize(symbol)
+          this.activeSubscriptions.delete(cleanSymbol)
+          const pipSize = this.getPipSize(cleanSymbol)
           callback({
             quote: response.tick.quote,
             lastDigit: this.extractLastDigit(response.tick.quote, pipSize),
             epoch: response.tick.epoch,
-            symbol,
+            symbol: cleanSymbol,
             id: subscriptionId,
             pip_size: pipSize,
           })
@@ -477,11 +493,11 @@ export class DerivWebSocketManager {
         lastError = error
         if (error.code === 'AlreadySubscribed') {
           await new Promise(r => setTimeout(r, 1000))
-          const recoveredId = this.symbolToSubscriptionMap.get(symbol)
+          const recoveredId = this.symbolToSubscriptionMap.get(cleanSymbol)
           if (recoveredId) {
             const ref = this.subscriptionRefCount.get(recoveredId) || 0
             this.subscriptionRefCount.set(recoveredId, ref + 1)
-            this.activeSubscriptions.delete(symbol)
+            this.activeSubscriptions.delete(cleanSymbol)
             return recoveredId
           }
         }
@@ -489,13 +505,13 @@ export class DerivWebSocketManager {
       }
     }
 
-    this.activeSubscriptions.delete(symbol)
-    console.error(`[v0] Failed to subscribe to ${symbol}:`, lastError)
+    this.activeSubscriptions.delete(cleanSymbol)
+    console.error(`[v0] Failed to subscribe to ${cleanSymbol}:`, lastError)
     return ""
   }
 
   public async unsubscribe(subscriptionId: string, callback?: (tick: TickData) => void) {
-    if (!subscriptionId) return
+    if (!subscriptionId || typeof subscriptionId !== 'string') return
     const symbol = this.subscriptions.get(subscriptionId)
     if (symbol && callback) {
       const cbs = this.tickCallbacks.get(symbol)
@@ -534,13 +550,26 @@ export class DerivWebSocketManager {
   // ─── History ───────────────────────────────────────────────────────────────
 
   /**
-   * Fetch historical ticks for a symbol.
+   * Fetch historical ticks for a symbol with caching.
    */
   public async getTicksHistory(symbol: string, count = 1000): Promise<TickData[]> {
+    if (!symbol || typeof symbol !== 'string') {
+      return []
+    }
+    const cleanSymbol = symbol.trim()
+    if (cleanSymbol === "") return []
+
+    // Check cache first
+    const cached = this.historyCache.get(cleanSymbol)
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL && cached.data.length >= count) {
+      this.log("info", `Returning ${count} cached historical ticks for ${cleanSymbol}`)
+      return cached.data.slice(-count)
+    }
+
     try {
-      this.log("info", `Fetching ${count} historical ticks for ${symbol}`)
+      this.log("info", `Fetching ${count} historical ticks for ${cleanSymbol}`)
       const response = await this.sendAndWait({
-        ticks_history: symbol,
+        ticks_history: cleanSymbol,
         adjust_start_time: 1,
         count,
         end: 'latest',
@@ -551,16 +580,22 @@ export class DerivWebSocketManager {
         const { prices, times } = response.history
         const pipSize = this.getPipSize(symbol)
         
-        return prices.map((price: number, i: number) => ({
+        const data = prices.map((price: number, i: number) => ({
           quote: price,
           lastDigit: this.extractLastDigit(price, pipSize),
           epoch: times[i],
           symbol,
           pip_size: pipSize
         }))
+
+        // Update cache
+        this.historyCache.set(symbol, { data, timestamp: Date.now() })
+        
+        return data
       }
       return []
-    } catch (error) {
+    } catch (error: any) {
+      this.log("error", `getTicksHistory failed for ${cleanSymbol}: ${error.message || JSON.stringify(error)}`)
       console.error("[v0] getTicksHistory error:", error)
       return []
     }
@@ -578,11 +613,25 @@ export class DerivWebSocketManager {
           const response = await this.sendAndWait({ active_symbols: "brief" }, 15000)
           if (response?.active_symbols) {
             this.symbolsCache = response.active_symbols.map((s: any) => {
-              const symbol = s.underlying_symbol || s.symbol
-              const display_name = s.underlying_symbol_name || s.display_name
+              const symbol = s.underlying_symbol || s.symbol || ""
+              const display_name = s.underlying_symbol_name || s.display_name || symbol
+              const market = s.market || "unknown"
+              const market_display_name = s.market_display_name || market
+              const submarket = s.submarket || "unknown"
+              const submarket_display_name = s.submarket_display_name || submarket
+              
               const decimalCount = s.pip_size !== undefined ? s.pip_size : (s.pip ? this.getDecimalCount(s.pip) : 2)
               this.pipSizeMap.set(symbol, decimalCount)
-              return { symbol, display_name, market: s.market, market_display_name: s.market_display_name, pip_size: decimalCount }
+              
+              return { 
+                symbol, 
+                display_name, 
+                market, 
+                market_display_name, 
+                submarket,
+                submarket_display_name,
+                pip_size: decimalCount 
+              }
             })
             console.log(`[v0] Loaded ${this.symbolsCache?.length} symbols`)
             return this.symbolsCache!
@@ -673,9 +722,16 @@ export class DerivWebSocketManager {
   }
 
   public async connectOptions(type: "demo" | "real" | "public", otp?: string): Promise<void> {
-    const baseUrl = DERIV_API.OPTIONS_WS[type.toUpperCase() as keyof typeof DERIV_API.OPTIONS_WS]
+    const typeKey = type.toUpperCase() as keyof typeof DERIV_API.OPTIONS_WS
+    let baseUrl: string = DERIV_API.OPTIONS_WS[typeKey]
+    
+    // If we are currently on fallback, adjust sub-endpoints too
+    if (this.currentWsUrl.includes("binaryws.com")) {
+      baseUrl = baseUrl.replace("derivws.com", "binaryws.com")
+    }
+    
     const url = otp ? `${baseUrl}?otp=${otp}` : baseUrl
-    return this.connect(url, true)
+    return this.connect(url as string, true)
   }
 }
 

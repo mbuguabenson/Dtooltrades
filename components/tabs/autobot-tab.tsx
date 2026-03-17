@@ -17,16 +17,16 @@ import { derivWebSocket } from "@/lib/deriv-websocket-manager"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
 
-import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface AutoBotTabProps {
   theme?: "light" | "dark"
-  symbol: string
-  onSymbolChange?: (symbol: string) => void
-  availableSymbols?: DerivSymbol[]
-  currentPrice?: number
   currentDigit?: number
+  currentPrice?: number
   tickCount?: number
+  maxTicks?: number
+  symbol?: string
+  availableSymbols?: any[]
+  onSymbolChange?: (symbol: string) => void
 }
 
 interface BotConfig {
@@ -133,7 +133,16 @@ const calculateSuggestedMartingale = (strategy: BotStrategy, stake: number): num
   return Math.max(1.1, Math.round(suggestedMultiplier * 100) / 100)
 }
 
-export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSymbols = [], currentPrice, currentDigit, tickCount }: AutoBotTabProps) {
+export function AutoBotTab({ 
+  theme = "dark", 
+  symbol = "R_100", 
+  onSymbolChange, 
+  availableSymbols = [], 
+  currentPrice, 
+  currentDigit, 
+  tickCount, 
+  maxTicks = 1000 
+}: AutoBotTabProps) {
   const {
     apiClient,
     isConnected,
@@ -162,7 +171,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
   const tickManagerRef = useRef<TickHistoryManager | null>(null)
   const tickSubscriptionRef = useRef<string | null>(null)
   const tickHandlerRef = useRef<((tickData: any) => void) | null>(null)
-  const analysisEngineRef = useRef<AnalysisEngine>(new AnalysisEngine(100))
+  const analysisEngineRef = useRef<AnalysisEngine>(new AnalysisEngine(1000))
 
   useEffect(() => {
     const defaultConfig: BotConfig = {
@@ -207,6 +216,18 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
 
         tickHandlerRef.current = tickHandler
 
+        // Pre-fetch history for the engine so analysis starts immediately
+        try {
+          const history = await derivWebSocket.getTicksHistory(symbol, maxTicks)
+          if (history && history.length > 0) {
+            console.log(`[v0] AutoBot pre-loaded ${history.length} ticks for immediate analysis`)
+            analysisEngineRef.current.setMaxTicks(maxTicks)
+            analysisEngineRef.current.addTicksBatch(history)
+          }
+        } catch (e) {
+          console.error("[v0] AutoBot failed to pre-load history:", e)
+        }
+
         // Subscribe to ticks for the selected symbol
         if (!symbol) {
           console.warn("[v0] AutoBotTab: No symbol provided for subscription yet")
@@ -223,7 +244,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
     initializeWebSocket()
 
     const analyzeInterval = setInterval(async () => {
-      const latestDigits = analysisEngineRef.current.getRecentDigits(100)
+      const latestDigits = analysisEngineRef.current.getRecentDigits(maxTicks)
 
       if (latestDigits.length > 0) {
         const lastDigit = latestDigits[latestDigits.length - 1]
@@ -276,7 +297,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
         derivWebSocket.unsubscribe(tickSubscriptionRef.current, tickHandlerRef.current || undefined)
       }
     }
-  }, [apiClient, isConnected, symbol])
+  }, [apiClient, isConnected, symbol, maxTicks])
 
   const mapEngineToUI = (strategy: BotStrategy, signals: Signal[], analysis: any) => {
     let relevant: Signal | undefined
@@ -474,81 +495,7 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
         </Card>
       )}
 
-      <Card
-        className={
-          theme === "dark"
-            ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
-            : "bg-white border-gray-200"
-        }
-      >
-        <CardHeader className="p-3 sm:p-6 pb-2">
-          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Trading Market</CardTitle>
-          <CardDescription className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-            All bots will trade on this market
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-3 sm:px-6 pb-3">
-          <div className="p-2 sm:p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-            <p className={`text-sm sm:text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {activeBots.size > 0 && (
-        <Card className={theme === "dark" ? "bg-orange-500/10 border-orange-500/30" : "bg-orange-50 border-orange-200"}>
-          <CardContent className="p-3 sm:pt-6 flex items-center justify-between">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle
-                className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}
-              />
-              <div>
-                <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-orange-400" : "text-orange-700"}`}>
-                  Active Bots Detected
-                </p>
-                <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-orange-300" : "text-orange-600"}`}>
-                  Click "EMERGENCY STOP ALL" to halt all running bots immediately.
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={handleEmergencyStopAll}
-              className="bg-red-600 hover:bg-red-700 text-white ml-2 sm:ml-4 shrink-0 text-[10px] sm:text-xs h-8 sm:h-10"
-            >
-              🚨 STOP ALL
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card
-        className={
-          theme === "dark"
-            ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
-            : "bg-white border-gray-200"
-        }
-      >
-        <CardHeader className="p-3 sm:p-6 pb-2">
-          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Market Information</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            <div className="p-2 sm:p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market</p>
-              <p className={`text-[10px] sm:text-lg font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>{symbol}</p>
-            </div>
-            <div className="p-2 sm:p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-              <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Price</p>
-              {(currentMarketPrice || 0).toFixed(5)}
-            </div>
-            <div className="p-2 sm:p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
-              <p className={`text-[8px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Digit</p>
-              <p className={`text-sm sm:text-2xl font-bold ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
-                {currentLastDigit}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Redundant Market Information and Trading Market cards removed as they are in the header */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {BOT_STRATEGIES.map((strategy) => {

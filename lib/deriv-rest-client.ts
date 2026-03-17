@@ -6,9 +6,16 @@ export class DerivRESTClient {
 
     constructor(appId: string = DERIV_CONFIG.APP_ID) {
         this.appId = appId
-        // Try to get token from localStorage if available
+        this.resolveToken()
+    }
+
+    private resolveToken() {
         if (typeof window !== "undefined") {
-            this.token = localStorage.getItem("deriv_api_token")
+            this.token = 
+                localStorage.getItem("deriv_auth_token") || 
+                localStorage.getItem("authToken") || 
+                localStorage.getItem("clientToken") || 
+                localStorage.getItem("deriv_api_token")
         }
     }
 

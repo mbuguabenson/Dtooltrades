@@ -71,7 +71,7 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
         const isOptionsAccount = currentAccount?.id.startsWith("CR") || currentAccount?.id.startsWith("VRTC") // Simplified logic for detection
 
         globalAPIClient = new DerivAPIClient({
-          appId: DERIV_APP_ID.toString(),
+          appId: String(DERIV_APP_ID || "123189"),
           token,
           isOptions: isOptionsAccount,
           accountType: auth.accountType?.toLowerCase() as any

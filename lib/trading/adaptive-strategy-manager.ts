@@ -54,7 +54,7 @@ export class AdaptiveStrategyManager {
                 return {
                     strategy: "Differs",
                     type: "DIGITDIFF",
-                    barrier: pattern.metadata.rejectedDigit.toString(),
+                    barrier: String(pattern.metadata.rejectedDigit ?? ""),
                     confidence: pattern.confidence,
                     description: `Fading rejected cluster of ${pattern.metadata.rejectedDigit}.`,
                     entryStatus: pattern.confidence >= 65 ? "Confirmed" : "Waiting"

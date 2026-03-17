@@ -22,7 +22,6 @@ import { TradingJournalPanel } from "@/components/trading-journal-panel"
 import { TradeLog } from "@/components/trade-log"
 import { SmartAuto24Engine } from "@/lib/smartauto24-engine-integration"
 import { useSmartAuto24 } from "@/hooks/use-smartauto24"
-import { TabMarketBar } from "@/components/tab-market-bar"
 import type { BotSignal } from "@/lib/bot-engines"
 
 interface AnalysisLogEntry {
@@ -737,16 +736,6 @@ export function SmartAuto24Tab({
 
   return (
     <div className="space-y-4">
-      <TabMarketBar
-        symbol={symbol}
-        availableSymbols={availableSymbols}
-        onSymbolChange={onSymbolChange}
-        currentDigit={currentDigit}
-        tickCount={tickCount}
-        theme={theme}
-        maxTicks={maxTicks}
-        onMaxTicksChange={onMaxTicksChange}
-      />
       {!isAuthorized ? (
         <Card
           className={`p-6 sm:p-12 border text-center ${theme === "dark" ? "bg-[#0a0e27]/80 border-red-500/30" : "bg-white border-gray-200"}`}

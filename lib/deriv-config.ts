@@ -29,6 +29,7 @@ export const DERIV_PLATFORMS = {
 // Official Deriv API Endpoints
 export const DERIV_API = {
   WEBSOCKET: "wss://ws.derivws.com/websockets/v3",
+  WEBSOCKET_FALLBACK: "wss://ws.binaryws.com/websockets/v3",
   OAUTH: "https://oauth.deriv.com/oauth2/authorize",
   // New Options API (REST)
   REST_BASE: "https://api.derivws.com",

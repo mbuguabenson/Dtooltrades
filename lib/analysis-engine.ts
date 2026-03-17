@@ -49,12 +49,12 @@ export interface Signal {
 
 export class AnalysisEngine {
   private ticks: TickData[] = []
-  private maxTicks = 100
+  private maxTicks = 1000
   private digitCounts: Map<number, number> = new Map()
   private lastDigits: number[] = []
   private pipSize = 2
 
-  constructor(maxTicks = 100) {
+  constructor(maxTicks = 1000) {
     this.maxTicks = maxTicks
     // Initialize digit counts
     for (let i = 0; i <= 9; i++) {
@@ -84,6 +84,39 @@ export class AnalysisEngine {
     // Update digit count
     const count = this.digitCounts.get(lastDigit) || 0
     this.digitCounts.set(lastDigit, count + 1)
+  }
+
+  /**
+   * Add a batch of ticks efficiently.
+   */
+  addTicksBatch(ticks: TickData[]): void {
+    if (!ticks || ticks.length === 0) return
+
+    // If batch is larger than maxTicks, only keep the last maxTicks
+    const relevantTicks = ticks.slice(-this.maxTicks)
+    
+    // Add them to our storage
+    relevantTicks.forEach(tick => {
+      const lastDigit = this.extractLastDigit(tick.quote, tick.pipSize || this.pipSize)
+      this.ticks.push(tick)
+      this.lastDigits.push(lastDigit)
+    })
+
+    // Trim to maxTicks
+    if (this.ticks.length > this.maxTicks) {
+      const startIdx = this.ticks.length - this.maxTicks
+      this.ticks = this.ticks.slice(startIdx)
+      this.lastDigits = this.lastDigits.slice(startIdx)
+    }
+
+    // Rebuild digit counts from scratch for accuracy after batch
+    for (let i = 0; i <= 9; i++) {
+      this.digitCounts.set(i, 0)
+    }
+    this.lastDigits.forEach(digit => {
+      const count = this.digitCounts.get(digit) || 0
+      this.digitCounts.set(digit, count + 1)
+    })
   }
 
   // Extract last digit correctly using truncation

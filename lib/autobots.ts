@@ -309,8 +309,8 @@ export class AutoBot {
       case "DIFFERS":
       case "SUPER_DIFFERS": {
         const signal = proSignals.find(s => s.type === "pro_differs") || signals.find(s => s.type === "differs")
-        if (signal?.status === "TRADE NOW" && signal.targetDigit !== undefined) {
-          return { contractType: "DIGITDIFF", prediction: signal.targetDigit.toString() }
+        if (signal?.status === "TRADE NOW" && signal.targetDigit !== undefined && signal.targetDigit !== null) {
+          return { contractType: "DIGITDIFF", prediction: String(signal.targetDigit) }
         }
         break
       }

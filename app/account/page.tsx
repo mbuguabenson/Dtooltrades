@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDerivAPI } from "@/lib/deriv-api-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AccountDetails } from "@/components/account/account-details"
@@ -17,8 +17,13 @@ import Link from "next/link"
 export default function AccountPage() {
     const { isLoggedIn, accountType, activeLoginId, isInitializing } = useDerivAPI()
     const [activeTab, setActiveTab] = useState("details")
+    const [mounted, setMounted] = useState(false)
 
-    if (isInitializing) {
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted || isInitializing) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 text-center">
                 <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-8"></div>

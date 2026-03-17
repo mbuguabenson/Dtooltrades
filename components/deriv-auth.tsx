@@ -104,23 +104,23 @@ export function DerivAuth({ theme = "dark" }: DerivAuthProps) {
           <Button
             onClick={createDerivAccount}
             size="sm"
-            className={`text-xs sm:text-sm h-10 px-4 rounded-xl font-bold transition-all ${theme === "dark"
+            className={`text-[10px] sm:text-xs h-8 px-3 rounded-lg font-bold transition-all ${theme === "dark"
               ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
               : "bg-emerald-50 text-emerald-700 border border-emerald-200"
               }`}
           >
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlus className="h-3.5 w-3.5 mr-1.5" />
             Sign Up
           </Button>
           <Button
             onClick={requestLogin}
             size="sm"
-            className={`text-xs sm:text-sm h-10 px-4 rounded-xl font-bold transition-all ${theme === "dark"
-              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+            className={`text-[10px] sm:text-xs h-8 px-3 rounded-lg font-bold transition-all ${theme === "dark"
+              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20"
               : "bg-blue-500 hover:bg-blue-600 text-white"
               }`}
           >
-            <LogIn className="h-4 w-4 mr-2" />
+            <LogIn className="h-3.5 w-3.5 mr-1.5" />
             Login
           </Button>
         </div>

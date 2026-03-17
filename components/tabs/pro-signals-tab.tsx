@@ -6,7 +6,6 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
-import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface ProSignalsTabProps {
   proSignals: Signal[]
@@ -41,15 +40,6 @@ export function ProSignalsTab({ proSignals, analysis, theme = "dark", symbol, av
   if (!proSignals || proSignals.length === 0) {
     return (
       <div className="space-y-6">
-        <TabMarketBar
-          symbol={symbol}
-          availableSymbols={availableSymbols}
-          onSymbolChange={onSymbolChange}
-          currentPrice={currentPrice}
-          currentDigit={currentDigit}
-          tickCount={tickCount}
-          theme={theme}
-        />
         <div className="text-center py-16">
           <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
             No pro signals available yet. Pro signals require specific market conditions.

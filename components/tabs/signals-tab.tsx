@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
-import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface SignalsTabProps {
   signals: Signal[]
@@ -76,17 +75,6 @@ export function SignalsTab({ signals, proSignals, analysis, theme = "dark", symb
 
   return (
     <div className="space-y-6">
-      <TabMarketBar
-        symbol={symbol}
-        availableSymbols={availableSymbols}
-        onSymbolChange={onSymbolChange}
-        currentPrice={currentPrice}
-        currentDigit={currentDigit}
-        tickCount={tickCount}
-        theme={theme}
-        maxTicks={maxTicks}
-        onMaxTicksChange={onMaxTicksChange}
-      />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {sortedSignals.map((signal, index) => {
           const isTradeNow = signal.status === "TRADE NOW"

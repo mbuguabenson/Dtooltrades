@@ -61,10 +61,35 @@ export default function DerivSmartChartInner({
 
   // SmartChart request callbacks (Champion Pattern)
   const requestAPI = async (req: any) => {
+    const requestType = Object.keys(req)[0]
+    
+    // Intercept metadata requests to satisfy the engine instantly
+    if (requestType === 'active_symbols') {
+      console.log("[SmartChart] Intercepting active_symbols request")
+      return { active_symbols: activeSymbols }
+    }
+    
+    if (requestType === 'trading_times') {
+      console.log("[SmartChart] Intercepting trading_times request")
+      const now = new Date()
+      const dateStr = now.toISOString().split('T')[0]
+      return { 
+        trading_times: { 
+          markets: [], 
+          date: dateStr 
+        } 
+      }
+    }
+
+    if (requestType === 'asset_index') {
+      console.log("[SmartChart] Intercepting asset_index request")
+      return { asset_index: [] }
+    }
+
     console.log("[SmartChart] requestAPI core request:", JSON.stringify(req))
     try {
       const response = await derivWebSocket.sendAndWait(req, 15000)
-      console.log(`[SmartChart] response for ${Object.keys(req)[0]}:`, !!response)
+      console.log(`[SmartChart] response for ${requestType}:`, !!response)
       return response
     } catch (e) {
       console.error("[SmartChart] requestAPI error:", e)
@@ -216,13 +241,33 @@ export default function DerivSmartChartInner({
     theme: theme,
   }), [theme])
 
-  // Provide a safe fallback for market ordering to prevent localeCompare crashes inside deriv-charts
+  // Provide safe fallbacks for ordering to prevent localeCompare crashes inside deriv-charts
   const getMarketsOrder = useCallback((active_symbols: any[]) => {
     if (!active_symbols || !Array.isArray(active_symbols)) return []
-    return active_symbols
-      .map(s => s?.market)
-      .filter((v, i, a) => v && typeof v === 'string' && a.indexOf(v) === i)
-      .sort((a, b) => a.localeCompare(b))
+    try {
+      return active_symbols
+        .map(s => s?.market)
+        .filter((v): v is string => typeof v === 'string' && v.length > 0)
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .sort((a, b) => (a || "").localeCompare(b || ""))
+    } catch (e) {
+      console.warn("[SmartChart] getMarketsOrder sorting failed:", e)
+      return []
+    }
+  }, [])
+
+  const getSubmarketsOrder = useCallback((active_symbols: any[]) => {
+    if (!active_symbols || !Array.isArray(active_symbols)) return []
+    try {
+      return active_symbols
+        .map(s => s?.submarket)
+        .filter((v): v is string => typeof v === 'string' && v.length > 0)
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .sort((a, b) => (a || "").localeCompare(b || ""))
+    } catch (e) {
+      console.warn("[SmartChart] getSubmarketsOrder sorting failed:", e)
+      return []
+    }
   }, [])
 
   // Don't render if SSR
@@ -247,6 +292,11 @@ export default function DerivSmartChartInner({
           subscribeQuotes={subscribeQuotes}
           unsubscribeQuotes={unsubscribeQuotes}
           getMarketsOrder={getMarketsOrder}
+          getSubmarketsOrder={getSubmarketsOrder}
+          getSymbolsOrder={(symbols: any[]) => {
+            if (!symbols || !Array.isArray(symbols)) return []
+            return [...symbols].sort((a, b) => (a?.display_name || a?.symbol || "").localeCompare(b?.display_name || b?.symbol || ""))
+          }}
           chartData={{
             activeSymbols: activeSymbols,
           }}

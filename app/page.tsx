@@ -5,7 +5,7 @@ import { useDeriv } from "@/hooks/use-deriv"
 import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Moon, Sun, User, AlertTriangle, Menu } from 'lucide-react'
+import { Moon, Sun, User, AlertTriangle, Menu, TrendingUp, Layers, Eye, Hash, Clock, Activity } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,6 @@ import { SignalsTab } from "@/components/tabs/signals-tab"
 import { ProSignalsTab } from "@/components/tabs/pro-signals-tab"
 import { EvenOddTab } from "@/components/tabs/even-odd-tab"
 import { OverUnderTab } from "@/components/tabs/over-under-tab"
-import { TabMarketBar } from "@/components/tab-market-bar"
 import { MatchesTab } from "@/components/tabs/matches-tab"
 import { DiffersTab } from "@/components/tabs/differs-tab"
 import { RiseFallTab } from "@/components/tabs/rise-fall-tab"
@@ -59,6 +58,11 @@ export default function DerivAnalysisApp() {
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
   const [showRiskModal, setShowRiskModal] = useState(false)
   const [siteConfig, setSiteConfig] = useState<any>(null)
+  const [watchedDigits, setWatchedDigits] = useState<number[]>(() => {
+    if (typeof window === "undefined") return []
+    const saved = localStorage.getItem("deriv_watched_digits")
+    return saved ? JSON.parse(saved) : []
+  })
   const globalContext = useGlobalTradingContext()
 
   const {
@@ -112,6 +116,12 @@ export default function DerivAnalysisApp() {
       .catch(console.error)
   }, [])
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("deriv_watched_digits", JSON.stringify(watchedDigits))
+    }
+  }, [watchedDigits])
+
   const recentDigits = getRecentDigits(20)
   const recent40Digits = getRecentDigits(40)
   const recent50Digits = getRecentDigits(50)
@@ -155,75 +165,35 @@ export default function DerivAnalysisApp() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col relative">
         {!siteConfig?.headerHidden && (
           <header
-            className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
-              ? "bg-[#050505]/90 border-white/5"
-              : "bg-white/95 border-gray-100"
-              } backdrop-blur-xl`}
+             className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
+               ? "bg-[#050505]/90 border-white/5"
+               : "bg-white/95 border-gray-100"
+               } backdrop-blur-xl`}
           >
-            <div className="mx-auto w-full px-2 sm:px-6">
-              <div className="flex flex-nowrap items-center py-0.5 h-auto sm:h-10 gap-1 w-full justify-between">
+            <div className="mx-auto w-full px-1 sm:px-3">
+              <div className="flex flex-nowrap items-center h-14 sm:h-20 gap-3 w-full justify-between overflow-hidden">
 
-                {/* Brand Logo only on mobile, full text on desktop */}
-                <div className="flex items-center shrink-0">
-                  <h1 className="text-sm sm:text-lg font-black tracking-tight flex items-center gap-0.5">
-                    <span className={`hidden sm:inline ${theme === "dark" ? "text-white" : "text-slate-900"}`}>PROFIT</span>
-                    <span className={`hidden sm:inline ${theme === "dark" ? "text-slate-400 font-medium" : "text-slate-500 font-medium"}`}>HUB</span>
-                    <span className={`sm:hidden ${theme === "dark" ? "text-white" : "text-slate-900"}`}>PH</span>
-                  </h1>
+                {/* Brand Logo and Text - Balanced */}
+                <div className="flex items-center shrink-0 min-w-[120px] sm:min-w-[180px]">
+                  <div className="flex flex-col leading-tight">
+                    <h1 className={`text-[13px] sm:text-xl font-black tracking-tight uppercase ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                      Profithub
+                    </h1>
+                    <h2 className={`text-[9px] sm:text-[11px] font-black tracking-[0.1em] opacity-90 uppercase ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                      Analysis Tool
+                    </h2>
+                  </div>
                 </div>
 
-                {/* Centralized Market Selector + Live Price */}
-                <div className="order-none w-auto flex-1 flex justify-center items-center min-w-0 max-w-2xl px-0 gap-1 sm:gap-1.5">
-                  {/* Market Selector */}
-                  {availableSymbols.length > 0 && (
-                    <div className={`flex items-center gap-1.5 px-1.5 sm:px-2 py-1 rounded-lg border transition-all ${theme === "dark"
-                      ? "bg-white/5 border-white/10 hover:border-blue-500/30"
-                      : "bg-gray-50 border-gray-200 hover:border-blue-400"
-                      }`}>
-                      <span className={`text-[9px] font-black uppercase tracking-widest hidden sm:inline ${theme === "dark" ? "text-slate-500" : "text-gray-400"
-                        }`}>Market</span>
-                      <MarketSelector
-                        symbols={availableSymbols}
-                        currentSymbol={symbol}
-                        onSymbolChange={changeSymbol}
-                        theme={theme}
-                      />
-                    </div>
-                  )}
+                <div className="flex-1" />
 
-                  {/* Live Price + Digit */}
-                  {currentPrice !== null && currentPrice !== undefined && (
-                    <div className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1 rounded-lg border ${theme === "dark"
-                      ? "bg-white/5 border-white/10"
-                      : "bg-gray-50 border-gray-200"
-                      }`}>
-                      <div className="text-center">
-                        <p className={`text-[8px] font-bold uppercase tracking-widest ${theme === "dark" ? "text-slate-500" : "text-gray-400"
-                          }`}>Price</p>
-                        <p className={`text-xs sm:text-sm font-black tabular-nums tracking-tight ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"
-                          }`}>{currentPrice.toFixed(2)}</p>
-                      </div>
-                      {currentDigit !== null && currentDigit !== undefined && (
-                        <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md flex items-center justify-center font-black text-xs sm:text-sm ${theme === "dark"
-                          ? "bg-blue-500/15 text-blue-300 border border-blue-500/20"
-                          : "bg-blue-50 text-blue-700 border border-blue-200"
-                          }`}>
-                          {currentDigit}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Auth & Desktop Tools */}
                 <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                  {/* Desktop Only Buttons */}
                   <div className="hidden sm:flex items-center gap-2">
                     <Link href="/account">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-8 px-3 text-xs rounded-xl font-bold flex items-center gap-1.5 transition-all ${theme === "dark"
+                        className={`h-8 px-3 text-[10px] rounded-lg font-bold flex items-center gap-1.5 transition-all ${theme === "dark"
                           ? "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-blue-600 hover:text-white"
                           : "bg-gray-100 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
                       >
@@ -235,18 +205,18 @@ export default function DerivAnalysisApp() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowRiskModal(true)}
-                      className={`h-7 px-2 text-[11px] rounded-lg font-bold flex items-center gap-1 transition-all ${theme === "dark"
+                      className={`h-8 px-3 text-[10px] rounded-lg font-bold flex items-center gap-1 transition-all ${theme === "dark"
                         ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20"
                         : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
                     >
-                      <AlertTriangle className="h-3 w-3" />
+                      <AlertTriangle className="h-3.5 w-3.5" />
                       Risk
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={toggleTheme}
-                      className={`h-7 w-7 rounded-md transition-all ${theme === "dark"
+                      className={`h-8 w-8 rounded-lg transition-all ${theme === "dark"
                         ? "bg-white/5 text-yellow-500 hover:bg-white/10"
                         : "bg-black/5 text-slate-700 hover:bg-black/10"
                         }`}
@@ -257,32 +227,30 @@ export default function DerivAnalysisApp() {
 
                   <DerivAuth theme={theme} />
 
-                  {/* Mobile Hamburger Menu */}
                   <div className="sm:hidden -ml-1">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className={`h-7 w-7 rounded-lg ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                          <Menu className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className={`h-9 w-9 rounded-lg ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                          <Menu className="h-5 w-5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={`w-48 ${theme === "dark" ? "bg-[#0a0e27] border-white/10" : ""}`}>
                         <DropdownMenuItem asChild>
-                          <Link href="/account" className="flex items-center gap-2 w-full cursor-pointer">
-                            <User className="h-4 w-4 shrink-0" />
+                          <Link href="/account" className="flex items-center gap-2 w-full cursor-pointer p-3">
+                            <User className="h-4 w-4" />
                             <span>Account</span>
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowRiskModal(true)} className="flex items-center gap-2 cursor-pointer">
-                          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                        <DropdownMenuItem onClick={() => setShowRiskModal(true)} className="flex items-center gap-2 cursor-pointer p-3">
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
                           <span>Risk Disclaimer</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className={theme === "dark" ? "bg-white/10" : ""} />
-                        <DropdownMenuItem onClick={toggleTheme} className="flex items-center justify-between cursor-pointer">
+                        <DropdownMenuItem onClick={toggleTheme} className="flex items-center justify-between cursor-pointer p-3">
                           <span className="flex items-center gap-2">
-                            {theme === "dark" ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 shrink-0" />}
+                            {theme === "dark" ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4" />}
                             <span>Theme</span>
                           </span>
-                          <span className="text-xs opacity-50">{theme === "dark" ? "Light" : "Dark"}</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -290,53 +258,169 @@ export default function DerivAnalysisApp() {
                 </div>
               </div>
 
-              {/* Elegant Navigation Row within Header */}
-              <div className="pb-1 px-1 sm:px-4">
-                <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
-                  {[
-                    "smart-adaptive",
-                    "smart-analysis",
-                    "smartauto24",
-                    "autobot",
-                    "automated",
-                    "signals",
-                    "pro-signals",
-                    "super-signals",
-                    "even-odd",
-                    "over-under",
-                    "advanced-over-under",
-                    "matches",
-                    "differs",
-                    "rise-fall",
-                    "ai-analysis",
-                    "tools-info",
-                    "charts",
-                  ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => (
-                    <TabsTrigger
-                      key={tab}
-                      value={tab}
-                      className={`shrink-0 rounded-full text-[11px] sm:text-[12px] px-4 sm:px-5 py-1.5 sm:py-2 mx-0.5 whitespace-nowrap transition-all duration-300 capitalize font-medium tracking-wide border ${activeTab === tab
-                        ? theme === "dark"
-                          ? "bg-white text-[#0f1629] border-white shadow-sm shadow-white/10"
-                          : "bg-[#0f1629] text-white border-[#0f1629] shadow-sm shadow-black/10"
-                        : theme === "dark"
-                          ? "bg-transparent border-transparent text-slate-400 hover:text-white hover:bg-white/10"
-                          : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 hover:bg-black/5"
-                        }`}
-                      onClick={(e) => {
-                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-                      }}
-                    >
-                      {tab === "autobot" ? "Autobot 🤖" : tab === "automated" ? "Autotrader 🚀" : tab.replace("-", " ")}
-                    </TabsTrigger>
-                  ))}
-                </ResponsiveTabs>
+              <div className="px-1 sm:px-4 flex flex-col gap-3 pb-4">
+                {/* 1. Symmetrical Trading Selection Tabs */}
+                <div className="flex items-center justify-center w-full">
+                  <div className={`p-1 rounded-xl sm:rounded-2xl border transition-all duration-300 ${theme === "dark" 
+                    ? "bg-[#050505]/60 border-white/5 shadow-2xl" 
+                    : "bg-gray-100/50 border-gray-200"
+                    } max-w-full overflow-hidden`}>
+                    <div className="overflow-x-auto no-scrollbar max-w-full">
+                      <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
+                        {[
+                          "smart-adaptive",
+                          "smart-analysis",
+                          "smartauto24",
+                          "autobot",
+                          "automated",
+                          "signals",
+                          "pro-signals",
+                          "super-signals",
+                          "even-odd",
+                          "over-under",
+                          "advanced-over-under",
+                          "matches",
+                          "differs",
+                          "rise-fall",
+                          "ai-analysis",
+                          "tools-info",
+                          "charts",
+                        ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => (
+                          <TabsTrigger
+                            key={tab}
+                            value={tab}
+                            className={`shrink-0 rounded-lg text-[11px] sm:text-[13px] h-8 sm:h-9 px-4 sm:px-6 whitespace-nowrap transition-all duration-300 capitalize font-black tracking-wide ${activeTab === tab
+                              ? theme === "dark"
+                                ? "bg-blue-600 text-white shadow-[0_4px_15px_rgba(37,99,235,0.4)] scale-100"
+                                : "bg-blue-600 text-white shadow-[0_4px_15px_rgba(37,99,235,0.3)] scale-100"
+                              : theme === "dark"
+                                ? "bg-transparent text-slate-400 hover:text-white hover:bg-white/5"
+                                : "bg-transparent text-slate-500 hover:text-slate-900 hover:bg-black/5"
+                              }`}
+                            onClick={(e) => {
+                              e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                            }}
+                          >
+                            {tab === "autobot" ? "Bot 🤖" : tab === "automated" ? "Super 🚀" : tab.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')}
+                          </TabsTrigger>
+                        ))}
+                      </ResponsiveTabs>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Balanced HUD Row - Dashboard Grid Style */}
+                <div className="flex items-center justify-center w-full px-1">
+                  <div className={`p-0.5 sm:p-1 rounded-xl sm:rounded-2xl border ${theme === "dark" ? "bg-[#050505]/60 border-white/5 shadow-2xl" : "bg-white/50 border-gray-100 shadow-xl"} backdrop-blur-2xl w-full sm:w-auto`}>
+                    <div className="flex flex-nowrap items-center justify-center gap-0.5 sm:gap-2.5 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+                      
+                      {/* 1. Market Selection Tile */}
+                      {availableSymbols.length > 0 && (
+                        <div className={`flex flex-col items-center justify-center min-w-[110px] sm:min-w-[170px] h-9 sm:h-11 rounded-lg sm:rounded-xl border transition-all ${theme === "dark"
+                          ? "bg-white/[0.03] border-white/10 shadow-inner"
+                          : "bg-gray-50 border-gray-200 shadow-xs"
+                          }`}>
+                          <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+                            Market Selection
+                          </span>
+                          <div className="w-full flex items-center justify-center scale-[0.85] sm:scale-100 origin-center -mt-0.5 sm:mt-0">
+                            <MarketSelector
+                              symbols={availableSymbols}
+                              currentSymbol={symbol}
+                              onSymbolChange={changeSymbol}
+                              theme={theme}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. Price Tile */}
+                      <div className={`flex flex-col items-center justify-center min-w-[75px] sm:min-w-[140px] h-9 sm:h-11 rounded-lg sm:rounded-xl border ${theme === "dark"
+                        ? "bg-white/[0.03] border-white/10 shadow-inner"
+                        : "bg-gray-50 border-gray-200 shadow-xs"
+                        }`}>
+                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                          Price
+                        </span>
+                        <span className={`text-[11px] sm:text-[16px] font-black tabular-nums leading-none ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                          {currentPrice?.toFixed(2) || "0.00"}
+                        </span>
+                      </div>
+
+                      {/* 3. Last Digit Tile */}
+                      <div className={`flex flex-col items-center justify-center min-w-[55px] sm:min-w-[110px] h-9 sm:h-11 rounded-lg sm:rounded-xl border relative overflow-hidden transition-all duration-300 ${theme === "dark"
+                        ? "bg-orange-500/[0.08] border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.12)]"
+                        : "bg-orange-50 border-orange-200"
+                        }`}>
+                        <div className="absolute inset-0 bg-gradient-to-t from-orange-500/[0.05] to-transparent animate-pulse pointer-events-none" />
+                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 relative z-10 opacity-70 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+                          Last Digit
+                        </span>
+                        <span className={`text-[15px] sm:text-[22px] font-black relative z-10 leading-none ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+                          {currentDigit ?? "0"}
+                        </span>
+                      </div>
+
+                      {/* 4. Ticks Tile */}
+                      <div className={`flex flex-col items-center justify-center min-w-[75px] sm:min-w-[140px] h-9 sm:h-11 rounded-lg sm:rounded-xl border ${theme === "dark"
+                        ? "bg-white/[0.03] border-white/10 shadow-inner"
+                        : "bg-gray-50 border-gray-200 shadow-xs"
+                        }`}>
+                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"}`}>
+                          Ticks
+                        </span>
+                        <div className="flex items-center gap-1 sm:gap-1.5 h-4 sm:h-5">
+                          <span className={`text-[11px] sm:text-[15px] font-black tabular-nums tracking-tight ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"}`}>
+                            {(tickCount || 0).toLocaleString()}
+                          </span>
+                          <div className={`h-3 w-px ${theme === "dark" ? "bg-white/20" : "bg-gray-300"}`} />
+                          <select
+                            value={maxTicks}
+                            onChange={(e) => changeMaxTicks(Number(e.target.value))}
+                            className={`bg-transparent text-[9px] sm:text-[11px] font-black focus:outline-hidden cursor-pointer appearance-none ${theme === "dark" ? "text-slate-300" : "text-slate-700"}`}
+                          >
+                            {[25, 60, 100, 250, 500, 1000, 2500, 5000].map(v => (
+                              <option key={v} value={v} className={theme === "dark" ? "bg-slate-900 text-white" : "bg-white text-slate-900"}>{v}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* 5. Watch Tile - Optimized Ultra-Compact */}
+                      <div className={`flex flex-col items-center justify-center min-w-[45px] sm:min-w-[80px] h-9 sm:h-11 rounded-lg sm:rounded-xl border transition-all ${theme === "dark"
+                        ? "bg-white/[0.03] border-white/10 hover:border-amber-500/50 shadow-inner"
+                        : "bg-gray-50 border-gray-200 shadow-xs"
+                        }`}>
+                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-amber-400" : "text-amber-600"}`}>
+                          Watch
+                        </span>
+                        <div className="flex items-center gap-1 px-1 w-full justify-center">
+                          <Eye className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 text-amber-500 shrink-0" />
+                          <input
+                            type="text"
+                            placeholder="D"
+                            className={`bg-transparent text-[9px] sm:text-[11px] font-black w-[15px] sm:w-[30px] focus:outline-hidden text-center placeholder:text-slate-600 ${theme === "dark" ? "text-slate-300" : "text-slate-700"}`}
+                            value={watchedDigits.join(',')}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const digits = val.split(',')
+                                .map(d => parseInt(d.trim()))
+                                .filter(d => !isNaN(d) && d >= 0 && d <= 9);
+                              setWatchedDigits([...new Set(digits)]);
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </header>
         )}
 
-        <main className="flex-1 pt-[75px] sm:pt-[80px] pb-4 px-1 sm:px-4 space-y-1.5 sm:space-y-4 max-w-7xl mx-auto w-full">
+        <main className="flex-1 pt-[180px] sm:pt-[240px] pb-4 px-1 sm:px-4 space-y-2 sm:space-y-4 max-w-7xl mx-auto w-full">
           {connectionStatus !== "connected" ? (
             <div className="text-center py-12 sm:py-20 md:py-32">
               <h2
@@ -358,43 +442,12 @@ export default function DerivAnalysisApp() {
           ) : (
             <>
               <TabsContent value="smart-analysis" className="mt-0 space-y-2 sm:space-y-3 md:space-y-4">
-                <TabMarketBar
-                  symbol={symbol}
-                  availableSymbols={availableSymbols}
-                  onSymbolChange={changeSymbol}
-                  currentPrice={currentPrice}
-                  currentDigit={currentDigit}
-                  tickCount={tickCount}
-                  theme={theme}
-                />
                 <div
                   className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
                 >
-                  <div className="flex items-center gap-3 sm:gap-6">
-                    <div className="flex flex-col items-start">
-                      <div className={`text-[8px] uppercase tracking-wider ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
-                        Digit
-                      </div>
-                      <div className={`text-xl sm:text-3xl font-black ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
-                        {currentDigit !== null ? currentDigit : "0"}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-start pl-2">
-                      <div className={`text-[8px] uppercase tracking-wider ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
-                        Price
-                      </div>
-                      <div
-                        className={`text-sm sm:text-base font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
-                      >
-                        {currentPrice?.toFixed(5) || "---"}
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex items-center gap-2">
                     <div className={`h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse`} />
-                    <span className={`text-[10px] font-bold uppercase ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>Live</span>
+                    <span className={`text-[10px] font-bold uppercase ${theme === "dark" ? "text-green-400" : "text-green-600"}`}>Market Live</span>
                   </div>
                 </div>
 
@@ -414,6 +467,7 @@ export default function DerivAnalysisApp() {
                       frequencies={analysis.digitFrequencies}
                       currentDigit={currentDigit}
                       theme={theme}
+                      watchedDigits={watchedDigits}
                     />
                   </div>
                 )}
@@ -514,7 +568,7 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="super-signals" className="mt-0">
-                <SuperSignalsTab theme={theme} symbol={symbol} availableSymbols={availableSymbols} />
+                <SuperSignalsTab theme={theme} symbol={symbol} availableSymbols={availableSymbols} maxTicks={maxTicks} />
               </TabsContent>
 
               <TabsContent value="even-odd" className="mt-0">

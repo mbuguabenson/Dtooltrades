@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import type { Signal, AnalysisResult } from "@/lib/analysis-engine"
 import { MarketSelector } from "@/components/market-selector"
 import type { DerivSymbol } from "@/hooks/use-deriv"
-import { TabMarketBar } from "@/components/tab-market-bar"
 
 interface MatchesTabProps {
   analysis: AnalysisResult | null
@@ -70,17 +69,6 @@ export function MatchesTab({ analysis, signals, recentDigits, theme = "dark", sy
 
   return (
     <div className="space-y-6">
-      <TabMarketBar
-        symbol={symbol}
-        availableSymbols={availableSymbols}
-        onSymbolChange={onSymbolChange}
-        currentPrice={currentPrice}
-        currentDigit={currentDigit}
-        tickCount={tickCount}
-        theme={theme}
-        maxTicks={maxTicks}
-        onMaxTicksChange={onMaxTicksChange}
-      />
       <div
         className={`rounded-xl p-8 border ${theme === "dark"
           ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"

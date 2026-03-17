@@ -29,8 +29,20 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [signals, setSignals] = useState<Signal[]>([])
   const [aiPrediction, setAiPrediction] = useState<PredictionResult | null>(null)
-  const [symbol, setSymbol] = useState(initialSymbol)
-  const [maxTicks, setMaxTicks] = useState(initialMaxTicks)
+  // Load persistent state from localStorage
+  const getStoredValue = (key: string, defaultValue: any) => {
+    if (typeof window === "undefined") return defaultValue
+    const saved = localStorage.getItem(key)
+    if (saved === null) return defaultValue
+    try {
+      return JSON.parse(saved)
+    } catch {
+      return saved
+    }
+  }
+
+  const [symbol, setSymbol] = useState(() => getStoredValue("deriv_selected_symbol", initialSymbol))
+  const [maxTicks, setMaxTicks] = useState(() => getStoredValue("deriv_max_ticks", initialMaxTicks))
   const [availableSymbols, setAvailableSymbols] = useState<DerivSymbol[]>([])
   const [connectionLogs, setConnectionLogs] = useState<ConnectionLog[]>([])
   const [proSignals, setProSignals] = useState<Signal[]>([])
@@ -118,23 +130,16 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
 
         // Pre-fetch historical ticks to populate the engine immediately
         try {
-          const history = await wsRef.current.getTicksHistory(symbol, 1000)
+          const history = await wsRef.current.getTicksHistory(symbol, 500)
           if (history && history.length > 0) {
-            console.log(`[v0] Pre-loaded ${history.length} historical ticks for ${symbol}`)
-            history.forEach(t => {
-              engineRef.current?.addTick({
-                epoch: t.epoch,
-                quote: t.quote,
-                symbol: t.symbol,
-                pipSize: t.pip_size || 2
-              })
-            })
+            console.log(`[v0] Pre-loaded ${history.length} historical ticks for ${symbol} via batch`)
+            engineRef.current?.addTicksBatch(history)
             
             // Initial UI state from history
             const lastTick = history[history.length - 1]
             setCurrentPrice(lastTick.quote)
             setCurrentDigit(lastTick.lastDigit)
-            setTickCount(history.length)
+            setTickCount(engineRef.current?.getTicks().length || 0)
             
             const initialAnalysis = engineRef.current?.getAnalysis()
             if (initialAnalysis) setAnalysis(initialAnalysis)
@@ -297,6 +302,9 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
 
     engineRef.current?.clear()
     setSymbol(newSymbol)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("deriv_selected_symbol", JSON.stringify(newSymbol))
+    }
     setTickCount(0)
     setCurrentPrice(null)
     setCurrentDigit(null)
@@ -309,6 +317,9 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
   const changeMaxTicks = useCallback((newMaxTicks: number) => {
     engineRef.current?.setMaxTicks(newMaxTicks)
     setMaxTicks(newMaxTicks)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("deriv_max_ticks", JSON.stringify(newMaxTicks))
+    }
   }, [])
 
   const exportData = useCallback(

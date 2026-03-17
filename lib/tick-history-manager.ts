@@ -104,8 +104,8 @@ export class TickHistoryManager {
     buffer.push(lastDigit)
     priceBuffer.push(price)
 
-    // Keep only last 100 ticks in rolling buffer
-    if (buffer.length > 100) {
+    // Keep only last 1000 ticks in rolling buffer
+    if (buffer.length > 1000) {
       buffer.shift()
       priceBuffer.shift()
     }

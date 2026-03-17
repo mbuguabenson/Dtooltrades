@@ -4,9 +4,10 @@ interface DigitDistributionProps {
   frequencies: Record<number, { count: number; percentage: number }>
   currentDigit: number | null
   theme: "light" | "dark"
+  watchedDigits?: number[]
 }
 
-export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDistributionProps) {
+export function DigitDistribution({ frequencies, currentDigit, theme, watchedDigits = [] }: DigitDistributionProps) {
   // Split digits into two rows: 0-4 and 5-9
   const row1Digits = [0, 1, 2, 3, 4]
   const row2Digits = [5, 6, 7, 8, 9]
@@ -107,6 +108,11 @@ export function DigitDistribution({ frequencies, currentDigit, theme }: DigitDis
           {/* Live Animation Pulsed Ring */}
           {isCurrentDigit && (
             <div className="absolute inset-0 border-2 border-orange-500 rounded-full animate-ping opacity-20" />
+          )}
+
+          {/* Watched Digit Highlight */}
+          {watchedDigits.includes(digit) && (
+            <div className="absolute inset-0 border-2 border-amber-400 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
           )}
         </div>
 

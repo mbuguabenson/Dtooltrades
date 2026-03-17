@@ -34,22 +34,17 @@ interface TradeSignal {
   category: "even-odd" | "over-under" | "differs"
 }
 
-const MARKETS: { symbol: string; name: string }[] = [
-  { symbol: "R_100", name: "Volatility 100 Index" },
-  { symbol: "R_75", name: "Volatility 75 Index" },
-  { symbol: "R_50", name: "Volatility 50 Index" },
-  { symbol: "R_25", name: "Volatility 25 Index" },
-  { symbol: "R_10", name: "Volatility 10 Index" },
-]
+// Dynamic markets instead of hardcoded list
 
 interface SuperSignalsTabProps {
   theme?: "light" | "dark"
   symbol?: string
   availableSymbols?: any[]
   onSymbolChange?: (symbol: string) => void
+  maxTicks?: number
 }
 
-export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSymbolChange }: SuperSignalsTabProps) {
+export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSymbolChange, maxTicks = 100 }: SuperSignalsTabProps) {
   const [marketsData, setMarketsData] = useState<Map<string, MarketData>>(new Map())
   const [tradeSignals, setTradeSignals] = useState<TradeSignal[]>([])
   const [showSignalPopup, setShowSignalPopup] = useState(false)
@@ -58,18 +53,28 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
   const subscriptionIdsRef = useRef<Map<string, string>>(new Map())
   const callbacksRef = useRef<Map<string, (tick: any) => void>>(new Map())
   const isInitializedRef = useRef(false)
+  const maxTicksRef = useRef(maxTicks)
+
+  useEffect(() => {
+    maxTicksRef.current = maxTicks
+  }, [maxTicks])
 
   useEffect(() => {
     if (isInitializedRef.current) return
     isInitializedRef.current = true
 
     const initMarkets = async () => {
+      if (!availableSymbols || availableSymbols.length === 0) return
+      
       const initialData = new Map<string, MarketData>()
+      const targetMarkets = availableSymbols.filter(s => 
+        s.symbol.startsWith("R_") || s.symbol.includes("1HZ")
+      ).slice(0, 10) // Limit to top 10 for performance
 
-      MARKETS.forEach((market) => {
+      targetMarkets.forEach((market) => {
         initialData.set(market.symbol, {
           symbol: market.symbol,
-          displayName: market.name,
+          displayName: market.display_name,
           currentPrice: 0,
           lastDigit: 0,
           last100Digits: [],
@@ -86,9 +91,9 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       setMarketsData(initialData)
 
       try {
-        console.log("[v0] Initializing subscriptions for SuperSignalsTab...")
+        console.log("[v0] Initializing dynamic subscriptions for SuperSignalsTab...")
 
-        for (const market of MARKETS) {
+        for (const market of targetMarkets) {
           const callback = (tick: any) => {
             setMarketsData((prev) => {
               const updated = new Map(prev)
@@ -97,9 +102,11 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
 
               const currentPrice = tick.quote
               const lastDigit = tick.lastDigit
-              const newDigits = [...marketData.last100Digits, lastDigit].slice(-100)
+              const currentMaxTicks = maxTicksRef.current
+              const newDigits = [...marketData.last100Digits, lastDigit].slice(-currentMaxTicks)
 
               // Analysis logic
+              const total = newDigits.length || 1
               const underCount = newDigits.filter((d) => d < 5).length
               const overCount = newDigits.filter((d) => d >= 5).length
               const evenCount = newDigits.filter((d) => d % 2 === 0).length
@@ -113,29 +120,29 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
               const analysis: MarketData["analysis"] = {
                 under: {
                   count: underCount,
-                  percentage: underCount,
-                  signal: underCount >= 60 ? "TRADE NOW" : "WAIT",
+                  percentage: (underCount / total) * 100,
+                  signal: (underCount / total) >= 0.6 ? "TRADE NOW" : "WAIT",
                 },
                 over: {
                   count: overCount,
-                  percentage: overCount,
-                  signal: overCount >= 60 ? "TRADE NOW" : "WAIT",
+                  percentage: (overCount / total) * 100,
+                  signal: (overCount / total) >= 0.6 ? "TRADE NOW" : "WAIT",
                 },
                 even: {
                   count: evenCount,
-                  percentage: evenCount,
-                  signal: evenCount >= 60 ? "TRADE NOW" : "WAIT",
+                  percentage: (evenCount / total) * 100,
+                  signal: (evenCount / total) >= 0.6 ? "TRADE NOW" : "WAIT",
                 },
                 odd: {
                   count: oddCount,
-                  percentage: oddCount,
-                  signal: oddCount >= 60 ? "TRADE NOW" : "WAIT",
+                  percentage: (oddCount / total) * 100,
+                  signal: (oddCount / total) >= 0.6 ? "TRADE NOW" : "WAIT",
                 },
                 differs: {
                   digit: leastFrequentDigit,
                   count: minCount,
-                  percentage: 100 - (minCount / (newDigits.length || 1)) * 100,
-                  signal: minCount <= 5 ? "TRADE NOW" : "WAIT",
+                  percentage: 100 - (minCount / total) * 100,
+                  signal: (minCount / total) <= 0.05 ? "TRADE NOW" : "WAIT",
                 },
               }
 
@@ -167,10 +174,10 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
     initMarkets()
 
     return () => {
-      isInitializedRef.current = false
-      MARKETS.forEach((market) => {
-        const subId = subscriptionIdsRef.current.get(market.symbol)
-        const callback = callbacksRef.current.get(market.symbol)
+      // Cleanup: Unsubscribe from all active markets
+      marketsData.forEach((_, symbol) => {
+        const subId = subscriptionIdsRef.current.get(symbol)
+        const callback = callbacksRef.current.get(symbol)
         if (subId && callback) {
           derivWebSocket.unsubscribe(subId, callback)
         }
@@ -178,7 +185,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       subscriptionIdsRef.current.clear()
       callbacksRef.current.clear()
     }
-  }, [])
+  }, [availableSymbols]) // Re-run when symbols load
 
   const checkForTradeSignal = (
     symbol: string,
@@ -199,7 +206,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
         confidence: analysis.under.percentage,
         category: "over-under",
         conditions: [
-          `Under digits: ${analysis.under.count}/100 (${analysis.under.percentage}%)`,
+          `Under digits: ${analysis.under.count}/${maxTicksRef.current} (${analysis.under.percentage.toFixed(1)}%)`,
           `Strong dominance detected`,
           `Entry confidence: HIGH`,
         ],
@@ -215,7 +222,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
         confidence: analysis.over.percentage,
         category: "over-under",
         conditions: [
-          `Over digits: ${analysis.over.count}/100 (${analysis.over.percentage}%)`,
+          `Over digits: ${analysis.over.count}/${maxTicksRef.current} (${analysis.over.percentage.toFixed(1)}%)`,
           `Strong dominance detected`,
           `Entry confidence: HIGH`,
         ],
@@ -231,7 +238,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
         confidence: analysis.even.percentage,
         category: "even-odd",
         conditions: [
-          `Even digits: ${analysis.even.count}/100 (${analysis.even.percentage}%)`,
+          `Even digits: ${analysis.even.count}/${maxTicksRef.current} (${analysis.even.percentage.toFixed(1)}%)`,
           `Strong pattern detected`,
           `Entry confidence: HIGH`,
         ],
@@ -247,7 +254,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
         confidence: analysis.odd.percentage,
         category: "even-odd",
         conditions: [
-          `Odd digits: ${analysis.odd.count}/100 (${analysis.odd.percentage}%)`,
+          `Odd digits: ${analysis.odd.count}/${maxTicksRef.current} (${analysis.odd.percentage.toFixed(1)}%)`,
           `Strong pattern detected`,
           `Entry confidence: HIGH`,
         ],
@@ -263,7 +270,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
         confidence: analysis.differs.percentage,
         category: "differs",
         conditions: [
-          `Digit ${analysis.differs.digit} rarely appears: ${analysis.differs.count}/100`,
+          `Digit ${analysis.differs.digit} rarely appears: ${analysis.differs.count}/${maxTicksRef.current}`,
           `High probability of difference`,
           `Entry confidence: HIGH`,
         ],
@@ -379,18 +386,18 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
             )}
             <Badge className="bg-emerald-500 text-white text-sm px-4 py-2 animate-pulse flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              {signalsDeactivated ? "Signals Inactive" : `Live Monitoring ${MARKETS.length} Markets`}
+              {signalsDeactivated ? "Signals Inactive" : `Live Monitoring ${marketsData.size} Markets`}
             </Badge>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div
+           <div
             className={`rounded-lg p-4 border ${theme === "dark" ? "bg-blue-500/10 border-blue-500/30" : "bg-blue-50 border-blue-200"}`}
           >
             <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Total Markets</div>
             <div className={`text-2xl font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
-              {MARKETS.length}
+              {marketsData.size}
             </div>
           </div>
           <div
@@ -405,7 +412,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
             className={`rounded-lg p-4 border ${theme === "dark" ? "bg-purple-500/10 border-purple-500/30" : "bg-purple-50 border-purple-200"}`}
           >
             <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Analyzed Ticks</div>
-            <div className={`text-2xl font-bold ${theme === "dark" ? "text-purple-400" : "text-purple-600"}`}>100</div>
+            <div className={`text-2xl font-bold ${theme === "dark" ? "text-purple-400" : "text-purple-600"}`}>{maxTicks}</div>
           </div>
         </div>
       </div>
@@ -453,21 +460,21 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
                     </div>
                   </div>
 
-                  {market.last100Digits.length === 100 && (
+                  {market.last100Digits.length >= Math.min(maxTicks, 25) && (
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Badge
                         variant="outline"
                         className={`text-xs ${theme === "dark" ? "border-green-500/50 text-green-400" : "border-green-500 text-green-600"
                           }`}
                       >
-                        E:{market.analysis.even.percentage}% O:{market.analysis.odd.percentage}%
+                        E:{market.analysis.even.percentage.toFixed(0)}% O:{market.analysis.odd.percentage.toFixed(0)}%
                       </Badge>
                       <Badge
                         variant="outline"
                         className={`text-xs ${theme === "dark" ? "border-blue-500/50 text-blue-400" : "border-blue-500 text-blue-600"
                           }`}
                       >
-                        U:{market.analysis.under.percentage}% O:{market.analysis.over.percentage}%
+                        U:{market.analysis.under.percentage.toFixed(0)}% O:{market.analysis.over.percentage.toFixed(0)}%
                       </Badge>
                       <Badge
                         variant="outline"
@@ -481,11 +488,11 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
                     </div>
                   )}
                 </div>
-                {market.last100Digits.length === 100 && (
+                {market.last100Digits.length >= maxTicks && (
                   <Badge
                     className={`${theme === "dark" ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-700"}`}
                   >
-                    100 Ticks
+                    {maxTicks} Ticks
                   </Badge>
                 )}
               </div>
@@ -624,7 +631,7 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
                         <span className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                           Confidence:
                         </span>
-                        <div className={`text-xl font-bold ${textColors[signal.category]}`}>{signal.confidence}%</div>
+                        <div className={`text-xl font-bold ${textColors[signal.category]}`}>{signal.confidence.toFixed(1)}%</div>
                       </div>
                     </div>
                   )

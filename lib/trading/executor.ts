@@ -45,7 +45,7 @@ export class TradeExecutor {
     }
 
     if (config.digit !== undefined) {
-      ;(proposal as any).barrier = config.digit.toString()
+      ;(proposal as any).barrier = String(config.digit ?? "")
     }
 
     try {
