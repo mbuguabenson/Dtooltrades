@@ -149,12 +149,7 @@ export function EvenOddTab({
 
   return (
     <div className="space-y-6">
-      <div
-        className={`rounded-xl p-2 px-4 border flex items-center justify-between gap-4 ${theme === "dark"
-          ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-          : "bg-white border-gray-200 shadow-md"
-          }`}
-      >
+      <div className="soft-card p-4 border-white/5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className={`text-xs font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-700"}`}>
             Current Digit:
@@ -177,14 +172,9 @@ export function EvenOddTab({
         </div>
       </div>
 
-      <div
-        className={`rounded-xl p-8 border ${theme === "dark"
-          ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-          : "bg-white border-gray-200 shadow-lg"
-          }`}
-      >
+      <div className="soft-card p-8 border-white/5">
         <div className="text-center mb-6">
-          <h2 className={`text-3xl font-bold mb-3 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+          <h2 className="text-2xl font-black uppercase tracking-[0.2em] mb-4 text-white">
             Even vs Odd Analysis
           </h2>
           <Badge
@@ -219,7 +209,7 @@ export function EvenOddTab({
                 : "bg-gray-50 border border-gray-200"
             }`}
         >
-          <h3 className={`text-lg font-bold mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+          <h3 className="text-xs font-black uppercase tracking-widest mb-2 text-white/70">
             Signal Recommendation
           </h3>
           <p className={`text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-800"}`}>

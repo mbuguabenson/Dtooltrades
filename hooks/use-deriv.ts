@@ -82,19 +82,56 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
           console.log("[v0] Fetching active symbols...")
           const symbols = await wsRef.current.getActiveSymbols()
           if (symbols && symbols.length > 0) {
-            setAvailableSymbols(symbols)
-            addLog(`Loaded ${symbols.length} active symbols`, "info")
-            console.log("[v0] Loaded symbols:", symbols.length, symbols.map(s => s.symbol).join(", "))
+            // Filter ALL Derived (Synthetic) indices
+            const filteredSymbols = symbols.filter(s => {
+              const name = (s.display_name || "").toUpperCase();
+              const sym = (s.symbol || "").toUpperCase();
+              const market = (s.market || "").toUpperCase();
+              const marketName = (s.market_display_name || "").toUpperCase();
+              
+              return market === "SYNTHETIC_INDEX" || 
+                     marketName.includes("DERIVED") ||
+                     marketName.includes("SYNTHETIC") ||
+                     sym.includes("JUMP") || 
+                     sym.includes("BOOM") || 
+                     sym.includes("CRASH") ||
+                     sym.includes("R_") ||
+                     sym.includes("1HZ");
+            }).sort((a, b) => {
+              const symA = a.symbol.toUpperCase();
+              const symB = b.symbol.toUpperCase();
+              const nameA = a.display_name.toUpperCase();
+              const nameB = b.display_name.toUpperCase();
+
+              // 1. Volatility Indices (R_ or 1HZ)
+              const isVolA = symA.startsWith("R_") || symA.includes("1HZ") || nameA.includes("VOLATILITY");
+              const isVolB = symB.startsWith("R_") || symB.includes("1HZ") || nameB.includes("VOLATILITY");
+              if (isVolA && !isVolB) return -1;
+              if (!isVolA && isVolB) return 1;
+
+              // 2. Jump Indices
+              const isJumpA = symA.includes("JUMP") || nameA.includes("JUMP");
+              const isJumpB = symB.includes("JUMP") || nameB.includes("JUMP");
+              if (isJumpA && !isJumpB) return -1;
+              if (!isJumpA && isJumpB) return 1;
+
+              // 3. Others (Bull, Bear, Boom, Crash etc.)
+              return nameA.localeCompare(nameB);
+            });
+
+            setAvailableSymbols(filteredSymbols)
+            addLog(`Loaded ${filteredSymbols.length} derived indices`, "info")
+            console.log("[v0] Sorted symbols:", filteredSymbols.length, filteredSymbols.map(s => s.symbol).join(", "))
           } else {
             console.warn("[v0] No symbols returned, using defaults")
             const defaultSymbols: any[] = [
-              { symbol: "R_100", display_name: "Volatility 100 Index", market: "synthetic_index", market_display_name: "Derived" },
-              { symbol: "R_75", display_name: "Volatility 75 Index", market: "synthetic_index", market_display_name: "Derived" },
-              { symbol: "R_50", display_name: "Volatility 50 Index", market: "synthetic_index", market_display_name: "Derived" },
-              { symbol: "R_25", display_name: "Volatility 25 Index", market: "synthetic_index", market_display_name: "Derived" },
-              { symbol: "R_10", display_name: "Volatility 10 Index", market: "synthetic_index", market_display_name: "Derived" },
-              { symbol: "1HZ100V", display_name: "Volatility 100 (1s) Index", market: "synthetic_index", market_display_name: "Derived" },
-              { symbol: "1HZ75V", display_name: "Volatility 75 (1s) Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "BTCH24", display_name: "Bull Market Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "BRCH24", display_name: "Bear Market Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "JUMP10", display_name: "Jump 10 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "JUMP25", display_name: "Jump 25 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "JUMP50", display_name: "Jump 50 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "JUMP75", display_name: "Jump 75 Index", market: "synthetic_index", market_display_name: "Derived" },
+              { symbol: "JUMP100", display_name: "Jump 100 Index", market: "synthetic_index", market_display_name: "Derived" },
             ]
             setAvailableSymbols(defaultSymbols)
             addLog("Using default markets", "info")
@@ -102,11 +139,9 @@ export function useDeriv(initialSymbol = "", initialMaxTicks = 1000) {
         } catch (error) {
           console.error("[v0] Failed to get active symbols:", error)
           const defaultSymbols: any[] = [
-            { symbol: "R_100", display_name: "Volatility 100 Index", market: "synthetic_index", market_display_name: "Derived" },
-            { symbol: "R_75", display_name: "Volatility 75 Index", market: "synthetic_index", market_display_name: "Derived" },
-            { symbol: "R_50", display_name: "Volatility 50 Index", market: "synthetic_index", market_display_name: "Derived" },
-            { symbol: "R_25", display_name: "Volatility 25 Index", market: "synthetic_index", market_display_name: "Derived" },
-            { symbol: "R_10", display_name: "Volatility 10 Index", market: "synthetic_index", market_display_name: "Derived" },
+            { symbol: "BTCH24", display_name: "Bull Market Index", market: "synthetic_index", market_display_name: "Derived" },
+            { symbol: "BRCH24", display_name: "Bear Market Index", market: "synthetic_index", market_display_name: "Derived" },
+            { symbol: "JUMP10", display_name: "Jump 10 Index", market: "synthetic_index", market_display_name: "Derived" },
           ]
           setAvailableSymbols(defaultSymbols)
           addLog("Failed to get symbols", "warning")

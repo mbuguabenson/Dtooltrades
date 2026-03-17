@@ -1,4 +1,5 @@
 import { extractLastDigit as utilsExtractLastDigit } from "./digit-utils"
+import { NeuralPatternEngine, type PatternMatch, type MarketStabilityData } from "./neural-pattern-engine"
 // Analysis engine for processing tick data and generating signals
 export interface TickData {
   epoch: number
@@ -28,6 +29,8 @@ export interface AnalysisResult {
   missingDigits: number[]
   streaks: { digit: number; count: number }[]
   totalTicks: number
+  neuralPatterns?: PatternMatch[]
+  marketStability?: MarketStabilityData
 }
 
 export interface Signal {
@@ -192,8 +195,10 @@ export class AnalysisEngine {
       missingDigits,
       streaks,
       totalTicks,
+      neuralPatterns: NeuralPatternEngine.detectPatterns(this.lastDigits),
+      marketStability: NeuralPatternEngine.analyzeStability(this.lastDigits, entropy, digitFrequencies)
     }
-  }
+}
 
   private calculateEntropy(frequencies: DigitFrequency[], total: number): number {
     let entropy = 0
@@ -886,6 +891,68 @@ export class AnalysisEngine {
       probability: 50,
       recommendation: "Over 2 conditions not met",
       entryCondition: "Wait for 2+ digits in 0,1,2 to be <10%",
+    }
+  }
+
+  /**
+   * Generates a comprehensive list of all active advanced signals 
+   * specifically for Over 0,1,2,3 and Under 9,8,7,6
+   */
+  public generateAdvancedSignalsList(): Signal[] {
+    const analysis = this.getAnalysis()
+    const signals: Signal[] = []
+    
+    // Check Over thresholds: 0, 1, 2, 3
+    for (const threshold of [0, 1, 2, 3]) {
+      const signal = this.generateSpecificOverUnder(analysis, "over", threshold)
+      if (signal.status !== "NEUTRAL") signals.push(signal)
+    }
+
+    // Check Under thresholds: 6, 7, 8, 9
+    for (const threshold of [6, 7, 8, 9]) {
+      const signal = this.generateSpecificOverUnder(analysis, "under", threshold)
+      if (signal.status !== "NEUTRAL") signals.push(signal)
+    }
+
+    return signals
+  }
+
+  private generateSpecificOverUnder(analysis: AnalysisResult, type: "over" | "under", threshold: number): Signal {
+    const { digitFrequencies } = analysis
+    
+    // Determine target range
+    const targetDigits = type === "over" 
+      ? digitFrequencies.filter(d => d.digit > threshold)
+      : digitFrequencies.filter(d => d.digit < threshold)
+    
+    const oppositeDigits = type === "over"
+      ? digitFrequencies.filter(d => d.digit <= threshold)
+      : digitFrequencies.filter(d => d.digit >= threshold)
+
+    const targetPercentage = targetDigits.reduce((acc, d) => acc + d.percentage, 0)
+    const oppositePercentage = oppositeDigits.reduce((acc, d) => acc + d.percentage, 0)
+    
+    // Get highest appearing digit in the OPPOSITE (entry trigger) range
+    const sortedOpposite = [...oppositeDigits].sort((a, b) => b.percentage - a.percentage)
+    const entryDigit = sortedOpposite[0].digit
+    const entryDigitPercentage = sortedOpposite[0].percentage
+
+    const isHighConfidence = targetPercentage >= 65 || (type === "over" && threshold <= 1 && targetPercentage >= 60)
+    const isMediumConfidence = targetPercentage >= 55
+
+    let status: "TRADE NOW" | "WAIT" | "NEUTRAL" = "NEUTRAL"
+    if (isHighConfidence) status = "TRADE NOW"
+    else if (isMediumConfidence) status = "WAIT"
+
+    const strategyName = `${type.toUpperCase()} ${threshold}`
+    
+    return {
+      type: "pro_over_under",
+      status,
+      probability: targetPercentage,
+      recommendation: `${status === "TRADE NOW" ? "🔥 STRONG" : "⌛ BUILDING"} ${strategyName} Signal: ${targetPercentage.toFixed(1)}% market dominance.`,
+      entryCondition: `Wait for digit ${entryDigit} (${entryDigitPercentage.toFixed(1)}%) to appear. This is your high-probability entry for ${strategyName}.`,
+      targetDigit: threshold
     }
   }
 }

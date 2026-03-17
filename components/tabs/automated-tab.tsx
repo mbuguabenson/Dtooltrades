@@ -228,13 +228,15 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
     <div className="space-y-3 sm:space-y-6">
       {/* Connection Status Alert */}
       {(apiError || localError || !isConnected) && (
-        <Card className={theme === "dark" ? "bg-red-500/10 border-red-500/30" : "bg-red-50 border-red-200"}>
-          <CardContent className="p-3 sm:pt-6 flex items-start gap-2 sm:gap-3">
-            <AlertCircle className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
+        <Card className="bg-rose-500/5 border-rose-500/20 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-500">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-2 rounded-full bg-rose-500/10 border border-rose-500/20">
+               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            </div>
             <div>
-              <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-red-400" : "text-red-700"}`}>Connection Issue</p>
-              <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-red-300" : "text-red-600"}`}>
-                {localError || apiError || "Connecting to API..."}
+              <p className="text-xs font-black uppercase tracking-widest text-rose-400">Uplink Interruption</p>
+              <p className="text-[10px] sm:text-xs mt-1 text-rose-400/80 font-medium">
+                {localError || apiError || "Negotiating WebSocket connection..."}
               </p>
             </div>
           </CardContent>
@@ -243,82 +245,65 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
 
       {/* Emergency Stop Alert */}
       {isRunning && (
-        <Card className={theme === "dark" ? "bg-orange-500/10 border-orange-500/30" : "bg-orange-50 border-orange-200"}>
-          <CardContent className="p-3 sm:pt-6 flex items-center justify-between">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle
-                className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}
-              />
+        <Card className="bg-amber-500/5 border-amber-500/20 backdrop-blur-xl animate-pulse">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              </div>
               <div>
-                <p className={`text-xs sm:text-base font-semibold ${theme === "dark" ? "text-orange-400" : "text-orange-700"}`}>
-                  Bot Running
-                </p>
-                <p className={`text-[10px] sm:text-sm mt-0.5 sm:mt-1 ${theme === "dark" ? "text-orange-300" : "text-orange-600"}`}>
-                  Click Emergency Stop to halt immediately
-                </p>
+                <p className="text-xs font-black uppercase tracking-widest text-amber-400">Autonomous Cycle Active</p>
+                <p className="text-[10px] sm:text-xs mt-1 text-amber-400/80 font-medium">Click terminate to halt all operations immediately</p>
               </div>
             </div>
             <Button
               onClick={() => setEmergencyStop(true)}
-              className="bg-red-600 hover:bg-red-700 text-white ml-2 sm:ml-4 shrink-0 text-[10px] sm:text-xs h-8 sm:h-10"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest text-[10px] h-9 px-6 shadow-[0_0_15px_rgba(225,29,72,0.4)]"
             >
-              🚨 Stop Bot
+              Terminate
             </Button>
           </CardContent>
         </Card>
       )}
 
       {/* Market Display */}
-      <Card
-        className={
-          theme === "dark"
-            ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
-            : "bg-white border-gray-200"
-        }
-      >
-        <CardHeader className="p-3 sm:p-6 pb-2">
-          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Trading Market</CardTitle>
-          <CardDescription className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-            Market detected from engine
-          </CardDescription>
+      <Card className="soft-card border-white/5">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Live Market Feed</CardTitle>
+          <CardDescription className="text-[10px] text-slate-600 uppercase font-medium">Real-time instrumentation</CardDescription>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
-          <p className={`text-sm sm:text-2xl font-bold mt-1 sm:mt-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-            Price: {(marketPrice || 0).toFixed(5)}
-          </p>
+        <CardContent className="p-4 pt-0">
+          <div className="flex items-baseline gap-2">
+             <p className="text-2xl font-black text-white tracking-tighter">
+                {(marketPrice || 0).toFixed(5)}
+             </p>
+             <div className="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
+                <TrendingUp className="w-3 h-3" /> USD
+             </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Bot Selection */}
-      <Card
-        className={
-          theme === "dark"
-            ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
-            : "bg-white border-gray-200"
-        }
-      >
-        <CardHeader className="p-3 sm:p-6 pb-2">
-          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Select Strategy</CardTitle>
+      <Card className="soft-card border-white/5">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Autonomous Strategies</CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <CardContent className="p-4 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {BOT_STRATEGIES.map((strategy) => (
               <div
                 key={strategy.id}
                 onClick={() => !isRunning && setSelectedStrategy(strategy.id)}
-                className={`p-2.5 sm:p-4 rounded-lg border cursor-pointer transition-all ${selectedStrategy === strategy.id
-                  ? theme === "dark"
-                    ? "bg-blue-500/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                    : "bg-blue-100 border-blue-500"
-                  : theme === "dark"
-                    ? "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
-                    : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                  } ${isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`p-4 rounded-xl border transition-all duration-300 group ${selectedStrategy === strategy.id
+                  ? "bg-primary/20 border-primary shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                  : "bg-white/5 border-white/5 hover:bg-white/[0.08] hover:border-white/10"
+                  } ${isRunning ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
               >
-                <h3 className={`text-xs sm:text-base font-bold mb-1 sm:mb-2 ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                <h3 className={`text-xs font-black uppercase tracking-wider mb-2 ${selectedStrategy === strategy.id ? "text-white" : "text-slate-300"}`}>
                   {strategy.name}
                 </h3>
-                <p className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
                   {strategy.description}
                 </p>
               </div>
@@ -328,116 +313,64 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
       </Card>
 
       {/* Bot Configuration */}
-      <Card
-        className={
-          theme === "dark"
-            ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20"
-            : "bg-white border-gray-200"
-        }
-      >
-        <CardHeader className="p-3 sm:p-6 pb-2">
-          <CardTitle className={`text-sm sm:text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Bot Configuration</CardTitle>
+      <Card className="soft-card border-white/5">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Operation Parameters</CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-3 sm:space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-1 sm:space-y-2">
-              <Label className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Stake ($)</Label>
-              <Input
-                type="number"
-                value={config.initialStake}
-                onChange={(e) => setConfig({ ...config, initialStake: Number.parseFloat(e.target.value) })}
-                disabled={isRunning}
-                className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className={theme === "dark" ? "text-white" : "text-gray-900"}>Duration (ticks)</Label>
-              <Input
-                type="number"
-                value={config.duration}
-                onChange={(e) => setConfig({ ...config, duration: Number.parseInt(e.target.value) })}
-                disabled={isRunning}
-                className={theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className={theme === "dark" ? "text-white" : "text-gray-900"}>Take Profit (%)</Label>
-              <Input
-                type="number"
-                value={config.tpPercent}
-                onChange={(e) => setConfig({ ...config, tpPercent: Number.parseFloat(e.target.value) })}
-                disabled={isRunning}
-                className={theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className={theme === "dark" ? "text-white" : "text-gray-900"}>Stop Loss (%)</Label>
-              <Input
-                type="number"
-                value={config.slPercent}
-                onChange={(e) => setConfig({ ...config, slPercent: Number.parseFloat(e.target.value) })}
-                disabled={isRunning}
-                className={theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className={theme === "dark" ? "text-white" : "text-gray-900"}>Cooldown (ms)</Label>
-              <Input
-                type="number"
-                value={config.cooldownMs}
-                onChange={(e) => setConfig({ ...config, cooldownMs: Number.parseInt(e.target.value) })}
-                disabled={isRunning}
-                className={theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}
-              />
-            </div>
-
-            <div className="space-y-1 sm:space-y-2">
-              <Label className={`text-[10px] sm:text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>M. Multiplier</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={config.martingaleMultiplier}
-                onChange={(e) => setConfig({ ...config, martingaleMultiplier: Number.parseFloat(e.target.value) })}
-                disabled={isRunning || !config.useMartingale}
-                className={`h-8 sm:h-10 text-[10px] sm:text-sm ${theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : ""}`}
-              />
-            </div>
+        <CardContent className="p-4 pt-0 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { label: "Stake Value", key: "initialStake", type: "number" },
+              { label: "Tick Depth", key: "duration", type: "number" },
+              { label: "Target Profit %", key: "tpPercent", type: "number" },
+              { label: "Loss Limit %", key: "slPercent", type: "number" },
+              { label: "Inertia Delay", key: "cooldownMs", type: "number" },
+              { label: "M. Variable", key: "martingaleMultiplier", type: "number", disabled: !config.useMartingale }
+            ].map(field => (
+              <div key={field.key} className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">{field.label}</Label>
+                <Input
+                  type={field.type}
+                  value={(config as any)[field.key]}
+                  onChange={(e) => setConfig({ ...config, [field.key]: Number.parseFloat(e.target.value) })}
+                  disabled={isRunning || field.disabled}
+                  className="h-9 text-xs font-bold bg-white/5 border-white/10 text-white rounded-lg focus:ring-primary/20"
+                />
+              </div>
+            ))}
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div className="flex items-center gap-3">
               <Switch
                 checked={config.useMartingale}
                 onCheckedChange={(checked) => setConfig({ ...config, useMartingale: checked })}
                 disabled={isRunning}
+                className="data-[state=checked]:bg-primary"
               />
-              <Label className={theme === "dark" ? "text-white" : "text-gray-900"}>Enable Martingale</Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Neural Martingale Override</Label>
             </div>
 
             {isRunning ? (
-              <Button onClick={handleStop} variant="destructive" className="gap-2" disabled={isLoading}>
+              <Button onClick={handleStop} variant="destructive" className="h-10 px-8 font-black uppercase tracking-[0.1em] text-xs gap-2" disabled={isLoading}>
                 <Square className="w-4 h-4" />
-                Stop Bot
+                Stop Execution
               </Button>
             ) : (
               <Button
                 onClick={handleStart}
-                className="bg-green-500 hover:bg-green-600 gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-10 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-[0.1em] text-xs gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                 disabled={!canStart}
               >
                 {isLoading ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    Starting...
+                    Initializing...
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4" />
-                    Start Bot
+                    Engage Strategy
                   </>
                 )}
               </Button>

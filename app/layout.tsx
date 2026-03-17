@@ -29,6 +29,7 @@ export default function RootLayout({
         <ThemeProviderAdvanced defaultTheme="dark">
           <DerivAPIProvider>
             <MaintenanceGuard>
+              <div className="heritage-nebula" />
               <HeartbeatManager />
               <Suspense fallback={null}>{children}</Suspense>
               <LiveChat />

@@ -18,31 +18,32 @@ export function MarketSelector({ symbols, currentSymbol, onSymbolChange, theme =
   const [open, setOpen] = useState(false)
 
   const groupedSymbols = useMemo(() => {
-    const volatility1s: DerivSymbol[] = []
     const volatilityIndices: DerivSymbol[] = []
+    const jumpIndices: DerivSymbol[] = []
     const otherSymbols: DerivSymbol[] = []
 
     symbols.forEach((symbol) => {
-      if (symbol.symbol.includes("1s")) {
-        volatility1s.push(symbol)
-      } else if (symbol.symbol.includes("R_") || symbol.market === "synthetic_index") {
+      const sym = symbol.symbol.toUpperCase();
+      const name = (symbol.display_name || "").toUpperCase();
+      
+      if (sym.includes("R_") || sym.includes("1HZ") || name.includes("VOLATILITY")) {
         volatilityIndices.push(symbol)
+      } else if (sym.includes("JUMP") || name.includes("JUMP")) {
+        jumpIndices.push(symbol)
       } else {
         otherSymbols.push(symbol)
       }
     })
 
-    volatility1s.sort((a, b) => {
+    const sortFn = (a: DerivSymbol, b: DerivSymbol) => {
       const aNum = Number.parseInt(a.symbol.match(/\d+/)?.[0] || "0")
       const bNum = Number.parseInt(b.symbol.match(/\d+/)?.[0] || "0")
-      return aNum - bNum
-    })
+      if (aNum !== bNum) return aNum - bNum
+      return a.display_name.localeCompare(b.display_name)
+    }
 
-    volatilityIndices.sort((a, b) => {
-      const aNum = Number.parseInt(a.symbol.replace("R_", "").replace("1s", "")) || 0
-      const bNum = Number.parseInt(b.symbol.replace("R_", "").replace("1s", "")) || 0
-      return aNum - bNum
-    })
+    volatilityIndices.sort(sortFn)
+    jumpIndices.sort(sortFn)
 
     const groups: Record<string, DerivSymbol[]> = {}
     otherSymbols.forEach((symbol) => {
@@ -55,17 +56,18 @@ export function MarketSelector({ symbols, currentSymbol, onSymbolChange, theme =
 
     const sortedGroups: Record<string, DerivSymbol[]> = {}
 
-    if (volatility1s.length > 0) {
-      sortedGroups["Volatility 1s"] = volatility1s
-    }
     if (volatilityIndices.length > 0) {
       sortedGroups["Volatility Indices"] = volatilityIndices
+    }
+    if (jumpIndices.length > 0) {
+      sortedGroups["Jump Indices"] = jumpIndices
     }
 
     Object.keys(groups)
       .sort()
       .forEach((market) => {
-        sortedGroups[market] = groups[market]
+        // Sort items within other groups too
+        sortedGroups[market] = groups[market].sort((a, b) => a.display_name.localeCompare(b.display_name))
       })
 
     return sortedGroups

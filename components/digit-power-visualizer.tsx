@@ -34,14 +34,14 @@ export function DigitPowerVisualizer({ snapshot, theme = "dark" }: DigitPowerVis
             {/* Primary Power Bars */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {powerBars?.map((bar) => (
-                    <div key={bar.label} className={`p-3 rounded-xl border ${isDark ? "bg-black/40 border-white/5" : "bg-white border-black/5"} relative overflow-hidden`}>
+                    <div key={bar.label} className="p-3 rounded-xl bg-white/[0.03] border border-white/5 relative overflow-hidden transition-all hover:border-primary/20">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold text-gray-400">{bar.label}</span>
-                            <span className="text-sm font-black font-mono">{bar.power}%</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{bar.label}</span>
+                            <span className="text-sm font-black text-white">{bar.power}%</span>
                         </div>
-                        <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                             <div
-                                className={`h-full ${bar.color} transition-all duration-300 ${bar.glow} shadow-lg rounded-full`}
+                                className={`h-full ${bar.color} transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,0.3)] rounded-full`}
                                 style={{ width: `${bar.power}%` }}
                             />
                         </div>
@@ -50,8 +50,8 @@ export function DigitPowerVisualizer({ snapshot, theme = "dark" }: DigitPowerVis
             </div>
 
             {/* Individual Digit Power */}
-            <div className={`p-4 rounded-xl border ${isDark ? "bg-black/20 border-white/5" : "bg-white border-black/5"}`}>
-                <h4 className="text-[10px] font-bold text-gray-400 mb-4 uppercase tracking-widest">Statistical Digit Heatmap</h4>
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Neural Power Distribution</h4>
                 <div className="grid grid-cols-5 lg:grid-cols-10 gap-2">
                     {snapshot.digitPowers.map((power, digit) => {
                         const isStrongest = digit === snapshot.strongestDigit

@@ -67,9 +67,18 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
       if (!availableSymbols || availableSymbols.length === 0) return
       
       const initialData = new Map<string, MarketData>()
+      // For SuperSignalsTab, we want ALL Derived (Synthetic) markets
+      // which typically start with R_ (Volatility) or include 1HZ (1s Volatility)
+      // or other synthetic prefixes like B_ (Boom/Crash), D_ (Daily Reset), etc.
       const targetMarkets = availableSymbols.filter(s => 
-        s.symbol.startsWith("R_") || s.symbol.includes("1HZ")
-      ).slice(0, 10) // Limit to top 10 for performance
+        s.market === "synthetic_index" || 
+        s.market_display_name?.toLowerCase().includes("derived") ||
+        s.symbol.startsWith("R_") || 
+        s.symbol.includes("1HZ") ||
+        s.symbol.startsWith("BOOM") ||
+        s.symbol.startsWith("CRASH") ||
+        s.symbol.startsWith("JD") // Jump 
+      ).slice(0, 20) // Limit to top 20 for performance (expanded from 10)
 
       targetMarkets.forEach((market) => {
         initialData.set(market.symbol, {

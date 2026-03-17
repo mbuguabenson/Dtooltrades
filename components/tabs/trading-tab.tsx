@@ -85,25 +85,13 @@ export function TradingTab({ theme: propTheme, symbol, onSymbolChange }: Trading
     console.log(`[${type.toUpperCase()}] ${message}`)
   }, [])
 
-  useEffect(() => {
-    setIsConnectedState(isConnected)
-    setIsAuthorisedState(isAuthorized)
-  }, [apiClient, isConnected, isAuthorized])
+  // Redundant connection effects removed. Context values used directly.
 
-  const [isConnectedState, setIsConnectedState] = useState(false)
-  const [isAuthorisedState, setIsAuthorisedState] = useState(false)
+  // Removing redundant local states to avoid sync issues
 
   useEffect(() => {
     if (apiClient && isConnected && isAuthorized) {
-      setIsConnectedState(true)
-      setIsAuthorisedState(true)
-
-      // Instead of forgetAll which kills other components' streams, 
-      // we just load what we need for this tab.
       loadMarketsAndSymbols()
-    } else {
-      setIsConnectedState(false)
-      setIsAuthorisedState(false)
     }
   }, [apiClient, isConnected, isAuthorized])
 
@@ -300,18 +288,18 @@ export function TradingTab({ theme: propTheme, symbol, onSymbolChange }: Trading
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-blue-500/20">
         <div className="flex items-center gap-2">
           <div
-            className={`w-2 h-2 rounded-full ${isConnectedState && isAuthorisedState ? "bg-green-400 animate-pulse" : connectionStatus === "reconnecting" ? "bg-yellow-400 animate-pulse" : "bg-red-400"}`}
+            className={`w-2 h-2 rounded-full ${isConnected && isAuthorized ? "bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.5)]" : connectionStatus === "reconnecting" || connectionStatus === "connecting" ? "bg-amber-400 animate-pulse" : "bg-rose-400"}`}
           />
           <span
-            className={`text-xs sm:text-sm font-medium ${currentTheme === "dark" ? "text-gray-300" : "text-gray-700"}`}
+            className={`text-[10px] font-black uppercase tracking-widest ${currentTheme === "dark" ? "text-slate-400" : "text-gray-700"}`}
           >
             {connectionStatus === "connecting"
-              ? "Connecting..."
+              ? "Connecting"
               : connectionStatus === "reconnecting"
-                ? "Reconnecting..."
-                : isConnectedState && isAuthorisedState
-                  ? "Connected"
-                  : "Disconnected"}
+                ? "Reconnecting"
+                : isConnected && isAuthorized
+                  ? "System Online"
+                  : "Offline"}
           </span>
         </div>
 
@@ -345,31 +333,45 @@ export function TradingTab({ theme: propTheme, symbol, onSymbolChange }: Trading
         </div>
       )}
 
-      {!isConnectedState || !isAuthorisedState ? (
+      {!isConnected || !isAuthorized ? (
         <div
-          className={`p-4 rounded-lg border text-center ${currentTheme === "dark" ? "bg-red-500/10 border-red-500/30" : "bg-red-50 border-red-200"}`}
+          className={`p-10 rounded-2xl border text-center soft-card animate-in fade-in zoom-in duration-300 ${currentTheme === "dark" ? "bg-black/40 border-white/5" : "bg-red-50 border-red-200"}`}
         >
-          <p className={`text-sm ${currentTheme === "dark" ? "text-red-400" : "text-red-600"}`}>
+          <div className="flex justify-center mb-4">
+             <div className="p-4 rounded-full bg-rose-500/10 border border-rose-500/20">
+                <Zap className="w-8 h-8 text-rose-500 animate-pulse" />
+             </div>
+          </div>
+          <h3 className={`text-lg font-black uppercase tracking-widest mb-1 ${currentTheme === "dark" ? "text-white" : "text-red-600"}`}>
             {connectionStatus === "connecting"
-              ? "Connecting to API..."
+              ? "Initializing Uplink"
               : connectionStatus === "reconnecting"
-                ? "Reconnecting to API..."
-                : "Waiting for authorization..."}
+                ? "Restoring Connection"
+                : "Authorization Required"}
+          </h3>
+          <p className={`text-xs font-medium uppercase tracking-wider ${currentTheme === "dark" ? "text-slate-500" : "text-gray-600"}`}>
+            {isLoggedIn 
+              ? "Authenticating with markets..." 
+              : "Please connect your Deriv account to proceed"}
           </p>
-          <p className={`text-xs mt-2 ${currentTheme === "dark" ? "text-gray-600" : "text-gray-600"}`}>
-            Please ensure you have entered a valid API token
-          </p>
+          {!isLoggedIn && (
+            <Button 
+               variant="outline" 
+               className="mt-6 font-black uppercase tracking-widest border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+               onClick={() => window.dispatchEvent(new CustomEvent('open-login'))}
+            >
+              Sign In to Deriv
+            </Button>
+          )}
         </div>
       ) : (
         <>
-          <Card
-            className={`p-4 border mb-4 ${currentTheme === "dark" ? "bg-[#0a0e27]/50 border-blue-500/20" : "bg-gray-50 border-gray-200"}`}
-          >
+          <Card className="p-4 soft-card border-white/5 mb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className={`text-xs font-semibold ${currentTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Market Selector</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Market Selector</label>
                 <Select value={symbol} onValueChange={handleSymbolChange}>
-                  <SelectTrigger className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white font-bold" : ""}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white font-black uppercase tracking-wider h-10 rounded-lg">
                     <SelectValue placeholder="Select Symbol" />
                   </SelectTrigger>
                   <SelectContent className={currentTheme === "dark" ? "bg-[#0a0e27] border-blue-500/30 text-white" : ""}>
@@ -391,9 +393,7 @@ export function TradingTab({ theme: propTheme, symbol, onSymbolChange }: Trading
           {/* Redundant Price Card Removed - Using global price from Ticker */}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
-            <TabsList
-              className={`grid w-full grid-cols-4 mb-6 h-12 ${currentTheme === "dark" ? "bg-[#0a0e27]/50 border border-blue-500/20" : "bg-gray-100"}`}
-            >
+            <TabsList className="grid w-full grid-cols-4 mb-6 h-12 bg-white/[0.03] border border-white/5 rounded-xl p-1">
               <TabsTrigger
                 value="manual"
                 className="text-xs sm:text-sm font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white gap-2"

@@ -26,12 +26,14 @@ import { StatisticalAnalysis } from "@/components/statistical-analysis"
 import { LastDigitsChart } from "@/components/charts/last-digits-chart"
 import { LastDigitsLineChart } from "@/components/charts/last-digits-line-chart"
 import { AIAnalysisTab } from "@/components/tabs/ai-analysis-tab"
+import { HeritageSuperSignals } from "@/components/heritage-super-signals"
 import { SuperSignalsTab } from "@/components/tabs/super-signals-tab"
 import { LoadingScreen } from "@/components/loading-screen"
 import { DerivAuth } from "@/components/deriv-auth"
 import { AutoBotTab } from "@/components/tabs/autobot-tab"
 import { AutomatedTab } from "@/components/tabs/automated-tab"
 import { SmartAuto24Tab } from "@/components/tabs/smartauto24-tab"
+import { AdvancedSignalsTab } from "@/components/advanced-signals-tab"
 import { useGlobalTradingContext } from "@/hooks/use-global-trading-context"
 import { verifier } from "@/lib/system-verifier"
 import { ResponsiveTabs } from "@/components/responsive-tabs"
@@ -176,10 +178,10 @@ export default function DerivAnalysisApp() {
                 {/* Brand Logo and Text - Balanced */}
                 <div className="flex items-center shrink-0 min-w-[120px] sm:min-w-[180px]">
                   <div className="flex flex-col leading-tight">
-                    <h1 className={`text-[13px] sm:text-xl font-black tracking-tight uppercase ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                    <h1 className={`text-[13px] sm:text-xl font-black tracking-tighter uppercase ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
                       Profithub
                     </h1>
-                    <h2 className={`text-[9px] sm:text-[11px] font-black tracking-[0.1em] opacity-90 uppercase ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                    <h2 className={`text-[8px] sm:text-[10px] font-bold tracking-[0.25em] opacity-80 uppercase ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
                       Analysis Tool
                     </h2>
                   </div>
@@ -261,9 +263,9 @@ export default function DerivAnalysisApp() {
               <div className="px-1 sm:px-4 flex flex-col gap-3 pb-4">
                 {/* 1. Symmetrical Trading Selection Tabs */}
                 <div className="flex items-center justify-center w-full">
-                  <div className={`p-1 rounded-xl sm:rounded-2xl border transition-all duration-300 ${theme === "dark" 
-                    ? "bg-[#050505]/60 border-white/5 shadow-2xl" 
-                    : "bg-gray-100/50 border-gray-200"
+                  <div className={`p-1 rounded-xl sm:rounded-2xl border transition-all duration-500 ${theme === "dark" 
+                    ? "bg-[#050505]/80 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl" 
+                    : "bg-white/70 border-gray-200 shadow-xl backdrop-blur-2xl"
                     } max-w-full overflow-hidden`}>
                     <div className="overflow-x-auto no-scrollbar max-w-full">
                       <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
@@ -276,6 +278,7 @@ export default function DerivAnalysisApp() {
                           "signals",
                           "pro-signals",
                           "super-signals",
+                          "advanced-signals",
                           "even-odd",
                           "over-under",
                           "advanced-over-under",
@@ -289,12 +292,12 @@ export default function DerivAnalysisApp() {
                           <TabsTrigger
                             key={tab}
                             value={tab}
-                            className={`shrink-0 rounded-lg text-[11px] sm:text-[13px] h-8 sm:h-9 px-4 sm:px-6 whitespace-nowrap transition-all duration-300 capitalize font-black tracking-wide ${activeTab === tab
+                            className={`shrink-0 rounded-lg text-[10px] sm:text-[11px] h-8 sm:h-9 px-4 sm:px-6 whitespace-nowrap transition-all duration-500 uppercase font-bold tracking-[0.15em] ${activeTab === tab
                               ? theme === "dark"
-                                ? "bg-blue-600 text-white shadow-[0_4px_15px_rgba(37,99,235,0.4)] scale-100"
-                                : "bg-blue-600 text-white shadow-[0_4px_15px_rgba(37,99,235,0.3)] scale-100"
+                                ? "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-[0_4px_20px_rgba(37,99,235,0.5)] border border-white/10"
+                                : "bg-slate-900 text-white shadow-lg"
                               : theme === "dark"
-                                ? "bg-transparent text-slate-400 hover:text-white hover:bg-white/5"
+                                ? "bg-transparent text-slate-500 hover:text-white hover:bg-white/5"
                                 : "bg-transparent text-slate-500 hover:text-slate-900 hover:bg-black/5"
                               }`}
                             onClick={(e) => {
@@ -320,7 +323,7 @@ export default function DerivAnalysisApp() {
                           ? "bg-white/[0.03] border-white/10 shadow-inner"
                           : "bg-gray-50 border-gray-200 shadow-xs"
                           }`}>
-                          <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+                          <span className={`text-[7px] sm:text-[8px] font-bold uppercase tracking-[0.18em] mb-0 opacity-70 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
                             Market Selection
                           </span>
                           <div className="w-full flex items-center justify-center scale-[0.85] sm:scale-100 origin-center -mt-0.5 sm:mt-0">
@@ -339,7 +342,7 @@ export default function DerivAnalysisApp() {
                         ? "bg-white/[0.03] border-white/10 shadow-inner"
                         : "bg-gray-50 border-gray-200 shadow-xs"
                         }`}>
-                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                        <span className={`text-[7px] sm:text-[8px] font-bold uppercase tracking-[0.18em] mb-0 opacity-70 ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
                           Price
                         </span>
                         <span className={`text-[11px] sm:text-[16px] font-black tabular-nums leading-none ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
@@ -353,7 +356,7 @@ export default function DerivAnalysisApp() {
                         : "bg-orange-50 border-orange-200"
                         }`}>
                         <div className="absolute inset-0 bg-gradient-to-t from-orange-500/[0.05] to-transparent animate-pulse pointer-events-none" />
-                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 relative z-10 opacity-70 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+                        <span className={`text-[7px] sm:text-[8px] font-bold uppercase tracking-[0.18em] mb-0 relative z-10 opacity-70 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
                           Last Digit
                         </span>
                         <span className={`text-[15px] sm:text-[22px] font-black relative z-10 leading-none ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
@@ -366,7 +369,7 @@ export default function DerivAnalysisApp() {
                         ? "bg-white/[0.03] border-white/10 shadow-inner"
                         : "bg-gray-50 border-gray-200 shadow-xs"
                         }`}>
-                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"}`}>
+                        <span className={`text-[7px] sm:text-[8px] font-bold uppercase tracking-[0.18em] mb-0 opacity-70 ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"}`}>
                           Ticks
                         </span>
                         <div className="flex items-center gap-1 sm:gap-1.5 h-4 sm:h-5">
@@ -391,7 +394,7 @@ export default function DerivAnalysisApp() {
                         ? "bg-white/[0.03] border-white/10 hover:border-amber-500/50 shadow-inner"
                         : "bg-gray-50 border-gray-200 shadow-xs"
                         }`}>
-                        <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-[0.1em] mb-0 opacity-60 ${theme === "dark" ? "text-amber-400" : "text-amber-600"}`}>
+                        <span className={`text-[7px] sm:text-[8px] font-bold uppercase tracking-[0.18em] mb-0 opacity-70 ${theme === "dark" ? "text-amber-400" : "text-amber-600"}`}>
                           Watch
                         </span>
                         <div className="flex items-center gap-1 px-1 w-full justify-center">
@@ -568,7 +571,21 @@ export default function DerivAnalysisApp() {
               </TabsContent>
 
               <TabsContent value="super-signals" className="mt-0">
-                <SuperSignalsTab theme={theme} symbol={symbol} availableSymbols={availableSymbols} maxTicks={maxTicks} />
+                {analysis && (
+                  <HeritageSuperSignals 
+                    theme={theme} 
+                    symbol={symbol} 
+                    availableSymbols={availableSymbols} 
+                    maxTicks={maxTicks}
+                    analysis={analysis}
+                    recentDigits={recentDigits}
+                    tickCount={tickCount}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="advanced-signals" className="mt-0">
+                <AdvancedSignalsTab theme={theme} availableSymbols={availableSymbols} />
               </TabsContent>
 
               <TabsContent value="even-odd" className="mt-0">
