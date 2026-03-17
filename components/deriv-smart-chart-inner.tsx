@@ -61,8 +61,11 @@ export default function DerivSmartChartInner({
 
   // SmartChart request callbacks (Champion Pattern)
   const requestAPI = async (req: any) => {
+    console.log("[SmartChart] requestAPI core request:", JSON.stringify(req))
     try {
-      return await derivWebSocket.sendAndWait(req, 15000)
+      const response = await derivWebSocket.sendAndWait(req, 15000)
+      console.log(`[SmartChart] response for ${Object.keys(req)[0]}:`, !!response)
+      return response
     } catch (e) {
       console.error("[SmartChart] requestAPI error:", e)
       return { error: e }
@@ -247,6 +250,11 @@ export default function DerivSmartChartInner({
           chartData={{
             activeSymbols: activeSymbols,
           }}
+          feedCall={{
+            activeSymbols: false,
+            tradingTimes: false,
+          }}
+          shouldFetchTradingTimes={false}
           topWidgets={() => hideToolbar ? null : <ChartTitle onChange={(s: string) => {}} />}
           enabledChartFooter={false}
           chartControlsWidgets={hideToolbar ? null : undefined}

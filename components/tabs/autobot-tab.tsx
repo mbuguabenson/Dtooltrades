@@ -208,6 +208,10 @@ export function AutoBotTab({ theme = "dark", symbol, onSymbolChange, availableSy
         tickHandlerRef.current = tickHandler
 
         // Subscribe to ticks for the selected symbol
+        if (!symbol) {
+          console.warn("[v0] AutoBotTab: No symbol provided for subscription yet")
+          return
+        }
         const subscriptionId = await derivWebSocket.subscribeTicks(symbol, tickHandler)
 
         tickSubscriptionRef.current = subscriptionId

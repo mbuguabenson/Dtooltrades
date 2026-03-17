@@ -410,6 +410,10 @@ export class DerivWebSocketManager {
   // ─── Tick subscriptions ────────────────────────────────────────────────────
 
   public async subscribeTicks(symbol: string, callback: (tick: TickData) => void): Promise<string> {
+    if (!symbol) {
+      console.warn("[v0] subscribeTicks: Symbol is empty, skipping")
+      return ""
+    }
     if (!this.tickCallbacks.has(symbol)) this.tickCallbacks.set(symbol, new Set())
     this.tickCallbacks.get(symbol)!.add(callback)
 
