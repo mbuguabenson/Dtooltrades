@@ -46,6 +46,7 @@
     "autoprefixer": "^10.4.20",
     "better-sqlite3": "latest",
     "class-variance-authority": "^0.7.1",
+    "classnames": "^2.5.1",
     "clsx": "^2.1.1",
     "cmdk": "latest",
     "date-fns": "4.1.0",

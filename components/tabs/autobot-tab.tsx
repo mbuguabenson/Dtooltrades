@@ -191,6 +191,12 @@ export function AutoBotTab({
   }, [])
 
   useEffect(() => {
+    // Early return if no symbol is selected yet
+    if (!symbol) {
+      console.log("[v0] AutoBotTab: Waiting for symbol selection...")
+      return
+    }
+
     const initializeWebSocket = async () => {
       try {
         // We rely on DerivAPIProvider for the core connection now
@@ -228,7 +234,7 @@ export function AutoBotTab({
 
         // Subscribe to ticks for the selected symbol
         if (!symbol) {
-          console.warn("[v0] AutoBotTab: No symbol provided for subscription yet")
+          console.warn("[v0] AutoBotTab: Symbol was cleared during initialization")
           return
         }
         const subscriptionId = await derivWebSocket.subscribeTicks(symbol, tickHandler)
