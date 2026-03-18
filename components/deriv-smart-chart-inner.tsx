@@ -271,9 +271,12 @@ export default function DerivSmartChartInner({
 
   if (!mounted) return null
 
+  // Validate that activeSymbols have required pip property for SmartCharts
+  const hasValidSymbols = activeSymbols.length > 0 && activeSymbols.some((s: any) => s?.pip !== undefined)
+
   return (
     <div className={classNames('w-full h-full min-h-[400px] relative rounded-xl overflow-hidden', className)} dir='ltr'>
-      {isEngineReady && activeSymbols.length > 0 && isConnectionOpened ? (
+      {isEngineReady && hasValidSymbols && isConnectionOpened ? (
         <SmartChart
           id={`smartchart-${symbol}`}
           symbol={symbol}
