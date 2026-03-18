@@ -346,25 +346,45 @@ export default function DerivAnalysisApp() {
                           "differs",
                           "ai-analysis",
                           "tools-info",
-                        ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => (
+                        ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => {
+                          const tabLabels: Record<string, string> = {
+                            "smart-adaptive": "Smart Adaptive",
+                            "smart-analysis": "Smart Analysis",
+                            "smartauto24": "SmartAuto24",
+                            "autobot": "Auto Bot",
+                            "automated": "Automated",
+                            "signals": "Signals",
+                            "pro-signals": "Pro Signals",
+                            "super-signals": "Super Signals",
+                            "advanced-signals": "Advanced Signals",
+                            "even-odd": "Even/Odd",
+                            "over-under": "Over/Under",
+                            "advanced-over-under": "Advanced Over/Under",
+                            "matches": "Matches",
+                            "differs": "Differs",
+                            "ai-analysis": "AI Analysis",
+                            "tools-info": "Tools Info"
+                          }
+                          return (
                           <TabsTrigger
                             key={tab}
                             value={tab}
-                            className={`shrink-0 rounded-none text-[11px] sm:text-[12px] h-10 sm:h-11 px-3 sm:px-5 whitespace-nowrap transition-all duration-300 font-semibold border-b-2 ${activeTab === tab
+                            className={`shrink-0 rounded-none text-[11px] sm:text-[12px] h-11 sm:h-12 px-4 sm:px-6 whitespace-nowrap transition-all duration-300 font-semibold border-b-2 ${activeTab === tab
                               ? theme === "dark"
-                                ? "border-blue-500 text-blue-500 bg-transparent"
-                                : "border-blue-600 text-blue-600 bg-transparent"
+                                ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                                : "border-blue-600 text-blue-600 bg-blue-100/50"
                               : theme === "dark"
-                                ? "border-transparent text-gray-500 hover:text-gray-300"
-                                : "border-transparent text-gray-500 hover:text-gray-700"
+                                ? "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600"
+                                : "border-transparent text-gray-600 hover:text-gray-700 hover:border-gray-300"
                               }`}
                             onClick={(e) => {
                               e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
                             }}
                           >
-                            {tab === "autobot" ? "Bot" : tab === "automated" ? "Super" : tab.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')}
+                            {tabLabels[tab] || tab}
                           </TabsTrigger>
-                        ))}
+                        )
+                        })}
                       </ResponsiveTabs>
                     </div>
                   </div>
