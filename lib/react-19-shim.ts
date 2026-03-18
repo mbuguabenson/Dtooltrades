@@ -6,9 +6,25 @@ import * as jsxRuntime from 'react/jsx-runtime';
  * that rely on React internals which were renamed or moved in React 19.
  */
 if (typeof window !== 'undefined') {
+    // --------------------------------------------------------------------------
+    // THE ULTIMATE REACT 19 LEGACY FIX:
+    // Intercept Symbol.for globally. If any legacy pre-compiled bundle (like smartcharts)
+    // or its embedded jsx-runtime tries to request the classic 'react.element' symbol
+    // to build old JSX nodes, we hand it the modern 'react.transitional.element'.
+    // This perfectly fools legacy libraries into natively generating React 19 elements!
+    // --------------------------------------------------------------------------
+    const originalSymbolFor = Symbol.for;
+    if (!(originalSymbolFor as any).__isPatchedForReact19) {
+        Symbol.for = function(key: string) {
+            if (key === 'react.element') {
+                return originalSymbolFor('react.transitional.element');
+            }
+            return originalSymbolFor.apply(this, arguments as any);
+        };
+        (Symbol.for as any).__isPatchedForReact19 = true;
+    }
+
     const ReactAny = React as any;
-    
-    // Attach JSX runtime to React object for the binary patch to use
     if (!ReactAny.jsx) {
         ReactAny.jsx = (jsxRuntime as any).jsx;
         ReactAny.jsxs = (jsxRuntime as any).jsxs;
