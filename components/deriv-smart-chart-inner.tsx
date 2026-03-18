@@ -51,20 +51,27 @@ export default function DerivSmartChartInner({
     let isMounted = true
 
     const init = async () => {
-      // 1. Ensure dedicated connection is ready
-      await chartWebSocket.connect()
-      if (!isMounted) return
+      try {
+        // 1. Ensure dedicated connection is ready
+        await chartWebSocket.connect()
+        if (!isMounted) return
 
-      setIsConnectionOpened(true)
+        setIsConnectionOpened(true)
 
-      // 2. Load active symbols (Metadata is shared but fetched independently for robustness)
-      const symbols = await derivWebSocket.getActiveSymbols()
-      if (isMounted && symbols && symbols.length > 0) {
-        setActiveSymbols(symbols)
-        // Ensure state is synced before starting engine
-        setTimeout(() => {
-           if (isMounted) setIsEngineReady(true)
-        }, 300)
+        // 2. Load active symbols (Metadata is shared but fetched independently for robustness)
+        const symbols = await derivWebSocket.getActiveSymbols()
+        if (isMounted && symbols && symbols.length > 0) {
+          setActiveSymbols(symbols)
+          // Ensure state is synced before starting engine
+          setTimeout(() => {
+             if (isMounted) setIsEngineReady(true)
+          }, 300)
+        }
+      } catch (error) {
+        console.error("[v0] Chart initialization error:", error)
+        if (isMounted) {
+          setIsEngineReady(true) // Still mark as ready to show chart placeholder
+        }
       }
     }
 
@@ -235,12 +242,22 @@ export default function DerivSmartChartInner({
 
   const getMarketsOrder = useCallback((active_symbols: any[]) => {
     if (!active_symbols || !Array.isArray(active_symbols)) return []
-    return Array.from(new Set(active_symbols.map(s => s?.market).filter(Boolean))).sort()
+    try {
+      return Array.from(new Set(active_symbols.map(s => s?.market).filter(Boolean))).sort()
+    } catch (e) {
+      console.error("[v0] Error in getMarketsOrder:", e)
+      return []
+    }
   }, [])
 
   const getSubmarketsOrder = useCallback((active_symbols: any[]) => {
     if (!active_symbols || !Array.isArray(active_symbols)) return []
-    return Array.from(new Set(active_symbols.map(s => s?.submarket).filter(Boolean))).sort()
+    try {
+      return Array.from(new Set(active_symbols.map(s => s?.submarket).filter(Boolean))).sort()
+    } catch (e) {
+      console.error("[v0] Error in getSubmarketsOrder:", e)
+      return []
+    }
   }, [])
 
   const [mounted, setMounted] = useState(false)

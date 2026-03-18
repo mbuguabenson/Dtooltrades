@@ -21,7 +21,6 @@ import { EvenOddTab } from "@/components/tabs/even-odd-tab"
 import { OverUnderTab } from "@/components/tabs/over-under-tab"
 import { MatchesTab } from "@/components/tabs/matches-tab"
 import { DiffersTab } from "@/components/tabs/differs-tab"
-import { RiseFallTab } from "@/components/tabs/rise-fall-tab"
 import { StatisticalAnalysis } from "@/components/statistical-analysis"
 import { LastDigitsChart } from "@/components/charts/last-digits-chart"
 import { LastDigitsLineChart } from "@/components/charts/last-digits-line-chart"
@@ -39,10 +38,10 @@ import { verifier } from "@/lib/system-verifier"
 import { ResponsiveTabs } from "@/components/responsive-tabs"
 import { MoneyMakerTab } from "@/components/tabs/money-maker-tab"
 import { ToolsInfoTab } from "@/components/tabs/tools-info-tab"
-import { ChartsTab } from "@/components/tabs/charts-tab"
 import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
 import { RiskDisclaimerModal } from "@/components/modals/risk-disclaimer-modal"
 import { MarketSelector } from "@/components/market-selector"
+import { WelcomeHero } from "@/components/welcome-hero"
 import {
   Dialog,
   DialogContent,
@@ -59,6 +58,7 @@ export default function DerivAnalysisApp() {
   const [initError, setInitError] = useState<string | null>(null)
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
   const [showRiskModal, setShowRiskModal] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(true)
   const [siteConfig, setSiteConfig] = useState<any>(null)
   const [watchedDigits, setWatchedDigits] = useState<number[]>(() => {
     if (typeof window === "undefined") return []
@@ -163,6 +163,58 @@ export default function DerivAnalysisApp() {
     )
   }
 
+  if (showWelcome && tickCount === 0) {
+    return (
+      <div className={`min-h-screen flex flex-col ${theme === "dark" ? "bg-[#0a0a0a]" : "bg-white"}`}>
+        <header className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
+          ? "bg-[#0a0a0a]/95 border-white/8"
+          : "bg-white/98 border-gray-200"
+        } backdrop-blur-xl`}>
+          <div className="mx-auto w-full px-2 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16 sm:h-20">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-black text-sm sm:text-base ${theme === "dark" ? "bg-blue-600 text-white" : "bg-blue-600 text-white"}`}>
+                  P
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <h1 className={`text-base sm:text-lg font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                    ProfitHub
+                  </h1>
+                  <h2 className={`text-[9px] sm:text-[10px] font-medium tracking-wide opacity-60 uppercase ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                    Trading
+                  </h2>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className={`h-9 w-9 rounded-lg transition-all ${theme === "dark"
+                  ? "bg-white/5 text-yellow-500 hover:bg-white/10"
+                  : "bg-black/5 text-slate-700 hover:bg-black/10"
+                }`}
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 pt-16 sm:pt-20">
+          <WelcomeHero theme={theme} onGetStarted={() => setShowWelcome(false)} />
+        </main>
+
+        <footer className={`py-6 sm:py-8 border-t ${theme === "dark" ? "bg-[#0a0a0a] border-white/8" : "bg-gray-50 border-gray-200"}`}>
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+            <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-500" : "text-gray-600"}`}>
+              © 2026 ProfitHub. Trading involves risk.
+            </p>
+          </div>
+        </footer>
+      </div>
+    )
+  }
+
   return (
     <div
       className={`min-h-screen flex flex-col ${theme === "dark" ? "bg-linear-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a]" : "bg-linear-to-br from-gray-50 via-white to-gray-100"}`}
@@ -171,22 +223,27 @@ export default function DerivAnalysisApp() {
         {!siteConfig?.headerHidden && (
           <header
              className={`fixed top-0 left-0 right-0 z-[100] shrink-0 w-full transition-all duration-500 border-b ${theme === "dark"
-               ? "bg-[#050505]/90 border-white/5"
-               : "bg-white/95 border-gray-100"
+               ? "bg-[#0a0a0a]/95 border-white/8"
+               : "bg-white/98 border-gray-200"
                } backdrop-blur-xl`}
           >
-            <div className="mx-auto w-full px-1 sm:px-3">
-              <div className="flex flex-nowrap items-center h-14 sm:h-20 gap-3 w-full justify-between overflow-hidden">
+            <div className="mx-auto w-full px-2 sm:px-6 lg:px-8">
+              <div className="flex flex-nowrap items-center h-16 sm:h-20 gap-4 sm:gap-6 w-full justify-between overflow-hidden">
 
-                {/* Brand Logo and Text - Balanced */}
-                <div className="flex items-center shrink-0 min-w-[120px] sm:min-w-[180px]">
-                  <div className="flex flex-col leading-tight">
-                    <h1 className={`text-[13px] sm:text-xl font-black tracking-tighter uppercase ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                      Profithub
-                    </h1>
-                    <h2 className={`text-[8px] sm:text-[10px] font-bold tracking-[0.25em] opacity-80 uppercase ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-                      Analysis Tool
-                    </h2>
+                {/* Brand Logo and Text - Clean Modern */}
+                <div className="flex items-center shrink-0 min-w-[140px] sm:min-w-[200px]">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-black text-sm sm:text-base ${theme === "dark" ? "bg-blue-600 text-white" : "bg-blue-600 text-white"}`}>
+                      P
+                    </div>
+                    <div className="flex flex-col leading-tight">
+                      <h1 className={`text-base sm:text-lg font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                        ProfitHub
+                      </h1>
+                      <h2 className={`text-[9px] sm:text-[10px] font-medium tracking-wide opacity-60 uppercase ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                        Trading
+                      </h2>
+                    </div>
                   </div>
                 </div>
 
@@ -263,14 +320,14 @@ export default function DerivAnalysisApp() {
                 </div>
               </div>
 
-              <div className="px-1 sm:px-4 flex flex-col gap-3 pb-4">
-                {/* 1. Symmetrical Trading Selection Tabs */}
-                <div className="flex items-center justify-center w-full">
-                  <div className={`p-1 rounded-xl sm:rounded-2xl border transition-all duration-500 ${theme === "dark" 
-                    ? "bg-[#050505]/80 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl" 
-                    : "bg-white/70 border-gray-200 shadow-xl backdrop-blur-2xl"
-                    } max-w-full overflow-hidden`}>
-                    <div className="overflow-x-auto no-scrollbar max-w-full">
+              <div className="px-2 sm:px-6 lg:px-8 flex flex-col gap-4 pb-4">
+                {/* Navigation Tabs - Clean Design */}
+                <div className="flex items-center justify-start w-full overflow-x-auto no-scrollbar -mx-2 sm:-mx-6 lg:-mx-8 px-2 sm:px-6 lg:px-8">
+                  <div className={`inline-flex rounded-lg border transition-all duration-500 ${theme === "dark" 
+                    ? "bg-[#0f0f0f] border-white/10" 
+                    : "bg-gray-50 border-gray-200"
+                    }`}>
+                    <div className="overflow-x-auto no-scrollbar flex">
                       <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
                         {[
                           "smart-adaptive",
@@ -287,27 +344,25 @@ export default function DerivAnalysisApp() {
                           "advanced-over-under",
                           "matches",
                           "differs",
-                          "rise-fall",
                           "ai-analysis",
                           "tools-info",
-                          "charts",
                         ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => (
                           <TabsTrigger
                             key={tab}
                             value={tab}
-                            className={`shrink-0 rounded-lg text-[10px] sm:text-[11px] h-8 sm:h-9 px-4 sm:px-6 whitespace-nowrap transition-all duration-500 uppercase font-bold tracking-[0.15em] ${activeTab === tab
+                            className={`shrink-0 rounded-none text-[11px] sm:text-[12px] h-10 sm:h-11 px-3 sm:px-5 whitespace-nowrap transition-all duration-300 font-semibold border-b-2 ${activeTab === tab
                               ? theme === "dark"
-                                ? "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-[0_4px_20px_rgba(37,99,235,0.5)] border border-white/10"
-                                : "bg-slate-900 text-white shadow-lg"
+                                ? "border-blue-500 text-blue-500 bg-transparent"
+                                : "border-blue-600 text-blue-600 bg-transparent"
                               : theme === "dark"
-                                ? "bg-transparent text-slate-500 hover:text-white hover:bg-white/5"
-                                : "bg-transparent text-slate-500 hover:text-slate-900 hover:bg-black/5"
+                                ? "border-transparent text-gray-500 hover:text-gray-300"
+                                : "border-transparent text-gray-500 hover:text-gray-700"
                               }`}
                             onClick={(e) => {
                               e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
                             }}
                           >
-                            {tab === "autobot" ? "Bot 🤖" : tab === "automated" ? "Super 🚀" : tab.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')}
+                            {tab === "autobot" ? "Bot" : tab === "automated" ? "Super" : tab.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')}
                           </TabsTrigger>
                         ))}
                       </ResponsiveTabs>
@@ -645,25 +700,6 @@ export default function DerivAnalysisApp() {
                 )}
               </TabsContent>
 
-              <TabsContent value="rise-fall" className="mt-0">
-                {analysis && (
-                  <RiseFallTab
-                    analysis={analysis}
-                    signals={signals}
-                    currentPrice={currentPrice}
-                    recentDigits={recent40Digits}
-                    theme={theme}
-                    symbol={symbol}
-                    availableSymbols={availableSymbols}
-                    onSymbolChange={changeSymbol}
-                    currentDigit={currentDigit}
-                    tickCount={tickCount}
-                    maxTicks={maxTicks}
-                    onMaxTicksChange={changeMaxTicks}
-                  />
-                )}
-              </TabsContent>
-
               <TabsContent value="ai-analysis" className="mt-0">
                 {analysis && (
                   <AIAnalysisTab
@@ -677,19 +713,6 @@ export default function DerivAnalysisApp() {
                   />
                 )}
               </TabsContent>
-
-              <TabsContent value="charts" className="mt-0">
-                <ChartsTab
-                  symbol={symbol}
-                  theme={theme}
-                  availableSymbols={availableSymbols}
-                  onSymbolChange={changeSymbol}
-                  currentPrice={currentPrice}
-                  currentDigit={currentDigit}
-                  tickCount={tickCount}
-                />
-              </TabsContent>
-
 
               <TabsContent value="autobot" className="mt-0">
                 <AutoBotTab theme={theme} symbol={symbol} />
@@ -724,40 +747,54 @@ export default function DerivAnalysisApp() {
 
       {!siteConfig?.footerHidden && (
         <footer
-          className={`mt-4 py-3 transition-all duration-300 border-t relative overflow-hidden ${theme === "dark"
-            ? "bg-[#0a0e27]/40 border-white/5"
+          className={`mt-6 py-6 sm:py-8 transition-all duration-300 border-t ${theme === "dark"
+            ? "bg-[#0a0a0a] border-white/8"
             : "bg-gray-50 border-gray-200"
             }`}
         >
-          {theme === "dark" && (
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
-          )}
-          <div className="mx-auto w-full max-w-7xl px-2 sm:px-6 lg:px-8 relative z-10">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <span className={`font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                  PROFIT<span className="text-blue-500">HUB</span>
-                </span>
-                <span className="text-gray-500 hidden sm:inline">•</span>
-                <span className="text-gray-500 hidden sm:inline text-[10px] uppercase tracking-wider">Trading Terminal</span>
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+              {/* Brand Section */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${theme === "dark" ? "bg-blue-600 text-white" : "bg-blue-600 text-white"}`}>
+                    P
+                  </div>
+                  <span className={`font-semibold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
+                    ProfitHub
+                  </span>
+                </div>
+                <p className={`text-xs sm:text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                  Real-time trading analysis and signals
+                </p>
               </div>
 
-              <div className="flex items-center gap-4 text-gray-500 font-medium">
-                <button
-                  onClick={() => setIsDisclaimerOpen(true)}
-                  className={`hover:text-blue-500 transition-colors flex items-center gap-1 border px-2 py-0.5 rounded ${theme === "dark" ? "border-white/10 hover:border-blue-500/30" : "border-gray-200 hover:border-blue-300"}`}
-                >
-                  <AlertTriangle className="h-3 w-3 text-amber-500" />
-                  Risk
-                </button>
-                <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
-                <a href="#" className="hover:text-blue-500 transition-colors hidden sm:inline">Terms</a>
-                <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
+              {/* Links Section */}
+              <div className="flex flex-col gap-3 sm:col-span-2">
+                <div className="flex flex-wrap gap-3 sm:gap-6">
+                  <button
+                    onClick={() => setIsDisclaimerOpen(true)}
+                    className={`text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 ${theme === "dark" ? "text-gray-400 hover:text-blue-500" : "text-gray-600 hover:text-blue-600"}`}
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Risk Disclaimer
+                  </button>
+                  <a href="#" className={`text-xs sm:text-sm font-medium transition-colors ${theme === "dark" ? "text-gray-400 hover:text-blue-500" : "text-gray-600 hover:text-blue-600"}`}>
+                    Privacy Policy
+                  </a>
+                  <a href="#" className={`text-xs sm:text-sm font-medium transition-colors hidden sm:inline-block ${theme === "dark" ? "text-gray-400 hover:text-blue-500" : "text-gray-600 hover:text-blue-600"}`}>
+                    Terms of Service
+                  </a>
+                  <a href="#" className={`text-xs sm:text-sm font-medium transition-colors ${theme === "dark" ? "text-gray-400 hover:text-blue-500" : "text-gray-600 hover:text-blue-600"}`}>
+                    Support
+                  </a>
+                </div>
               </div>
+            </div>
 
-              <div className={`hidden md:block text-[10px] ${theme === "dark" ? "text-gray-600" : "text-gray-400"}`}>
-                © 2026 Profit Hub.
-              </div>
+            <div className={`mt-6 sm:mt-8 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm ${theme === "dark" ? "border-white/8 text-gray-500" : "border-gray-200 text-gray-500"}`}>
+              <p>© 2026 ProfitHub. All rights reserved.</p>
+              <p>Trading involves risk. Please read our risk disclaimer.</p>
             </div>
           </div>
         </footer>
