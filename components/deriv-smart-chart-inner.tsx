@@ -37,25 +37,47 @@ const upgradeLegacyElements = (node: any): any => {
   return node;
 }
 
-if (typeof window !== 'undefined' && SmartChart) {
-   // Patch Class component render
-   if (SmartChart.prototype && SmartChart.prototype.render) {
-      const originalRender = SmartChart.prototype.render;
-      SmartChart.prototype.render = function() {
-         return upgradeLegacyElements(originalRender.call(this));
-      };
-   } 
-   // Patch Function component
-   else if (typeof SmartChart === 'function') {
-      const OriginalSmartChart = SmartChart as any;
-      (window as any).PatchedSmartChart = function(props: any) {
-         return upgradeLegacyElements(OriginalSmartChart(props));
-      };
-   }
+// Robust patcher to drill through React.memo, React.forwardRef, etc.
+const patchComponent = (ComponentObj: any): any => {
+  if (!ComponentObj) return ComponentObj;
+
+  if (typeof ComponentObj === 'function') {
+     // If class component
+     if (ComponentObj.prototype && ComponentObj.prototype.render) {
+         class PatchedClass extends ComponentObj {
+            render() {
+               return upgradeLegacyElements(super.render());
+            }
+         }
+         return PatchedClass;
+     }
+     // If function component
+     return function PatchedFunctionComponent(props: any, ref: any) {
+        return upgradeLegacyElements(ComponentObj(props, ref));
+     };
+  }
+
+  if (typeof ComponentObj === 'object') {
+     const typeOf = ComponentObj.$$typeof;
+     if (typeOf === Symbol.for('react.memo')) {
+        return {
+           ...ComponentObj,
+           type: patchComponent(ComponentObj.type)
+        };
+     }
+     if (typeOf === Symbol.for('react.forward_ref') || typeof ComponentObj.render === 'function') {
+        return {
+           ...ComponentObj,
+           render: patchComponent(ComponentObj.render)
+        };
+     }
+  }
+
+  return ComponentObj;
 }
 
-const ActiveSmartChart = (typeof window !== 'undefined' && (window as any).PatchedSmartChart) 
-  ? (window as any).PatchedSmartChart 
+const ActiveSmartChart = (typeof window !== 'undefined') 
+  ? patchComponent(SmartChart)
   : SmartChart;
 // ---------------------------------------------------
 
