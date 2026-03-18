@@ -69,19 +69,16 @@ export function WelcomeHero({ theme = "dark", onGetStarted }: WelcomeHeroProps) 
           {[
             {
               icon: Activity,
-              number: "01",
               title: "Real-Time Market Data",
               description: "Live price feeds and instant updates across all Deriv markets with microsecond precision"
             },
             {
               icon: BarChart3,
-              number: "02",
               title: "Advanced Analytics",
               description: "Comprehensive digit distribution, pattern recognition, and statistical analysis tools"
             },
             {
               icon: Zap,
-              number: "03",
               title: "Smart Trading Signals",
               description: "AI-powered signals for even-odd, matches, rises, and falls with confidence scores"
             }
@@ -94,9 +91,6 @@ export function WelcomeHero({ theme = "dark", onGetStarted }: WelcomeHeroProps) 
                   ? "border-gray-800 bg-gray-900/30 hover:bg-gray-900/60 hover:border-blue-500/30"
                   : "border-gray-200 bg-gray-50/50 hover:bg-gray-100 hover:border-blue-400"}`}
               >
-                <div className={`text-sm sm:text-base font-bold mb-3 ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
-                  {feature.number}
-                </div>
                 <Icon className={`w-8 h-8 sm:w-10 sm:h-10 mb-4 transition-all ${theme === "dark" ? "text-blue-500 group-hover:text-blue-400" : "text-blue-600 group-hover:text-blue-700"}`} />
                 <h3 className={`text-lg sm:text-xl font-bold mb-2 ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
                   {feature.title}
