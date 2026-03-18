@@ -1,3 +1,4 @@
+import React from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
 
 /**
@@ -14,37 +15,64 @@ if (typeof window !== 'undefined') {
         ReactAny.Fragment = (jsxRuntime as any).Fragment;
     }
 
-    // React 19 moved __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED to 
+    // React 19 moved __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED to
     // __CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED in the browser.
-    const internals = ReactAny.__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED || 
+    const internals = ReactAny.__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED ||
                       ReactAny.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
     if (internals) {
-        // Ensure the old internal name exists
+        // Ensure the old internal name exists so legacy libraries can find it
         if (!ReactAny.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
             ReactAny.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = internals;
         }
 
         // React 19 internal structure changed: ReactCurrentOwner -> owner
-        if (!internals.ReactCurrentOwner && internals.owner) {
+        // ALWAYS define this property. Even if internals.owner is null at module-init
+        // time, the live getter will return the correct value when the library reads it.
+        if (!internals.ReactCurrentOwner) {
             Object.defineProperty(internals, 'ReactCurrentOwner', {
                 get() {
-                    return internals.owner;
+                    // internals.owner is the React 19 equivalent; fall back to a safe stub
+                    return (internals.owner !== undefined ? internals.owner : { current: null });
+                },
+                set(val: any) {
+                    internals.owner = val;
                 },
                 configurable: true,
-                enumerable: true
+                enumerable: true,
             });
         }
-        
+
         // Also map Dispatcher if needed (typical for hooks errors)
-        if (!internals.ReactCurrentDispatcher && internals.H) {
-             Object.defineProperty(internals, 'ReactCurrentDispatcher', {
+        if (!internals.ReactCurrentDispatcher) {
+            Object.defineProperty(internals, 'ReactCurrentDispatcher', {
                 get() {
-                    return internals.H;
+                    return internals.H || { current: null };
                 },
                 configurable: true,
-                enumerable: true
+                enumerable: true,
             });
         }
+
+        // Map ReactCurrentBatchConfig if needed
+        if (!internals.ReactCurrentBatchConfig) {
+            Object.defineProperty(internals, 'ReactCurrentBatchConfig', {
+                get() {
+                    return internals.T !== undefined
+                        ? { transition: internals.T }
+                        : { transition: null };
+                },
+                configurable: true,
+                enumerable: true,
+            });
+        }
+    } else {
+        // Last-resort: if React internals are completely absent, create a stub
+        // so legacy libraries don't throw "Cannot read properties of undefined"
+        ReactAny.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
+            ReactCurrentOwner: { current: null },
+            ReactCurrentDispatcher: { current: null },
+            ReactCurrentBatchConfig: { transition: null },
+        };
     }
 }
