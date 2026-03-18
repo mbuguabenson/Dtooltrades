@@ -13,6 +13,52 @@ if (typeof window !== 'undefined') {
   setSmartChartsPublicPath('/assets/')
 }
 
+// --- REACT 19 COMPATIBILITY PATCH FOR SMARTCHARTS ---
+// SmartCharts bundles an older React 18 JSX runtime that creates legacy elements.
+// React 19 strictly rejects these with "A React Element from an older version of React".
+// We intercept its render output and upgrade the elements at runtime.
+const upgradeLegacyElements = (node: any): any => {
+  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) return node.map(upgradeLegacyElements);
+
+  const LEGACY_SYMBOL = Symbol.for('react.element');
+  const MODERN_SYMBOL = Symbol.for('react.transitional.element');
+
+  if (node.$$typeof === LEGACY_SYMBOL || node.$$typeof === MODERN_SYMBOL) {
+     const newNode = { ...node, $$typeof: MODERN_SYMBOL };
+     if (newNode.props) {
+        newNode.props = { ...newNode.props };
+        if (newNode.props.children) {
+           newNode.props.children = upgradeLegacyElements(newNode.props.children);
+        }
+     }
+     return newNode;
+  }
+  return node;
+}
+
+if (typeof window !== 'undefined' && SmartChart) {
+   // Patch Class component render
+   if (SmartChart.prototype && SmartChart.prototype.render) {
+      const originalRender = SmartChart.prototype.render;
+      SmartChart.prototype.render = function() {
+         return upgradeLegacyElements(originalRender.call(this));
+      };
+   } 
+   // Patch Function component
+   else if (typeof SmartChart === 'function') {
+      const OriginalSmartChart = SmartChart as any;
+      (window as any).PatchedSmartChart = function(props: any) {
+         return upgradeLegacyElements(OriginalSmartChart(props));
+      };
+   }
+}
+
+const ActiveSmartChart = (typeof window !== 'undefined' && (window as any).PatchedSmartChart) 
+  ? (window as any).PatchedSmartChart 
+  : SmartChart;
+// ---------------------------------------------------
+
 interface DerivSmartChartProps {
   symbol: string
   theme?: "light" | "dark"
@@ -245,12 +291,19 @@ export default function DerivSmartChartInner({
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+  
+  console.log("SMARTCHART_EXPORT_INSPECT:", { 
+    type: typeof SmartChart, 
+    keys: SmartChart ? Object.keys(SmartChart) : 'null',
+    isReactElement: SmartChart && SmartChart.$$typeof ? true : false
+  })
+
   if (!mounted) return null
 
   return (
     <div className={classNames('w-full h-full min-h-[400px] relative rounded-xl overflow-hidden', className)} dir='ltr'>
       {isEngineReady && activeSymbols.length > 0 && isConnectionOpened ? (
-        <SmartChart
+        <ActiveSmartChart
           id={`smartchart-${symbol}`}
           symbol={symbol}
           isMobile={isMobile}
