@@ -13,74 +13,6 @@ if (typeof window !== 'undefined') {
   setSmartChartsPublicPath('/assets/')
 }
 
-// --- REACT 19 COMPATIBILITY PATCH FOR SMARTCHARTS ---
-// SmartCharts bundles an older React 18 JSX runtime that creates legacy elements.
-// React 19 strictly rejects these with "A React Element from an older version of React".
-// We intercept its render output and upgrade the elements at runtime.
-const upgradeLegacyElements = (node: any): any => {
-  if (!node || typeof node !== 'object') return node;
-  if (Array.isArray(node)) return node.map(upgradeLegacyElements);
-
-  const LEGACY_SYMBOL = Symbol.for('react.element');
-  const MODERN_SYMBOL = Symbol.for('react.transitional.element');
-
-  if (node.$$typeof === LEGACY_SYMBOL || node.$$typeof === MODERN_SYMBOL) {
-     const newNode = { ...node, $$typeof: MODERN_SYMBOL };
-     if (newNode.props) {
-        newNode.props = { ...newNode.props };
-        if (newNode.props.children) {
-           newNode.props.children = upgradeLegacyElements(newNode.props.children);
-        }
-     }
-     return newNode;
-  }
-  return node;
-}
-
-// Robust patcher to drill through React.memo, React.forwardRef, etc.
-const patchComponent = (ComponentObj: any): any => {
-  if (!ComponentObj) return ComponentObj;
-
-  if (typeof ComponentObj === 'function') {
-     // If class component
-     if (ComponentObj.prototype && ComponentObj.prototype.render) {
-         class PatchedClass extends ComponentObj {
-            render() {
-               return upgradeLegacyElements(super.render());
-            }
-         }
-         return PatchedClass;
-     }
-     // If function component
-     return function PatchedFunctionComponent(props: any, ref: any) {
-        return upgradeLegacyElements(ComponentObj(props, ref));
-     };
-  }
-
-  if (typeof ComponentObj === 'object') {
-     const typeOf = ComponentObj.$$typeof;
-     if (typeOf === Symbol.for('react.memo')) {
-        return {
-           ...ComponentObj,
-           type: patchComponent(ComponentObj.type)
-        };
-     }
-     if (typeOf === Symbol.for('react.forward_ref') || typeof ComponentObj.render === 'function') {
-        return {
-           ...ComponentObj,
-           render: patchComponent(ComponentObj.render)
-        };
-     }
-  }
-
-  return ComponentObj;
-}
-
-const ActiveSmartChart = (typeof window !== 'undefined') 
-  ? patchComponent(SmartChart)
-  : SmartChart;
-// ---------------------------------------------------
-
 interface DerivSmartChartProps {
   symbol: string
   theme?: "light" | "dark"
@@ -325,7 +257,7 @@ export default function DerivSmartChartInner({
   return (
     <div className={classNames('w-full h-full min-h-[400px] relative rounded-xl overflow-hidden', className)} dir='ltr'>
       {isEngineReady && activeSymbols.length > 0 && isConnectionOpened ? (
-        <ActiveSmartChart
+        <SmartChart
           id={`smartchart-${symbol}`}
           symbol={symbol}
           isMobile={isMobile}

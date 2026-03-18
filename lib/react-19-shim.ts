@@ -26,6 +26,34 @@ if (typeof window !== 'undefined') {
         });
     }
 
+    // GLOBALLY patch React.createElement to output React 19 Transitional Elements.
+    // React 19's native createElement outputs Symbol('react.element'), which React 19's
+    // own reconciler ironically strictly rejects with "A React Element from an older version of React".
+    // Bypassing this saves all legacy UMD bundles (like smartcharts).
+    const originalCreateElement = ReactAny.createElement;
+    if (originalCreateElement && !originalCreateElement.__isPatchedForReact19) {
+        ReactAny.createElement = function(...args: any[]) {
+            const element = originalCreateElement.apply(this, args);
+            if (element && typeof element === 'object' && element.$$typeof === Symbol.for('react.element')) {
+                 element.$$typeof = Symbol.for('react.transitional.element');
+            }
+            return element;
+        };
+        ReactAny.createElement.__isPatchedForReact19 = true;
+    }
+
+    const originalCloneElement = ReactAny.cloneElement;
+    if (originalCloneElement && !originalCloneElement.__isPatchedForReact19) {
+        ReactAny.cloneElement = function(...args: any[]) {
+            const element = originalCloneElement.apply(this, args);
+            if (element && typeof element === 'object' && element.$$typeof === Symbol.for('react.element')) {
+                 element.$$typeof = Symbol.for('react.transitional.element');
+            }
+            return element;
+        };
+        ReactAny.cloneElement.__isPatchedForReact19 = true;
+    }
+
     // React 19 moved __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED to
     // __CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED in the browser.
     const internals = ReactAny.__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED ||
