@@ -11,10 +11,12 @@
  */
 
 export const DERIV_APP_ID = "123189"
+export const OAUTH_CLIENT_ID = "32EtOUHbr4zUOcHKwjgwj"
 export const DERIV_REDIRECT_URL = typeof window !== "undefined" ? window.location.origin : ""
 
 export const DERIV_CONFIG = {
   APP_ID: DERIV_APP_ID,
+  OAUTH_CLIENT_ID: OAUTH_CLIENT_ID,
   REDIRECT_URL: DERIV_REDIRECT_URL,
 } as const
 
@@ -34,7 +36,9 @@ export const DERIV_API = {
   
   // V4 API Endpoints
   WEBSOCKET: "wss://api.derivws.com/trading/v1/options/ws/public",
-  OAUTH: "https://oauth.deriv.com/oauth2/authorize",
+  OAUTH: "https://auth.deriv.com/oauth2/auth",
+  TOKEN: "https://auth.deriv.com/oauth2/token",
+  
   // New Options API (REST)
   REST_BASE: "https://api.derivws.com",
   // New Options API (WebSocket - paths)
