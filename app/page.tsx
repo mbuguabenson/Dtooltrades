@@ -42,6 +42,7 @@ import SmartAdaptiveTradingTab from "@/components/tabs/smart-adaptive-trading"
 import { RiskDisclaimerModal } from "@/components/modals/risk-disclaimer-modal"
 import { MarketSelector } from "@/components/market-selector"
 import { WelcomeHero } from "@/components/welcome-hero"
+import { FloatingAIScanner } from "@/components/floating-ai-scanner"
 import {
   Dialog,
   DialogContent,
@@ -850,14 +851,19 @@ export default function DerivAnalysisApp() {
         </DialogContent>
       </Dialog>
       <RiskDisclaimerModal
-        isOpen={showRiskModal}
-        onClose={() => setShowRiskModal(false)}
-        onAccept={() => {
-          localStorage.setItem("deriv_risk_accepted", "true")
-          setShowRiskModal(false)
-        }}
+        isOpen={isDisclaimerOpen}
+        onClose={() => setIsDisclaimerOpen(false)}
         theme={theme}
       />
-    </div >
+
+      {/* Floating AI Scanner */}
+      <FloatingAIScanner 
+        theme={theme} 
+        availableSymbols={availableSymbols}
+        onScanComplete={(results) => {
+          console.log("[v0] AI Scanner results:", results)
+        }}
+      />
+    </div>
   )
 }
