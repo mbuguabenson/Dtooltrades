@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Filter, Zap, Activity, Info, Loader2 } from "lucide-react"
+import { Search, Filter, Zap, Activity, Info, Loader2, Zap as ZapIcon } from "lucide-react"
 import { AnalysisEngine, type Signal } from "@/lib/analysis-engine"
 import { DerivWebSocketManager } from "@/lib/deriv-websocket-manager"
 
@@ -194,98 +194,93 @@ export function AdvancedSignalsTab({ theme, availableSymbols }: AdvancedSignalsT
         </CardContent>
       </Card>
 
-      {/* Results Table - Heritage Style */}
-      <Card className="soft-card border-white/5 overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-white/[0.03]">
-              <TableRow className="border-white/5 hover:bg-transparent">
-                <TableHead className="w-[200px] text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 py-4">Market</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Signal</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Prob.</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Status</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Strategy Guide</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredResults.length > 0 ? (
-                filteredResults.map((result) => (
-                  result.signals.map((signal, idx) => (
-                    <TableRow key={`${result.symbol}-${idx}`} className="border-white/5 hover:bg-white/[0.02] transition-colors">
-                      <TableCell className="py-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-sm text-white tracking-wide">
-                            {result.displayName}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">{result.symbol}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="rounded-md bg-primary/10 text-primary border-primary/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                          {signal.type.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-20 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                            <div 
-                              className={`h-full transition-all duration-1000 ${signal.probability > 70 ? 'bg-primary' : 'bg-blue-500'}`} 
-                              style={{ width: `${signal.probability}%` }}
-                            />
-                          </div>
-                          <span className="text-[11px] font-black text-slate-300">
-                            {signal.probability.toFixed(0)}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`rounded-md border font-black text-[9px] px-2 py-0.5 shadow-sm uppercase tracking-widest ${getStatusColor(signal.status)}`}>
-                          {signal.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[450px]">
-                        <div className="p-3 rounded-xl border border-white/5 bg-white/[0.02] group hover:bg-white/[0.04] transition-colors outline outline-transparent hover:outline-primary/20">
-                          <div className="flex items-start gap-3">
-                            <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                            <div className="space-y-1">
-                              <p className="text-[11px] font-bold leading-relaxed text-slate-200 uppercase tracking-wide">
-                                {signal.recommendation}
-                              </p>
-                              <p className="text-[10px] text-slate-500 font-medium">
-                                <span className="font-black text-primary/80 uppercase tracking-tighter mr-1">ENTRY:</span> {signal.entryCondition}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-80 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-4">
-                      <div className="p-6 rounded-full bg-white/5 border border-white/10">
-                        <Zap className="w-10 h-10 text-slate-700 animate-pulse" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-slate-500 font-black uppercase tracking-[0.2em] text-xs">
-                          {isScanning ? "Analyzing Market Frequencies..." : "Scanning Complete - No Signals Met Filter"}
+      {/* Results Grid - Modern Card Design */}
+      <div>
+        {filteredResults.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredResults.map((result) => (
+              result.signals.map((signal, idx) => (
+                <Card key={`${result.symbol}-${idx}`} className="border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] hover:from-white/10 hover:to-white/[0.05] transition-all duration-300 p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm text-white truncate">
+                        {result.displayName}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-mono mt-1">
+                        {result.symbol}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="rounded-md bg-indigo-500/10 text-indigo-400 border-indigo-500/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider whitespace-nowrap ml-2">
+                      {signal.type.replace('_', ' ')}
+                    </Badge>
+                  </div>
+
+                  {/* Probability Bar */}
+                  <div className="mb-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-400">Confidence</span>
+                      <span className="text-sm font-bold text-slate-200">
+                        {signal.probability.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-1000 ${signal.probability > 70 ? 'bg-gradient-to-r from-indigo-500 to-blue-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`} 
+                        style={{ width: `${signal.probability}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-400">Status:</span>
+                    <Badge className={`rounded-md border font-black text-[9px] px-2.5 py-1 uppercase tracking-widest ${getStatusColor(signal.status)}`}>
+                      {signal.status}
+                    </Badge>
+                  </div>
+
+                  {/* Strategy Guide */}
+                  <div className="pt-4 border-t border-white/10">
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <Info className="w-3.5 h-3.5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] font-semibold leading-relaxed text-slate-300">
+                          {signal.recommendation}
                         </p>
-                        {isScanning && (
-                           <div className="w-64 mx-auto h-1.5 bg-white/5 rounded-full overflow-hidden mt-4">
-                            <div className="h-full bg-primary transition-all duration-300" style={{ width: `${scanProgress}%` }} />
-                          </div>
-                        )}
+                      </div>
+                      <div className="flex items-start gap-2 mt-2">
+                        <Zap className="w-3.5 h-3.5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-[10px] text-slate-400 font-medium">
+                          <span className="font-black text-yellow-400/80 uppercase tracking-tighter mr-1">ENTRY:</span> {signal.entryCondition}
+                        </p>
                       </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+                  </div>
+                </Card>
+              ))
+            ))}
+          </div>
+        ) : (
+          <Card className="soft-card border-white/5 p-16">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="p-6 rounded-full bg-white/5 border border-white/10">
+                <Zap className="w-12 h-12 text-slate-600 animate-pulse" />
+              </div>
+              <div className="space-y-1 text-center">
+                <p className="text-slate-500 font-black uppercase tracking-[0.2em] text-sm">
+                  {isScanning ? "Analyzing Market Frequencies..." : "Scanning Complete - No Signals Met Filter"}
+                </p>
+                {isScanning && (
+                  <div className="w-64 mx-auto h-2 bg-white/5 rounded-full overflow-hidden mt-4">
+                    <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${scanProgress}%` }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
       
       {/* Heritage Footer */}
       <div className="flex items-center justify-between px-3 py-2 border-t border-white/5">

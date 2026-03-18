@@ -427,102 +427,137 @@ export function AIAnalysisTab({ analysis, currentDigit, currentPrice, symbol, th
         </div>
       </div>
 
-      {/* AI Recommendation Panel */}
+      {/* AI Recommendation Panel - Modern Design */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Recommendation Card */}
         <div className="lg:col-span-2">
-            <Card className="soft-card border-white/5 p-6 h-full">
-                <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Neural Recommendation</h3>
-                    {aiSignalResult && (
-                        <Badge className={`${
-                            aiSignalResult.signal === "TRADE NOW" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse" : 
-                            aiSignalResult.signal === "WAIT" ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-slate-500/20 text-slate-400 border-slate-500/30"
-                        } text-xs font-black uppercase tracking-[0.2em] px-4 py-1.5`}>
-                            {aiSignalResult.signal}
-                        </Badge>
-                    )}
+          <Card className="border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-blue-500/5 p-6 h-full">
+            {/* Header with Signal Status */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <Sparkles className="w-6 h-6 text-indigo-400" />
+                AI Recommendation
+              </h2>
+              {aiSignalResult && (
+                <Badge className={`${
+                  aiSignalResult.signal === "TRADE NOW" ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/50 animate-pulse" : 
+                  aiSignalResult.signal === "WAIT" ? "bg-amber-500 text-white" : "bg-slate-600 text-white"
+                } text-xs font-black uppercase tracking-widest px-4 py-2`}>
+                  {aiSignalResult.signal}
+                </Badge>
+              )}
+            </div>
+
+            {aiSignalResult ? (
+              <div className="space-y-6">
+                {/* Signal Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                    <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Strategy</div>
+                    <div className="text-lg font-bold text-white">{aiSignalResult.bestStrategy}</div>
+                  </div>
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                    <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Entry</div>
+                    <div className="text-lg font-bold text-indigo-400">{aiSignalResult.entryPoint}</div>
+                  </div>
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                    <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Confidence</div>
+                    <div className="text-lg font-bold text-emerald-400">{aiSignalResult.confidence.toFixed(0)}%</div>
+                  </div>
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                    <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Validity</div>
+                    <div className="text-lg font-bold text-amber-400">{aiSignalResult.tradeValidity}T</div>
+                  </div>
                 </div>
 
-                {aiSignalResult ? (
-                    <div className="space-y-8">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Target Strategy</div>
-                                <div className="text-lg font-black text-white">{aiSignalResult.bestStrategy}</div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Entry Matrix</div>
-                                <div className="text-lg font-black text-indigo-400 uppercase">{aiSignalResult.entryPoint}</div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Confidence</div>
-                                <div className="text-lg font-black text-emerald-400">{aiSignalResult.confidence.toFixed(1)}%</div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Validity</div>
-                                <div className="text-lg font-black text-amber-400">{aiSignalResult.tradeValidity} TICKS</div>
-                            </div>
-                        </div>
+                {/* Confidence Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-300">Confidence Score</span>
+                    <span className="text-sm font-bold text-emerald-400">{aiSignalResult.confidence.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-500 transition-all duration-500" style={{width: `${aiSignalResult.confidence}%`}} />
+                  </div>
+                </div>
 
-                        <div className="p-4 rounded-xl bg-indigo-500/[0.03] border border-indigo-500/10 relative">
-                            <div className="absolute top-3 right-4">
-                                <Brain className="w-5 h-5 text-indigo-500/30" />
-                            </div>
-                            <div className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Technical Reasoning</div>
-                            <p className="text-sm font-bold text-slate-300 leading-relaxed">
-                                {aiSignalResult.reasoning}
-                            </p>
-                        </div>
+                {/* Technical Reasoning */}
+                <div className="p-4 rounded-lg bg-indigo-500/20 border border-indigo-500/40">
+                  <div className="flex items-start gap-3">
+                    <Brain className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="text-sm font-bold text-indigo-300 mb-1">Neural Analysis</div>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        {aiSignalResult.reasoning}
+                      </p>
                     </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-48 text-slate-600 bg-white/[0.01] rounded-xl border border-dashed border-white/5">
-                        <Zap className="w-8 h-8 opacity-20 mb-2" />
-                        <p className="text-[10px] font-black uppercase tracking-widest mt-2">Matrix Analysis Pending...</p>
-                    </div>
-                )}
-            </Card>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-slate-600">
+                <div className="p-6 rounded-full bg-white/5 border border-white/10 mb-4">
+                  <Brain className="w-10 h-10 text-slate-700 animate-pulse" />
+                </div>
+                <p className="text-sm font-semibold text-slate-500">Analyzing market patterns...</p>
+              </div>
+            )}
+          </Card>
         </div>
 
-        {/* Global Statistics Panel */}
+        {/* Performance Stats Panel */}
         <div>
-            <Card className="soft-card border-white/5 p-6 h-full flex flex-col justify-between">
-                <div className="space-y-6">
+          <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-green-500/5 p-6 h-full flex flex-col">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                <TrendingUp className="w-5 h-5 text-emerald-400" />
+                Performance
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Success Rate */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-slate-300">Success Rate</span>
+                    <span className={`text-lg font-bold ${successRate > 50 ? "text-emerald-400" : "text-amber-400"}`}>
+                      {successRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${successRate > 50 ? "bg-emerald-500" : "bg-amber-500"}`} style={{width: `${successRate}%`}} />
+                  </div>
+                </div>
+
+                {/* Total Scans */}
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <div className="text-xs font-semibold text-slate-400 uppercase">Analysis Cycles</div>
+                  <div className="text-2xl font-bold text-white mt-1">{analysisHistory.length}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Historical Log */}
+            <div className="flex-1 border-t border-white/10 pt-4">
+              <div className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                <History className="w-4 h-4" />
+                Latest Analysis
+              </div>
+              <div className="space-y-2 overflow-y-auto max-h-32">
+                {analysisHistory.slice(-5).reverse().map((log, idx) => (
+                  <div key={idx} className="p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Engine Performance</h3>
-                        <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      <span className={`font-semibold text-sm ${log.signal === "TRADE NOW" ? "text-emerald-400" : log.signal === "WAIT" ? "text-amber-400" : "text-slate-400"}`}>
+                        {log.bestStrategy}
+                      </span>
+                      <span className="text-xs font-bold text-slate-400">
+                        {log.confidence.toFixed(0)}%
+                      </span>
                     </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Success Ratio</span>
-                            <span className="text-lg font-black text-emerald-400">{successRate.toFixed(1)}%</span>
-                        </div>
-                        <Progress value={successRate} className="h-1.5 bg-white/5" indicatorClassName="bg-emerald-500" />
-                        
-                        <div className="flex items-center justify-between pt-2">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Scans</span>
-                            <span className="text-lg font-black text-white">{analysisHistory.length}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-8 space-y-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
-                        <History className="w-3 h-3" />
-                        Historical Log
-                    </div>
-                    <div className="space-y-2 h-32 overflow-y-auto scrollbar-hide">
-                        {analysisHistory.slice(-5).reverse().map((log, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-2 px-3 rounded-lg bg-white/[0.02] border border-white/5 text-[9px] font-bold">
-                                <span className={log.signal === "TRADE NOW" ? "text-emerald-400" : "text-slate-500"}>
-                                    {log.bestStrategy}
-                                </span>
-                                <span className="text-slate-400">{log.confidence.toFixed(1)}%</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </Card>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
 

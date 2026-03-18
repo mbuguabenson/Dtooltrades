@@ -344,9 +344,9 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
   )
 
   return (
-    <div className="space-y-6">
-      <div
-        className={`rounded-xl p-6 border ${theme === "dark"
+    <div className="space-y-6 pb-10">
+      {/* Header Section */}
+      <div className={`rounded-lg p-6 border ${theme === "dark"
           ? "bg-gradient-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
           : "bg-white/80 backdrop-blur-xl border-blue-200 shadow-[0_8px_32px_rgba(31,38,135,0.15)]"
           }`}
@@ -426,7 +426,8 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Markets Grid - Modern Card Design */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {totalMarkets.map((market) => {
           const hasSignal =
             market.analysis.under.signal === "TRADE NOW" ||
@@ -435,76 +436,111 @@ export function SuperSignalsTab({ theme = "dark", symbol, availableSymbols, onSy
             market.analysis.odd.signal === "TRADE NOW" ||
             market.analysis.differs.signal === "TRADE NOW"
 
+          // Calculate signal strength
+          const signals = []
+          if (market.analysis.under.signal === "TRADE NOW") signals.push(market.analysis.under.percentage)
+          if (market.analysis.over.signal === "TRADE NOW") signals.push(market.analysis.over.percentage)
+          if (market.analysis.even.signal === "TRADE NOW") signals.push(market.analysis.even.percentage)
+          if (market.analysis.odd.signal === "TRADE NOW") signals.push(market.analysis.odd.percentage)
+          if (market.analysis.differs.signal === "TRADE NOW") signals.push(market.analysis.differs.percentage)
+          
+          const avgConfidence = signals.length > 0 ? signals.reduce((a, b) => a + b, 0) / signals.length : 0
+
           return (
             <Card
               key={market.symbol}
-              className={`p-4 border-2 ${hasSignal
+              className={`p-5 border transition-all duration-300 ${hasSignal
                 ? theme === "dark"
-                  ? "border-emerald-500/50 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse"
-                  : "border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-50 shadow-[0_8px_24px_rgba(16,185,129,0.2)]"
+                  ? "border-green-500/60 bg-gradient-to-br from-green-500/15 to-emerald-500/5 shadow-[0_0_25px_rgba(34,197,94,0.25)]"
+                  : "border-green-400/60 bg-gradient-to-br from-green-50 to-emerald-50/50 shadow-[0_8px_24px_rgba(34,197,94,0.15)]"
                 : theme === "dark"
-                  ? "border-blue-500/30 bg-blue-500/5"
-                  : "border-blue-200 bg-blue-50"
+                  ? "border-gray-700/50 bg-gray-900/40 hover:bg-gray-800/50"
+                  : "border-gray-200 bg-white/50 hover:bg-white/70"
                 }`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h3 className={`text-lg font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+              {/* Market Header */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-sm font-bold truncate ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                     {market.displayName}
                   </h3>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Price:</span>
-                      <span className={`text-sm font-bold ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
-                        {(market.currentPrice || 0).toFixed(5)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                        Last Digit:
-                      </span>
-                      <span className={`text-lg font-bold ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
-                        {market.lastDigit !== null && market.lastDigit !== undefined ? market.lastDigit : "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {market.last100Digits.length >= Math.min(maxTicks, 25) && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${theme === "dark" ? "border-green-500/50 text-green-400" : "border-green-500 text-green-600"
-                          }`}
-                      >
-                        E:{market.analysis.even.percentage.toFixed(0)}% O:{market.analysis.odd.percentage.toFixed(0)}%
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${theme === "dark" ? "border-blue-500/50 text-blue-400" : "border-blue-500 text-blue-600"
-                          }`}
-                      >
-                        U:{market.analysis.under.percentage.toFixed(0)}% O:{market.analysis.over.percentage.toFixed(0)}%
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${theme === "dark"
-                          ? "border-purple-500/50 text-purple-400"
-                          : "border-purple-500 text-purple-600"
-                          }`}
-                      >
-                        D:{market.analysis.differs.digit}
-                      </Badge>
-                    </div>
-                  )}
+                  <p className={`text-xs mt-0.5 font-mono ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                    {market.symbol}
+                  </p>
                 </div>
-                {market.last100Digits.length >= maxTicks && (
-                  <Badge
-                    className={`${theme === "dark" ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-700"}`}
-                  >
-                    {maxTicks} Ticks
-                  </Badge>
+                {hasSignal && (
+                  <div className="ml-2 px-2 py-1 rounded-md bg-green-500/20 border border-green-500/50">
+                    <Zap className="h-3.5 w-3.5 text-green-500" />
+                  </div>
                 )}
               </div>
+
+              {/* Price & Digit Info */}
+              <div className="space-y-3 mb-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className={`p-2.5 rounded-lg ${theme === "dark" ? "bg-white/5 border border-white/10" : "bg-gray-100/50 border border-gray-200"}`}>
+                    <span className={`text-xs font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                      Price
+                    </span>
+                    <div className={`text-sm font-bold mt-1 ${theme === "dark" ? "text-cyan-400" : "text-cyan-600"}`}>
+                      {(market.currentPrice || 0).toFixed(5)}
+                    </div>
+                  </div>
+                  <div className={`p-2.5 rounded-lg ${theme === "dark" ? "bg-white/5 border border-white/10" : "bg-gray-100/50 border border-gray-200"}`}>
+                    <span className={`text-xs font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                      Last Digit
+                    </span>
+                    <div className={`text-sm font-bold mt-1 ${theme === "dark" ? "text-orange-400" : "text-orange-600"}`}>
+                      {market.lastDigit !== null && market.lastDigit !== undefined ? market.lastDigit : "—"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Signal Analysis */}
+              {market.last100Digits.length >= Math.min(maxTicks, 25) && (
+                <div className="space-y-2 mb-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-xs font-semibold ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                      Signal Status
+                    </span>
+                    {hasSignal && (
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${theme === "dark" ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-700"}`}>
+                        {signals.length} Signal{signals.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {market.analysis.even.percentage > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Even</span>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-12 h-1.5 rounded-full ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`}>
+                            <div className={`h-full rounded-full transition-all ${market.analysis.even.signal === "TRADE NOW" ? "bg-green-500" : "bg-blue-400"}`} style={{width: `${Math.min(market.analysis.even.percentage, 100)}%`}} />
+                          </div>
+                          <span className={`text-xs font-bold ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                            {market.analysis.even.percentage.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {market.analysis.odd.percentage > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Odd</span>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-12 h-1.5 rounded-full ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"}`}>
+                            <div className={`h-full rounded-full transition-all ${market.analysis.odd.signal === "TRADE NOW" ? "bg-green-500" : "bg-blue-400"}`} style={{width: `${Math.min(market.analysis.odd.percentage, 100)}%`}} />
+                          </div>
+                          <span className={`text-xs font-bold ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                            {market.analysis.odd.percentage.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </Card>
           )
         })}
