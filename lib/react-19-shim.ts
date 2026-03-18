@@ -15,6 +15,17 @@ if (typeof window !== 'undefined') {
         ReactAny.Fragment = (jsxRuntime as any).Fragment;
     }
 
+    // Force legacy libraries to see this as the global React instance
+    window.React = React;
+    
+    // Legacy library might check React version (expecting 16/17/18)
+    if (React.version && React.version.startsWith('19')) {
+        Object.defineProperty(React, 'version', {
+            get: () => '18.2.0', // Trick older libraries into thinking it's still React 18
+            configurable: true
+        });
+    }
+
     // React 19 moved __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED to
     // __CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED in the browser.
     const internals = ReactAny.__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED ||
