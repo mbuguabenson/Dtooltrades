@@ -28,11 +28,18 @@ export function ApiTokenModal({ open, onSubmit, onOAuthLogin, theme = "dark" }: 
 
   const handleOAuthClick = () => {
     console.log("[v0] OAuth login button clicked")
+    // Check if running in v0 preview environment (vusercontent.net)
+    if (typeof window !== "undefined" && window.location.hostname.includes("vusercontent.net")) {
+      alert("OAuth login is not available in v0's preview environment due to Content Security Policy restrictions.\n\nTo use OAuth:\n1. Deploy this app to your own server\n2. Or use the API Token method below with a token from Deriv\n\nFor development, please enter your Deriv API token manually.")
+      return
+    }
+    
     if (onOAuthLogin) {
       try {
         onOAuthLogin()
       } catch (error) {
         console.error("[v0] OAuth login error:", error)
+        alert(`OAuth login failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     } else {
       console.warn("[v0] onOAuthLogin callback not provided")
@@ -76,8 +83,11 @@ export function ApiTokenModal({ open, onSubmit, onOAuthLogin, theme = "dark" }: 
             className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2"
           >
             <LogIn className="w-4 h-4 mr-2" />
-            Login with Deriv
+            Login with Deriv (Deployed Apps Only)
           </Button>
+          <p className={`text-xs mt-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+            Note: OAuth login works when deployed. In v0 preview, use API token method below.
+          </p>
         </div>
 
         {/* Divider */}
