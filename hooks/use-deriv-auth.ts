@@ -138,60 +138,34 @@ export function useDerivAuth() {
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    const handleOAuthCallback = async (params: URLSearchParams) => {
-      const code = params.get('code')
-      const returnedState = params.get('state')
-      const storedState = sessionStorage.getItem('oauth_state')
-      const codeVerifier = sessionStorage.getItem('pkce_code_verifier')
+    // Check if we have a token ready from the OAuth callback
+    const checkForTokenCookie = () => {
+      const cookies = document.cookie.split(';').reduce((acc: Record<string, string>, cookie) => {
+        const [key, value] = cookie.trim().split('=')
+        if (key && value) acc[key] = decodeURIComponent(value)
+        return acc
+      }, {})
 
-      if (!code || !returnedState || !storedState || !codeVerifier) return
-
-      if (returnedState !== storedState) {
-        console.error("[v0] ❌ OAuth State mismatch! CSRF detected or invalid session.")
-        return
-      }
-
-      setIsInitializing(true)
-      console.log("[v0] 🔄 Exchanging OAuth code for token...")
-
-      try {
-        const response = await fetch('/api/auth/deriv-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            code_verifier: codeVerifier,
-            redirect_uri: window.location.origin
-          })
-        })
-
-        const data = await response.json()
-        if (data.error) throw new Error(data.error)
-
-        const accessToken = data.access_token
-        console.log("[v0] 🔑 OAuth 2.0 access token received")
-
-        // Store and authorize
+      if (cookies.deriv_token_ready) {
+        console.log("[v0] 🔑 Token received from OAuth callback")
+        const accessToken = cookies.deriv_token_ready
+        
+        // Store token
         localStorage.setItem("deriv_api_token", accessToken)
         setToken(accessToken)
         connectWithToken(accessToken)
 
-        // Clear PKCE from session
-        sessionStorage.removeItem('pkce_code_verifier')
-        sessionStorage.removeItem('oauth_state')
-
         // Clean URL
         const newUrl = window.location.origin + window.location.pathname
         window.history.replaceState({}, document.title, newUrl)
-      } catch (err: any) {
-        console.error("[v0] ❌ Token exchange failed:", err.message)
-        setIsInitializing(false)
+        
+        return true
       }
+      return false
     }
 
-    const searchParams = new URLSearchParams(window.location.search)
-    if (searchParams.has('code')) {
-      handleOAuthCallback(searchParams)
+    // First check for token from callback (this is handled server-side now)
+    if (checkForTokenCookie()) {
       return
     }
 
@@ -301,13 +275,15 @@ export function useDerivAuth() {
 
       console.log("[v0] 🔐 PKCE verifier and challenge generated")
       
-      // Store in localStorage for later retrieval in the callback
-      localStorage.setItem('pkce_code_verifier', verifier)
-      localStorage.setItem('oauth_state', state)
+      // Set secure cookies for the callback handler (server-side validation)
+      // Using Secure flag for production, but keeping SameSite=Lax for localhost testing
+      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      const secure = isProduction ? '; Secure' : ''
+      
+      document.cookie = `pkce_code_verifier=${verifier}; path=/; SameSite=Lax${secure}`
+      document.cookie = `oauth_state=${state}; path=/; SameSite=Lax${secure}`
 
-      // Set cookies for the callback handler
-      document.cookie = `pkce_code_verifier=${verifier}; path=/; SameSite=Lax`
-      document.cookie = `oauth_state=${state}; path=/; SameSite=Lax`
+      console.log("[v0] 🔐 OAuth cookies set")
 
       // Build OAuth redirect URI - must match pre-registered URI in Deriv app
       const redirectUri = `${window.location.origin}/api/auth/oauth-callback`

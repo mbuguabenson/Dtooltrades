@@ -14,14 +14,14 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error')
     const errorDescription = searchParams.get('error_description')
 
-    console.log('[v0] OAuth Callback received:', { code, state, error })
+    console.log('[v0] OAuth Callback received:', { code, state, error, hasError: !!error })
 
-    // Handle OAuth errors
+    // Handle OAuth errors from Deriv
     if (error) {
-      console.error('[v0] OAuth Error:', error, errorDescription)
+      console.error('[v0] OAuth Error from Deriv:', error, errorDescription)
       return NextResponse.redirect(
         new URL(
-          `/auth-error?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`,
+          `/auth-error?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || 'No description provided')}`,
           request.nextUrl.origin
         )
       )
@@ -32,95 +32,107 @@ export async function GET(request: NextRequest) {
       console.error('[v0] OAuth callback missing authorization code')
       return NextResponse.redirect(
         new URL(
-          '/auth-error?error=missing_code&description=Authorization%20code%20not%20received',
+          '/auth-error?error=missing_code&description=Authorization%20code%20not%20received%20from%20Deriv',
           request.nextUrl.origin
         )
       )
     }
 
-    // Validate state parameter for CSRF protection
-    if (typeof window === 'undefined') {
-      const sessionState = request.cookies.get('oauth_state')?.value
-      if (!state || state !== sessionState) {
-        console.error('[v0] OAuth state mismatch - possible CSRF attack')
-        return NextResponse.redirect(
-          new URL(
-            '/auth-error?error=state_mismatch&description=OAuth%20state%20validation%20failed',
-            request.nextUrl.origin
-          )
-        )
-      }
-    }
-
-    // Exchange authorization code for access token
-    // This is done in a separate server action to keep the client_secret secure
-    const response = await fetch('https://auth.deriv.com/oauth2/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        client_id: process.env.NEXT_PUBLIC_DERIV_OAUTH_CLIENT_ID || '32EtOUHbr4zUOcHKwjgwj',
-        redirect_uri: `${request.nextUrl.origin}/api/auth/oauth-callback`,
-        code_verifier: request.cookies.get('pkce_code_verifier')?.value || '',
-      }).toString(),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('[v0] Token exchange failed:', response.status, errorData)
+    // Validate state parameter for CSRF protection using cookies (since we're on server)
+    const sessionState = request.cookies.get('oauth_state')?.value
+    console.log('[v0] State validation - received:', state, 'stored:', sessionState)
+    
+    if (!state || !sessionState || state !== sessionState) {
+      console.error('[v0] OAuth state mismatch - possible CSRF attack', { received: state, stored: sessionState })
       return NextResponse.redirect(
         new URL(
-          `/auth-error?error=token_exchange_failed&description=${encodeURIComponent(errorData)}`,
+          '/auth-error?error=state_mismatch&description=OAuth%20state%20validation%20failed%20-%20please%20try%20logging%20in%20again',
           request.nextUrl.origin
         )
       )
     }
 
-    const tokenData = await response.json()
+    // Get PKCE code verifier from cookie
+    const codeVerifier = request.cookies.get('pkce_code_verifier')?.value
+    if (!codeVerifier) {
+      console.error('[v0] Missing PKCE code verifier')
+      return NextResponse.redirect(
+        new URL(
+          '/auth-error?error=missing_verifier&description=PKCE%20code%20verifier%20not%20found%20-%20please%20try%20logging%20in%20again',
+          request.nextUrl.origin
+        )
+      )
+    }
 
-    console.log('[v0] OAuth token exchange successful')
+    // Exchange authorization code for access token via our backend endpoint
+    console.log('[v0] Exchanging OAuth code for token...')
+    const tokenExchangeResponse = await fetch(
+      new URL('/api/auth/deriv-token', request.nextUrl.origin).toString(),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          code_verifier: codeVerifier,
+          redirect_uri: `${request.nextUrl.origin}/api/auth/oauth-callback`,
+        }),
+      }
+    )
 
-    // Store the access token in an HTTP-only cookie
+    if (!tokenExchangeResponse.ok) {
+      const errorData = await tokenExchangeResponse.json().catch(() => ({ error: 'Unknown error' }))
+      console.error('[v0] Token exchange failed:', tokenExchangeResponse.status, errorData)
+      return NextResponse.redirect(
+        new URL(
+          `/auth-error?error=token_exchange_failed&description=${encodeURIComponent(errorData.error || 'Token exchange failed - please try again')}`,
+          request.nextUrl.origin
+        )
+      )
+    }
+
+    const tokenData = await tokenExchangeResponse.json()
+
+    if (!tokenData.access_token) {
+      console.error('[v0] No access token in response', tokenData)
+      return NextResponse.redirect(
+        new URL(
+          '/auth-error?error=no_token&description=No%20access%20token%20received%20from%20server',
+          request.nextUrl.origin
+        )
+      )
+    }
+
+    console.log('[v0] ✅ OAuth token exchange successful')
+
+    // Redirect to dashboard with token stored in localStorage on client side
     const response_with_cookie = NextResponse.redirect(
       new URL('/dashboard', request.nextUrl.origin)
     )
 
-    response_with_cookie.cookies.set({
-      name: 'deriv_access_token',
-      value: tokenData.access_token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: tokenData.expires_in || 86400, // Default 24 hours
-      path: '/',
-    })
-
-    // Store user info if available
-    if (tokenData.user_id) {
-      response_with_cookie.cookies.set({
-        name: 'deriv_user_id',
-        value: tokenData.user_id.toString(),
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 86400,
-        path: '/',
-      })
-    }
-
-    // Clear OAuth state and PKCE verifier
+    // Clear OAuth state and PKCE verifier cookies
     response_with_cookie.cookies.delete('oauth_state')
     response_with_cookie.cookies.delete('pkce_code_verifier')
+
+    // Set a temporary flag cookie so the client knows to store the token
+    response_with_cookie.cookies.set({
+      name: 'deriv_token_ready',
+      value: tokenData.access_token,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60, // 1 minute - just enough for client to read and store
+      path: '/',
+    })
 
     return response_with_cookie
   } catch (error) {
     console.error('[v0] OAuth callback error:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.redirect(
       new URL(
-        `/auth-error?error=server_error&description=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`,
+        `/auth-error?error=server_error&description=${encodeURIComponent('Server error: ' + errorMsg)}`,
         request.nextUrl.origin
       )
     )
