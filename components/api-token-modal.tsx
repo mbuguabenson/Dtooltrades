@@ -83,11 +83,30 @@ export function ApiTokenModal({ open, onSubmit, onOAuthLogin, theme = "dark" }: 
             className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2"
           >
             <LogIn className="w-4 h-4 mr-2" />
-            Login with Deriv (Deployed Apps Only)
+            Login with Deriv OAuth
           </Button>
-          <p className={`text-xs mt-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-            Note: OAuth login works when deployed. In v0 preview, use API token method below.
-          </p>
+          <div className={`text-xs p-2 rounded mt-2 ${theme === "dark" ? "bg-blue-500/20 border border-blue-500/30 text-blue-300" : "bg-blue-50 border border-blue-200 text-blue-700"}`}>
+            <p className="font-semibold mb-1">First-time setup required:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>Log in to Deriv</li>
+              <li>Go to Settings → API Tokens → OAuth Apps</li>
+              <li>Edit app <code className="bg-slate-800 px-1 rounded text-cyan-400">32EtOUHbr4zUOcHKwjgwj</code></li>
+              <li>Add this callback URL to "Redirect URIs":</li>
+            </ol>
+            <code className={`block p-1 rounded mt-1 break-all text-[9px] font-mono ${
+              theme === "dark" ? "bg-slate-900 text-cyan-300" : "bg-slate-100 text-cyan-600"
+            }`}>
+              {typeof window !== 'undefined' && `${window.location.origin}/api/auth/oauth-callback`}
+            </code>
+            <a
+              href="https://app.deriv.com/account/api-token"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-block mt-2 font-medium ${theme === "dark" ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}`}
+            >
+              Go to Deriv OAuth Settings →
+            </a>
+          </div>
         </div>
 
         {/* Divider */}
