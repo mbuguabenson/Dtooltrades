@@ -43,6 +43,8 @@ import { RiskDisclaimerModal } from "@/components/modals/risk-disclaimer-modal"
 import { MarketSelector } from "@/components/market-selector"
 import { WelcomeHero } from "@/components/welcome-hero"
 import { FloatingAIScanner } from "@/components/floating-ai-scanner"
+import { ApiTokenModal } from "@/components/api-token-modal"
+import { useDerivAuth } from "@/hooks/use-deriv-auth"
 import {
   Dialog,
   DialogContent,
@@ -67,6 +69,7 @@ export default function DerivAnalysisApp() {
     return saved ? JSON.parse(saved) : []
   })
   const globalContext = useGlobalTradingContext()
+  const { showTokenModal, submitApiToken, loginWithDeriv } = useDerivAuth()
 
   const {
     connectionStatus,
@@ -863,6 +866,14 @@ export default function DerivAnalysisApp() {
         onScanComplete={(results) => {
           console.log("[v0] AI Scanner results:", results)
         }}
+      />
+
+      {/* API Token Modal */}
+      <ApiTokenModal
+        open={showTokenModal}
+        onSubmit={submitApiToken}
+        onOAuthLogin={loginWithDeriv}
+        theme={theme}
       />
     </div>
   )
