@@ -287,31 +287,44 @@ export function useDerivAuth() {
   }
 
   const loginWithDeriv = async () => {
-    if (typeof window === "undefined") return
+    console.log("[v0] 🔐 Starting OAuth login flow...")
+    if (typeof window === "undefined") {
+      console.error("[v0] ❌ OAuth: Window object not available (SSR)")
+      return
+    }
     
-    // Modern OAuth 2.0 PKCE Flow
-    const verifier = generateCodeVerifier()
-    const challenge = await generateCodeChallenge(verifier)
-    const state = generateState()
+    try {
+      // Modern OAuth 2.0 PKCE Flow
+      const verifier = generateCodeVerifier()
+      const challenge = await generateCodeChallenge(verifier)
+      const state = generateState()
 
-    sessionStorage.setItem('pkce_code_verifier', verifier)
-    sessionStorage.setItem('oauth_state', state)
+      console.log("[v0] 🔐 PKCE verifier and challenge generated")
+      
+      sessionStorage.setItem('pkce_code_verifier', verifier)
+      sessionStorage.setItem('oauth_state', state)
 
-    const redirectUri = window.location.origin
-    const oauthUrl = new URL(DERIV_API.OAUTH)
-    
-    oauthUrl.searchParams.set('response_type', 'code')
-    oauthUrl.searchParams.set('client_id', OAUTH_CLIENT_ID)
-    oauthUrl.searchParams.set('redirect_uri', redirectUri)
-    oauthUrl.searchParams.set('scope', 'trade')
-    oauthUrl.searchParams.set('state', state)
-    oauthUrl.searchParams.set('code_challenge', challenge)
-    oauthUrl.searchParams.set('code_challenge_method', 'S256')
-    
-    // Optional: add app_id for legacy support if needed
-    oauthUrl.searchParams.set('app_id', DERIV_CONFIG.APP_ID)
+      const redirectUri = window.location.origin
+      const oauthUrl = new URL(DERIV_API.OAUTH)
+      
+      oauthUrl.searchParams.set('response_type', 'code')
+      oauthUrl.searchParams.set('client_id', OAUTH_CLIENT_ID)
+      oauthUrl.searchParams.set('redirect_uri', redirectUri)
+      oauthUrl.searchParams.set('scope', 'trade')
+      oauthUrl.searchParams.set('state', state)
+      oauthUrl.searchParams.set('code_challenge', challenge)
+      oauthUrl.searchParams.set('code_challenge_method', 'S256')
+      
+      // Optional: add app_id for legacy support if needed
+      oauthUrl.searchParams.set('app_id', DERIV_CONFIG.APP_ID)
 
-    window.location.href = oauthUrl.toString()
+      console.log("[v0] 🔐 OAuth URL:", oauthUrl.toString())
+      console.log("[v0] 🔐 Redirecting to OAuth provider...")
+      
+      window.location.href = oauthUrl.toString()
+    } catch (error) {
+      console.error("[v0] ❌ OAuth setup error:", error)
+    }
   }
 
   const requestLogin = () => {

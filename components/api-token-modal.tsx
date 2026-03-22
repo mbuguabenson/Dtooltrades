@@ -27,8 +27,15 @@ export function ApiTokenModal({ open, onSubmit, onOAuthLogin, theme = "dark" }: 
   }
 
   const handleOAuthClick = () => {
+    console.log("[v0] OAuth login button clicked")
     if (onOAuthLogin) {
-      onOAuthLogin()
+      try {
+        onOAuthLogin()
+      } catch (error) {
+        console.error("[v0] OAuth login error:", error)
+      }
+    } else {
+      console.warn("[v0] onOAuthLogin callback not provided")
     }
   }
 

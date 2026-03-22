@@ -71,6 +71,16 @@ export default function DerivAnalysisApp() {
   const globalContext = useGlobalTradingContext()
   const { showTokenModal, submitApiToken, loginWithDeriv } = useDerivAuth()
 
+  // Wrapper to ensure OAuth login is properly triggered
+  const handleOAuthLogin = () => {
+    console.log("[v0] 🔐 Page: Triggering OAuth login...")
+    try {
+      loginWithDeriv()
+    } catch (error) {
+      console.error("[v0] ❌ Page: OAuth login error:", error)
+    }
+  }
+
   const {
     connectionStatus,
     currentPrice,
@@ -872,7 +882,7 @@ export default function DerivAnalysisApp() {
       <ApiTokenModal
         open={showTokenModal}
         onSubmit={submitApiToken}
-        onOAuthLogin={loginWithDeriv}
+        onOAuthLogin={handleOAuthLogin}
         theme={theme}
       />
     </div>
