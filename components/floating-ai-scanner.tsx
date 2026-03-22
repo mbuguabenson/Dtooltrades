@@ -265,213 +265,165 @@ export function FloatingAIScanner({ theme = "dark", availableSymbols = [], onSca
           </div>
 
           {!isMinimized && (
-            <div className="p-4 space-y-4 max-h-[600px] overflow-y-auto">
-              {/* All Strategies Display */}
-              <div className="space-y-2">
-                <label className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                  <TrendingUp className="w-4 h-4" />
-                  Market Strategies & Probabilities
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {strategies.map(strategy => {
-                    const probability = getStrategyProbability(strategy.id)
-                    const isActive = selectedStrategies.includes(strategy.id)
-                    return (
-                      <div
-                        key={strategy.id}
-                        onClick={() => toggleStrategy(strategy.id)}
-                        className={`cursor-pointer p-3 rounded-lg border transition-all ${
-                          isActive
-                            ? theme === "dark"
-                              ? "bg-purple-500/20 border-purple-500/60 shimmer"
-                              : "bg-purple-100/50 border-purple-400/60 shimmer"
-                            : theme === "dark"
-                              ? "bg-gray-800/50 border-gray-700/50 hover:bg-gray-700/50"
-                              : "bg-gray-100/50 border-gray-300/50 hover:bg-gray-200/50"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-1">
-                          <span className="text-lg">{strategy.icon}</span>
-                          {isActive && (
-                            <Activity className={`w-3 h-3 ${theme === "dark" ? "text-green-400" : "text-green-600"} animate-pulse`} />
-                          )}
-                        </div>
-                        <p className={`text-xs font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                          {strategy.label}
-                        </p>
-                        <p className={`text-[10px] ${theme === "dark" ? "text-gray-400" : "text-gray-600"} mt-1`}>
-                          {strategy.description}
-                        </p>
-                        
-                        {/* Probability Gauge */}
-                        <div className="mt-2 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className={`text-[9px] font-bold ${
-                              probability > 70 ? theme === "dark" ? "text-green-400" : "text-green-600"
-                              : probability > 50 ? theme === "dark" ? "text-yellow-400" : "text-yellow-600"
-                              : theme === "dark" ? "text-gray-500" : "text-gray-600"
-                            }`}>
-                              Power: {probability}%
-                            </span>
-                          </div>
-                          <div className={`h-1.5 rounded-full overflow-hidden ${theme === "dark" ? "bg-gray-700/50" : "bg-gray-300/50"}`}>
-                            <div
-                              className={`h-full transition-all duration-500 ${
-                                probability > 70 ? "bg-gradient-to-r from-green-500 to-emerald-400"
-                                : probability > 50 ? "bg-gradient-to-r from-yellow-500 to-amber-400"
-                                : "bg-gradient-to-r from-gray-500 to-gray-400"
-                              }`}
-                              style={{ width: `${probability}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Entry/Exit Conditions */}
-                        <div className={`mt-2 pt-2 border-t ${theme === "dark" ? "border-gray-700/50" : "border-gray-300/50"}`}>
-                          <p className={`text-[9px] font-semibold ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"} mb-0.5`}>
-                            Entry: {strategy.entryCondition}
-                          </p>
-                          <p className={`text-[9px] font-semibold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
-                            Exit: {strategy.exitCondition}
-                          </p>
-                        </div>
-
-                        {/* Run/Stop Status */}
-                        <div className="mt-2 flex items-center justify-between">
-                          <div className={`flex items-center gap-1 px-2 py-1 rounded text-[9px] font-bold ${
-                            probability > 70
-                              ? theme === "dark" ? "bg-green-500/30 text-green-300" : "bg-green-100 text-green-700"
-                              : theme === "dark" ? "bg-yellow-500/30 text-yellow-300" : "bg-yellow-100 text-yellow-700"
-                          }`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${probability > 70 ? "bg-green-400" : "bg-yellow-400"} animate-pulse`} />
-                            {probability > 70 ? "RUN" : "WAIT"}
-                          </div>
-                          <span className={`text-[8px] ${theme === "dark" ? "text-gray-500" : "text-gray-600"}`}>
-                            {strategy.id === "EVEN_ODD" ? "Avg Confidence" : "Confidence"}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Scan Progress */}
-              {isScanning && (
-                <div className={`p-3 rounded-lg border ${
-                  theme === "dark"
-                    ? "bg-blue-500/10 border-blue-500/30"
-                    : "bg-blue-100/50 border-blue-300"
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Loader2 className={`w-4 h-4 animate-spin ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`} />
-                    <span className={`text-xs font-bold ${theme === "dark" ? "text-blue-300" : "text-blue-700"}`}>
-                      Real-time Market Scan
-                    </span>
-                  </div>
-                  <div className={`w-full h-2 rounded-full ${theme === "dark" ? "bg-gray-700/50" : "bg-gray-300/50"} overflow-hidden`}>
-                    <div
-                      className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 animate-pulse transition-all duration-300"
-                      style={{ width: `${Math.min(scanProgress, 100)}%` }}
-                    />
-                  </div>
-                  <p className={`text-xs text-center mt-1 font-semibold ${theme === "dark" ? "text-blue-300" : "text-blue-700"}`}>
-                    {Math.round(Math.min(scanProgress, 100))}% Complete
-                  </p>
-                </div>
-              )}
-
-              {/* Live Results */}
-              {scanResults.length > 0 && (
-                <div className={`p-3 rounded-lg border ${
-                  theme === "dark"
-                    ? "bg-emerald-500/10 border-emerald-500/30"
-                    : "bg-emerald-100/50 border-emerald-300"
-                }`}>
-                  <p className={`text-xs font-bold mb-2 ${theme === "dark" ? "text-emerald-400" : "text-emerald-700"}`}>
-                    Active Opportunities ({scanResults.length})
-                  </p>
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                    {scanResults.slice(0, 5).map((result, idx) => (
-                      <div
-                        key={result.symbol}
-                        className={`text-[11px] flex items-center justify-between p-2 rounded border float-up ${
-                          theme === "dark"
-                            ? "bg-gray-800/50 border-gray-700/50 hover:bg-gray-700/50"
-                            : "bg-white/50 border-gray-300/50 hover:bg-gray-200/50"
-                        }`}
-                        style={{ animationDelay: `${idx * 0.1}s` }}
-                      >
-                        <div className="flex-1">
-                          <p className={`font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                            {result.displayName}
-                          </p>
-                          <p className={`text-[9px] ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                            {result.signals} active signal{result.signals !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className={`px-2 py-1 rounded font-bold text-[10px] ${
-                            result.confidence > 70
-                              ? theme === "dark" ? "bg-green-500/30 text-green-300" : "bg-green-100 text-green-700"
-                              : theme === "dark" ? "bg-yellow-500/30 text-yellow-300" : "bg-yellow-100 text-yellow-700"
-                          }`}>
-                            {result.confidence}%
-                          </div>
-                          <p className={`text-[8px] mt-1 ${
-                            result.confidence > 70
-                              ? theme === "dark" ? "text-green-400" : "text-green-600"
-                              : theme === "dark" ? "text-yellow-400" : "text-yellow-600"
-                          }`}>
-                            {result.status}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  onClick={handleScan}
-                  disabled={isScanning || !isConnected}
-                  className={`font-bold uppercase tracking-wider py-2 transition-all ${
-                    isScanning
-                      ? theme === "dark"
-                        ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                        : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                      : theme === "dark"
-                        ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
-                        : "bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600"
-                  }`}
-                >
-                  <Zap className="w-4 h-4 mr-1 inline" />
-                  {isScanning ? "Scanning" : "Full Scan"}
-                </Button>
-                <Button
-                  onClick={handleScanAll}
-                  disabled={!isConnected}
-                  variant="outline"
-                  className={`font-bold uppercase tracking-wider py-2 ${
+            <div className="p-4 space-y-3">
+              {scanResults.length === 0 ? (
+                // Compact search interface - before scan
+                <div className="space-y-3">
+                  <div className={`p-3 rounded-lg border ${
                     theme === "dark"
-                      ? "border-gray-600 text-gray-300 hover:bg-gray-800"
-                      : "border-gray-400 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <Brain className="w-4 h-4 mr-1 inline" />
-                  All Markets
-                </Button>
-              </div>
+                      ? "bg-gray-800/50 border-gray-700/50"
+                      : "bg-gray-100/50 border-gray-300/50"
+                  }`}>
+                    <p className={`text-xs font-bold mb-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                      Scan all markets for active signals
+                    </p>
+                    <Button
+                      onClick={handleScan}
+                      disabled={isScanning || !isConnected}
+                      className={`w-full font-bold uppercase tracking-wider py-2 transition-all ${
+                        isScanning
+                          ? theme === "dark"
+                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                            : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                          : theme === "dark"
+                            ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                            : "bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600"
+                      }`}
+                    >
+                      <Zap className="w-4 h-4 mr-2 inline" />
+                      {isScanning ? "Scanning..." : "Start Scan"}
+                    </Button>
+                  </div>
+                  
+                  {!isConnected && (
+                    <div className={`p-2 rounded-lg border text-center ${
+                      theme === "dark"
+                        ? "bg-red-500/10 border-red-500/30 text-red-300 text-xs"
+                        : "bg-red-100/50 border-red-300 text-red-700 text-xs"
+                    }`}>
+                      Connect to API for live analysis
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Full results view - after scan
+                <div className="max-h-[500px] overflow-y-auto space-y-3">
+                  {/* Strategies with Signals Display */}
+                  <div className="space-y-2">
+                    <label className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                      <TrendingUp className="w-4 h-4" />
+                      Active Strategies
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {strategies.map(strategy => {
+                        const probability = getStrategyProbability(strategy.id)
+                        const isActive = selectedStrategies.includes(strategy.id)
+                        if (probability === 0) return null // Only show strategies with signals
+                        return (
+                          <div
+                            key={strategy.id}
+                            className={`p-3 rounded-lg border transition-all ${
+                              theme === "dark"
+                                ? "bg-purple-500/20 border-purple-500/60 shimmer"
+                                : "bg-purple-100/50 border-purple-400/60 shimmer"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-1">
+                              <span className="text-lg">{strategy.icon}</span>
+                              <Activity className={`w-3 h-3 ${theme === "dark" ? "text-green-400" : "text-green-600"} animate-pulse`} />
+                            </div>
+                            <p className={`text-xs font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                              {strategy.label}
+                            </p>
+                            
+                            {/* Probability Gauge */}
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[9px] font-bold ${
+                                  probability > 70 ? theme === "dark" ? "text-green-400" : "text-green-600"
+                                  : probability > 50 ? theme === "dark" ? "text-yellow-400" : "text-yellow-600"
+                                  : theme === "dark" ? "text-gray-500" : "text-gray-600"
+                                }`}>
+                                  Signal: {probability}%
+                                </span>
+                              </div>
+                              <div className={`h-1.5 rounded-full overflow-hidden ${theme === "dark" ? "bg-gray-700/50" : "bg-gray-300/50"}`}>
+                                <div
+                                  className={`h-full transition-all duration-500 ${
+                                    probability > 70 ? "bg-gradient-to-r from-green-500 to-emerald-400"
+                                    : probability > 50 ? "bg-gradient-to-r from-yellow-500 to-amber-400"
+                                    : "bg-gradient-to-r from-gray-500 to-gray-400"
+                                  }`}
+                                  style={{ width: `${probability}%` }}
+                                />
+                              </div>
+                            </div>
 
-              {!isConnected && (
-                <div className={`p-2 rounded-lg border text-center ${
-                  theme === "dark"
-                    ? "bg-red-500/10 border-red-500/30 text-red-300 text-xs"
-                    : "bg-red-100/50 border-red-300 text-red-700 text-xs"
-                }`}>
-                  Connect to API for live analysis
+                            {/* Entry/Exit Conditions */}
+                            <div className={`mt-2 pt-2 border-t text-[8px] ${theme === "dark" ? "border-gray-700/50" : "border-gray-300/50"}`}>
+                              <p className={`font-semibold ${theme === "dark" ? "text-emerald-400" : "text-emerald-600"} mb-0.5 leading-tight`}>
+                                Entry: {strategy.entryCondition}
+                              </p>
+                              <p className={`font-semibold ${theme === "dark" ? "text-red-400" : "text-red-600"} leading-tight`}>
+                                Exit: {strategy.exitCondition}
+                              </p>
+                            </div>
+
+                            {/* Run/Stop Status */}
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className={`flex items-center gap-1 px-2 py-1 rounded text-[9px] font-bold ${
+                                probability > 70
+                                  ? theme === "dark" ? "bg-green-500/30 text-green-300" : "bg-green-100 text-green-700"
+                                  : theme === "dark" ? "bg-yellow-500/30 text-yellow-300" : "bg-yellow-100 text-yellow-700"
+                              }`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${probability > 70 ? "bg-green-400" : "bg-yellow-400"} animate-pulse`} />
+                                {probability > 70 ? "RUN" : "WAIT"}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Scan Progress */}
+                  {isScanning && (
+                    <div className={`p-3 rounded-lg border ${
+                      theme === "dark"
+                        ? "bg-blue-500/10 border-blue-500/30"
+                        : "bg-blue-100/50 border-blue-300"
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Loader2 className={`w-4 h-4 animate-spin ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`} />
+                        <span className={`text-xs font-bold ${theme === "dark" ? "text-blue-300" : "text-blue-700"}`}>
+                          Scanning Markets...
+                        </span>
+                      </div>
+                      <div className={`w-full h-2 rounded-full ${theme === "dark" ? "bg-gray-700/50" : "bg-gray-300/50"} overflow-hidden`}>
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 animate-pulse transition-all duration-300"
+                          style={{ width: `${Math.min(scanProgress, 100)}%` }}
+                        />
+                      </div>
+                      <p className={`text-xs text-center mt-1 font-semibold ${theme === "dark" ? "text-blue-300" : "text-blue-700"}`}>
+                        {Math.round(Math.min(scanProgress, 100))}% Complete
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Back to Search Button */}
+                  <Button
+                    onClick={() => setScanResults([])}
+                    variant="outline"
+                    className={`w-full font-bold uppercase tracking-wider py-2 ${
+                      theme === "dark"
+                        ? "border-gray-600 text-gray-300 hover:bg-gray-800"
+                        : "border-gray-400 text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Brain className="w-4 h-4 mr-2 inline" />
+                    New Scan
+                  </Button>
                 </div>
               )}
             </div>
