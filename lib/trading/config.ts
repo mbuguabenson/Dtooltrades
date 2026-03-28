@@ -2,9 +2,9 @@
 import { z } from "zod"
 
 const configSchema = z.object({
-  DERIV_APP_ID: z.string().default("123189"),
+  DERIV_APP_ID: z.string().default("113831"),
   DERIV_API_TOKEN: z.string(),
-  WS_URL: z.string().default("wss://ws.binaryws.com/websockets/v3"),
+  WS_URL: z.string().default("wss://legacy-api.deriv.com/websockets/v3"),
   EXECUTION_MODE: z.enum(["demo", "live"]).default("demo"),
   MARKETS: z.string().default(""),
   BASE_STAKE_USD: z.coerce.number().default(1),
