@@ -1,5 +1,30 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+
+export default function DerivAnalysisApp() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to dashboard immediately
+    router.push("/?dashboard=true")
+  }, [router])
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-950">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-300 text-sm">Loading trading dashboard...</p>
+      </div>
+    </div>
+  )
+}
+
+/*
+// LEGACY CODE BELOW - Main dashboard page (kept for reference)
+// This page now redirects directly to the dashboard
+
 import { useState, useEffect } from "react"
 import { useDeriv } from "@/hooks/use-deriv"
 import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
@@ -54,7 +79,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-export default function DerivAnalysisApp() {
+function DerivAnalysisApp() {
   const [theme, setTheme] = useState<"light" | "dark">("dark")
   const [activeTab, setActiveTab] = useState("smart-analysis")
   const [isLoading, setIsLoading] = useState(true)
