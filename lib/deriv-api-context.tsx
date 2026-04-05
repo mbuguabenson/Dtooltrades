@@ -62,9 +62,9 @@ export function DerivAPIProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // 1. Ensure basic API client exists even without token
     if (!globalAPIClient) {
-      console.log("[v0] Initializing baseline DerivAPIClient")
+      console.log("[v0] Initializing baseline DerivAPIClient with App ID:", DERIV_APP_ID)
       globalAPIClient = new DerivAPIClient({
-        appId: String(DERIV_APP_ID || "123189"),
+        appId: String(DERIV_APP_ID),
       })
       
       globalAPIClient.setErrorCallback((err) => {
