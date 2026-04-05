@@ -43,6 +43,9 @@ import { RiskDisclaimerModal } from "@/components/modals/risk-disclaimer-modal"
 import { MarketSelector } from "@/components/market-selector"
 import { WelcomeHero } from "@/components/welcome-hero"
 import { FloatingAIScanner } from "@/components/floating-ai-scanner"
+import { ApiTokenModal } from "@/components/api-token-modal"
+import { useDerivAuth } from "@/hooks/use-deriv-auth"
+import { DashboardTab } from "@/components/tabs/dashboard-tab"
 import {
   Dialog,
   DialogContent,
@@ -67,6 +70,17 @@ export default function DerivAnalysisApp() {
     return saved ? JSON.parse(saved) : []
   })
   const globalContext = useGlobalTradingContext()
+  const { showTokenModal, submitApiToken, loginWithDeriv } = useDerivAuth()
+
+  // Wrapper to ensure OAuth login is properly triggered
+  const handleOAuthLogin = () => {
+    console.log("[v0] 🔐 Page: Triggering OAuth login...")
+    try {
+      loginWithDeriv()
+    } catch (error) {
+      console.error("[v0] ❌ Page: OAuth login error:", error)
+    }
+  }
 
   const {
     connectionStatus,
@@ -331,6 +345,7 @@ export default function DerivAnalysisApp() {
                     <div className="overflow-x-auto no-scrollbar flex">
                       <ResponsiveTabs theme={theme} value={activeTab} onValueChange={setActiveTab}>
                         {[
+                          "dashboard",
                           "smart-adaptive",
                           "smart-analysis",
                           "smartauto24",
@@ -349,6 +364,7 @@ export default function DerivAnalysisApp() {
                           "tools-info",
                         ].filter(tab => !siteConfig?.hiddenTabs?.includes(tab)).map((tab) => {
                           const tabLabels: Record<string, string> = {
+                            "dashboard": "Dashboard",
                             "smart-adaptive": "Smart Adaptive",
                             "smart-analysis": "Smart Analysis",
                             "smartauto24": "SmartAuto24",
@@ -527,6 +543,10 @@ export default function DerivAnalysisApp() {
                   Reconnecting to Deriv API... Some data may be delayed.
                 </div>
               )}
+              <TabsContent value="dashboard" className="mt-0">
+                <DashboardTab theme={theme} />
+              </TabsContent>
+
               <TabsContent value="smart-analysis" className="mt-0 space-y-2 sm:space-y-3 md:space-y-4">
                 <div
                   className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border flex items-center justify-between ${theme === "dark" ? "bg-linear-to-br from-[#0f1629]/80 to-[#1a2235]/80 border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]" : "bg-white border-gray-200 shadow-lg"}`}
@@ -863,6 +883,14 @@ export default function DerivAnalysisApp() {
         onScanComplete={(results) => {
           console.log("[v0] AI Scanner results:", results)
         }}
+      />
+
+      {/* API Token Modal */}
+      <ApiTokenModal
+        open={showTokenModal}
+        onSubmit={submitApiToken}
+        onOAuthLogin={handleOAuthLogin}
+        theme={theme}
       />
     </div>
   )

@@ -1,6 +1,10 @@
 /**
  * Deriv API Configuration
  *
+ * Official Deriv API Documentation:
+ * - API Reference: https://developers.deriv.com/docs/
+ * - WebSocket Specifications: https://developers.deriv.com/docs/websocket/
+ * 
  * Official Deriv GitHub Repositories:
  * - Main Deriv App (DTrader, Cashier, Account, Bot Web UI): https://github.com/deriv-com/deriv-app
  * - SmartTrader Platform: https://github.com/deriv-com/deriv-smarttrader
@@ -10,9 +14,21 @@
  * - Derivatives Base (optional): https://github.com/deriv-com/derivatives
  */
 
-export const DERIV_APP_ID = "123189"
+export const DERIV_APP_ID = "32KGABH3pjSMkQ6JTotTG"
 export const OAUTH_CLIENT_ID = "32EtOUHbr4zUOcHKwjgwj"
-export const DERIV_REDIRECT_URL = typeof window !== "undefined" ? window.location.origin : ""
+
+// Get redirect URL based on environment
+// This must match the pre-registered redirect URIs in the Deriv OAuth app
+const getOAuthRedirectUrl = () => {
+  if (typeof window === "undefined") return "http://localhost:3000"
+  
+  const origin = window.location.origin
+  
+  // Add /api/auth/oauth-callback as the standard OAuth redirect path
+  return `${origin}/api/auth/oauth-callback`
+}
+
+export const DERIV_REDIRECT_URL = getOAuthRedirectUrl()
 
 export const DERIV_CONFIG = {
   APP_ID: DERIV_APP_ID,
